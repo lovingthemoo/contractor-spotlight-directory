@@ -78,7 +78,7 @@ export class GooglePlacesService {
         'googleMapsUri',
         'internationalPhoneNumber',
         'reviews',
-        'photos',  // Request the entire photos object
+        'photos.name,photos.widthPx,photos.heightPx,photos.authorAttributions',  // Specific photo fields
         'regularOpeningHours'
       ].join(',');
 
@@ -102,6 +102,19 @@ export class GooglePlacesService {
         console.log('Raw photo data:', {
           photoCount: placeDetails.photos.length,
           firstPhoto: placeDetails.photos[0],
+        });
+
+        // Transform photos to use the format similar to Google Business Profile
+        placeDetails.photos = placeDetails.photos.map((photo: any) => ({
+          ...photo,
+          url: photo.name ? 
+            `https://lh3.googleusercontent.com/${photo.name.split('/').pop()}=w800-h500-k-no` : 
+            undefined
+        }));
+
+        console.log('Transformed photos:', {
+          photoCount: placeDetails.photos.length,
+          sampleUrl: placeDetails.photos[0]?.url
         });
       } else {
         console.log('No photos found in response');
