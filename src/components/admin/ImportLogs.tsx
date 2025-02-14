@@ -1,7 +1,7 @@
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Clock, Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Trash2, XCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertDialog,
@@ -14,6 +14,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface UploadLog {
   id: string;
@@ -39,6 +48,36 @@ const ImportLogs = ({ logs, onDelete }: ImportLogsProps) => {
     
     const duration = new Date(end).getTime() - new Date(start).getTime();
     return `${Math.round(duration / 1000)}s`;
+  };
+
+  const formatErrors = (errors: any) => {
+    if (!errors) return null;
+    
+    // If errors is an array, format each error
+    if (Array.isArray(errors)) {
+      return errors.map((error, index) => (
+        <div key={index} className="mb-4 last:mb-0">
+          <h4 className="font-medium text-red-600 mb-1">
+            Error {index + 1}
+          </h4>
+          <pre className="text-sm bg-gray-50 p-2 rounded">
+            {typeof error === 'object' ? JSON.stringify(error, null, 2) : error}
+          </pre>
+        </div>
+      ));
+    }
+    
+    // If errors is an object, stringify it
+    if (typeof errors === 'object') {
+      return (
+        <pre className="text-sm bg-gray-50 p-2 rounded">
+          {JSON.stringify(errors, null, 2)}
+        </pre>
+      );
+    }
+    
+    // If errors is a string, display it directly
+    return <p className="text-sm text-red-600">{errors}</p>;
   };
 
   return (
@@ -76,13 +115,29 @@ const ImportLogs = ({ logs, onDelete }: ImportLogsProps) => {
               </div>
               <div className="flex items-center gap-2">
                 {log.errors && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => console.log('Error details:', log.errors)}
-                  >
-                    View Errors
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        View Errors
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Import Errors</DialogTitle>
+                        <DialogDescription>
+                          Errors encountered while importing {log.filename}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ScrollArea className="max-h-[60vh] mt-4">
+                        {formatErrors(log.errors)}
+                      </ScrollArea>
+                    </DialogContent>
+                  </Dialog>
                 )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -112,6 +167,11 @@ const ImportLogs = ({ logs, onDelete }: ImportLogsProps) => {
             </div>
           </Card>
         ))}
+        {logs.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            No import logs available
+          </div>
+        )}
       </div>
     </div>
   );
