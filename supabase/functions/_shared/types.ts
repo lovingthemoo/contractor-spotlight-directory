@@ -27,5 +27,7 @@ export interface ContractorData {
   google_business_scopes?: string[];
   needs_google_enrichment: boolean;
   last_enrichment_attempt: string;
+  description?: string;
+  website_description?: string;
   slug: string;
 }
