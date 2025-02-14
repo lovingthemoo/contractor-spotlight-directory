@@ -66,15 +66,17 @@ const ContractorDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+      <div className="flex items-center justify-center min-h-screen" role="status">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]">
+          <span className="sr-only">Loading...</span>
+        </div>
       </div>
     );
   }
 
   if (error || !contractor) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen" role="alert">
         <h1 className="text-2xl font-bold">Contractor not found</h1>
         <Link to="/" className="mt-4 text-primary hover:underline">
           Return to home
@@ -91,8 +93,8 @@ const ContractorDetail = () => {
     <div className="min-h-screen py-12 bg-gray-50">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <Link to="/">
-          <Button variant="ghost" className="mb-6">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+          <Button variant="ghost" className="mb-6" aria-label="Back to listings">
+            <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
             Back to Listings
           </Button>
         </Link>
@@ -102,13 +104,13 @@ const ContractorDetail = () => {
             {contractor.google_photos && contractor.google_photos[0] ? (
               <img
                 src={contractor.google_photos[0].url}
-                alt={businessName}
+                alt={`Project by ${businessName}`}
                 className="object-cover w-full rounded-lg shadow-lg aspect-video"
               />
             ) : (
               <img
                 src={contractor.images?.[0] || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e'}
-                alt={businessName}
+                alt={`Project by ${businessName}`}
                 className="object-cover w-full rounded-lg shadow-lg aspect-video"
               />
             )}
@@ -121,8 +123,8 @@ const ContractorDetail = () => {
               </h1>
               <div className="flex items-center mt-2 space-x-4">
                 <Badge>{contractor.specialty}</Badge>
-                <div className="flex items-center">
-                  <Star className="w-4 h-4 text-yellow-400" />
+                <div className="flex items-center" aria-label={`Rating: ${contractor.rating} out of 5 stars`}>
+                  <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
                   <span className="ml-1 font-medium">{contractor.rating}</span>
                   <span className="ml-1 text-gray-500">
                     ({contractor.review_count} reviews)
@@ -133,21 +135,27 @@ const ContractorDetail = () => {
 
             <Card className="p-4 space-y-3">
               <div className="flex items-center text-gray-600">
-                <MapPin className="w-4 h-4 mr-2" />
-                {address}
+                <MapPin className="w-4 h-4 mr-2" aria-label="Address" />
+                <span>{address}</span>
               </div>
               
               {phone && (
                 <div className="flex items-center text-gray-600">
-                  <Phone className="w-4 h-4 mr-2" />
-                  {phone}
+                  <Phone className="w-4 h-4 mr-2" aria-label="Phone number" />
+                  <span>{phone}</span>
                 </div>
               )}
               
               {contractor.website_url && (
                 <div className="flex items-center text-gray-600">
-                  <Globe className="w-4 h-4 mr-2" />
-                  <a href={contractor.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  <Globe className="w-4 h-4 mr-2" aria-label="Website" />
+                  <a 
+                    href={contractor.website_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-primary hover:underline"
+                    aria-label={`Visit ${businessName}'s website`}
+                  >
                     Visit Website
                   </a>
                 </div>
@@ -155,8 +163,12 @@ const ContractorDetail = () => {
               
               {contractor.email && (
                 <div className="flex items-center text-gray-600">
-                  <Mail className="w-4 h-4 mr-2" />
-                  <a href={`mailto:${contractor.email}`} className="text-primary hover:underline">
+                  <Mail className="w-4 h-4 mr-2" aria-label="Email" />
+                  <a 
+                    href={`mailto:${contractor.email}`} 
+                    className="text-primary hover:underline"
+                    aria-label={`Email ${businessName}`}
+                  >
                     {contractor.email}
                   </a>
                 </div>
@@ -226,7 +238,7 @@ const ContractorDetail = () => {
               {contractor.google_reviews.map((review: any, index: number) => (
                 <Card key={index} className="p-4">
                   <div className="flex items-center mb-4">
-                    <div className="flex items-center">
+                    <div className="flex items-center" aria-label={`Rating: ${review.rating} out of 5 stars`}>
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
@@ -234,6 +246,7 @@ const ContractorDetail = () => {
                             i < review.rating ? 'text-yellow-400' : 'text-gray-300'
                           }`}
                           fill={i < review.rating ? 'currentColor' : 'none'}
+                          aria-hidden="true"
                         />
                       ))}
                     </div>
