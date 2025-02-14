@@ -55,7 +55,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
             {contractor.website_description || contractor.description}
           </p>
 
-          {contractor.specialty === 'Building' && contractor.project_types && (
+          {contractor.project_types && contractor.project_types.length > 0 && (
             <div className="mt-3">
               <div className="flex flex-wrap gap-1">
                 {contractor.project_types.slice(0, 3).map((type) => (
@@ -77,7 +77,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
               <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
               <span className="ml-1 text-sm font-medium">{contractor.rating}</span>
               <span className="ml-1 text-sm text-gray-500">
-                ({contractor.review_count} reviews)
+                ({contractor.review_count || 0} {contractor.review_count === 1 ? 'review' : 'reviews'})
               </span>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" aria-hidden="true" />
