@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +24,8 @@ const Index = () => {
         const response = await supabase
           .from('contractors')
           .select('*')
-          .order('rating', { ascending: false });
+          .order('rating', { ascending: false })
+          .not('rating', 'is', null); // Only show contractors with ratings
         
         if (response.error) {
           console.error('Supabase error:', response.error);
@@ -60,9 +62,9 @@ const Index = () => {
       selectedSpecialty === "All" || contractor.specialty === selectedSpecialty
     )
     .filter(contractor => 
-      contractor.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contractor.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contractor.location.toLowerCase().includes(searchQuery.toLowerCase())
+      contractor.business_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contractor.specialty?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contractor.location?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
   return (
