@@ -65,7 +65,7 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Include reviews and photos in the field mask
+      // Include photos and authorship in the field mask
       const fieldMask = [
         'id',
         'displayName',
@@ -78,7 +78,10 @@ export class GooglePlacesService {
         'googleMapsUri',
         'internationalPhoneNumber',
         'reviews',
-        'photos'
+        'photos.name',
+        'photos.widthPx',
+        'photos.heightPx',
+        'photos.authorAttributions'
       ].join(',');
 
       const response = await fetch(`${this.baseUrl}/${placeId}`, {
