@@ -64,7 +64,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   }
 
   // Check if enrichment is needed
-  const needsEnrichment = !dbContractor.google_place_id || 
+  const needsEnrichment = !dbContractor.google_place_name || 
                          !dbContractor.rating || 
                          !dbContractor.years_in_business || 
                          !dbContractor.description;
