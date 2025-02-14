@@ -30,17 +30,16 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
         ? JSON.parse(dbContractor.google_reviews) 
         : dbContractor.google_reviews;
         
-      google_reviews = Array.isArray(reviewsData) 
-        ? reviewsData.map(review => ({
-            rating: Number(review.rating) || 0,
-            text: String(review.text || ''),
-            time: String(review.time || ''),
-            author_name: String(review.author_name || '')
-          }))
-        : undefined;
+      if (Array.isArray(reviewsData) && reviewsData.length > 0) {
+        google_reviews = reviewsData.map(review => ({
+          rating: Number(review.rating) || 0,
+          text: String(review.text || ''),
+          time: String(review.time || ''),
+          author_name: String(review.author_name || '')
+        }));
+      }
     } catch (e) {
       console.error('Error parsing google_reviews:', e);
-      google_reviews = undefined;
     }
   }
 
@@ -51,28 +50,27 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
         ? JSON.parse(dbContractor.google_photos)
         : dbContractor.google_photos;
 
-      google_photos = Array.isArray(photosData)
-        ? photosData.map(photo => ({
-            url: String(photo.url || ''),
-            width: Number(photo.width) || 0,
-            height: Number(photo.height) || 0,
-            type: String(photo.type || '')
-          }))
-        : undefined;
+      if (Array.isArray(photosData) && photosData.length > 0) {
+        google_photos = photosData.map(photo => ({
+          url: String(photo.url || ''),
+          width: Number(photo.width) || 0,
+          height: Number(photo.height) || 0,
+          type: String(photo.type || '')
+        }));
+      }
     } catch (e) {
       console.error('Error parsing google_photos:', e);
-      google_photos = undefined;
     }
   }
 
   // Check if enrichment is needed
-  const needsEnrichment = !dbContractor.rating || 
-    !dbContractor.years_in_business || 
-    !dbContractor.description ||
-    !dbContractor.google_reviews;
+  const needsEnrichment = !dbContractor.google_place_id || 
+                         !dbContractor.rating || 
+                         !dbContractor.years_in_business || 
+                         !dbContractor.description;
 
   if (needsEnrichment) {
-    // Update the contractor to mark it for enrichment
+    console.log(`Marking contractor ${dbContractor.id} for enrichment`);
     await supabase
       .from('contractors')
       .update({
@@ -82,26 +80,33 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
       .eq('id', dbContractor.id);
   }
 
-  const website_url = formatWebsiteUrl(dbContractor.website_url);
-
-  // Only use values that are actually present in the database
-  return {
+  // Only include fields that have actual values
+  const contractor: Contractor = {
     ...dbContractor,
-    google_reviews,
-    google_photos,
-    certifications: dbContractor.certifications || undefined,
-    years_in_business: dbContractor.years_in_business || undefined,
-    website_url,
     rating: dbContractor.rating || undefined,
     review_count: dbContractor.review_count || 0,
-    images: dbContractor.images || [],
-    project_types: dbContractor.project_types || []
+    years_in_business: dbContractor.years_in_business || undefined,
+    images: Array.isArray(dbContractor.images) ? dbContractor.images : [],
+    project_types: Array.isArray(dbContractor.project_types) ? dbContractor.project_types : [],
+    google_reviews: google_reviews || undefined,
+    google_photos: google_photos || undefined,
+    certifications: Array.isArray(dbContractor.certifications) ? dbContractor.certifications : undefined,
+    website_url: formatWebsiteUrl(dbContractor.website_url)
   };
+
+  // Remove any undefined values to ensure clean data
+  Object.keys(contractor).forEach(key => {
+    if (contractor[key] === undefined) {
+      delete contractor[key];
+    }
+  });
+
+  return contractor;
 };
 
 export const getDisplayImage = (contractor: Contractor): string => {
   if (contractor.google_photos?.[0]?.url) return contractor.google_photos[0].url;
-  if (contractor.images?.[0]) return contractor.images[0];
+  if (Array.isArray(contractor.images) && contractor.images[0]) return contractor.images[0];
   return '';
 };
 

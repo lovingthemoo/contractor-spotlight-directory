@@ -12,9 +12,10 @@ interface ContractorCardProps {
 }
 
 const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: ContractorCardProps) => {
+  // Only use actual data from the database
   const businessName = contractor.google_place_name || contractor.business_name;
-  const displayAddress = getDisplayAddress(contractor);
   const displayImage = getDisplayImage(contractor);
+  const displayAddress = getDisplayAddress(contractor);
   const formattedPhone = contractor.google_formatted_phone || contractor.phone;
   
   const locationSlug = contractor.location?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || '';
@@ -35,9 +36,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
               className="object-cover w-full h-48"
               loading="lazy"
             />
-            {contractor.specialty && (
-              <Badge className="absolute top-4 right-4">{contractor.specialty}</Badge>
-            )}
+            <Badge className="absolute top-4 right-4">{contractor.specialty}</Badge>
           </div>
         )}
         <div className="p-4">
@@ -60,7 +59,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
               </div>
             )}
             
-            {contractor.years_in_business && (
+            {typeof contractor.years_in_business === 'number' && contractor.years_in_business > 0 && (
               <div className="flex items-center text-sm text-gray-500">
                 <Clock className="w-4 h-4 mr-1 shrink-0" aria-label="Years in business" />
                 <span>{contractor.years_in_business} years in business</span>
@@ -74,7 +73,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
             </p>
           )}
 
-          {contractor.project_types && contractor.project_types.length > 0 && (
+          {Array.isArray(contractor.project_types) && contractor.project_types.length > 0 && (
             <div className="mt-3">
               <div className="flex flex-wrap gap-1" role="list" aria-label="Project types">
                 {contractor.project_types.slice(0, 3).map((type) => (
@@ -92,7 +91,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
           )}
 
           <div className="flex items-center justify-between mt-4">
-            {contractor.rating !== undefined && contractor.rating > 0 && (
+            {typeof contractor.rating === 'number' && contractor.rating > 0 && (
               <div className="flex items-center">
                 <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
                 <span className="ml-1 text-sm font-medium">
