@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Search, MapPin, ChevronRight, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 // Constants
-const MIN_RATING = 0; // Changed from 4 to 0 to show all contractors while testing
+const MIN_RATING = 0;
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
 
 interface Contractor {
@@ -39,23 +40,25 @@ const Index = () => {
     queryFn: async () => {
       console.log('Fetching contractors...');
       try {
-        const { data, error } = await supabase
+        const response = await supabase
           .from('contractors')
           .select('*');
         
-        if (error) {
-          console.error('Supabase error:', error);
-          throw error;
+        console.log('Full Supabase response:', response);
+
+        if (response.error) {
+          console.error('Supabase error:', response.error);
+          throw response.error;
         }
 
-        console.log('Raw Supabase response:', { data, error });
+        const { data } = response;
         
         if (!data || data.length === 0) {
           console.log('No contractors found in database');
-        } else {
-          console.log(`Found ${data.length} contractors`);
+          return [];
         }
 
+        console.log(`Found ${data.length} contractors:`, data);
         return data as Contractor[];
       } catch (e) {
         console.error('Query execution error:', e);
@@ -77,9 +80,9 @@ const Index = () => {
   console.log('Filtered contractors:', filteredContractors);
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <div className="min-h-screen">
+      <main className="flex-grow">
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-white">
           <div className="px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -94,16 +97,17 @@ const Index = () => {
               
               {/* Search Bar */}
               <div className="flex items-center max-w-md mx-auto mt-8 overflow-hidden bg-white border rounded-full">
-                <Search className="w-5 h-5 mx-3 text-gray-400" />
+                <Search className="w-5 h-5 mx-3 text-gray-400" aria-hidden="true" />
                 <Input
                   type="text"
                   placeholder="Search contractors..."
                   className="flex-1 border-0 focus-visible:ring-0"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search contractors"
                 />
                 <Badge variant="secondary" className="mr-2">
-                  <MapPin className="w-4 h-4 mr-1" />
+                  <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
                   London
                 </Badge>
               </div>
@@ -119,6 +123,7 @@ const Index = () => {
               className="flex flex-wrap gap-4 mt-4"
               defaultValue="All"
               onValueChange={setSelectedSpecialty}
+              aria-label="Service type filter"
             >
               {specialties.map((specialty) => (
                 <div key={specialty} className="flex items-center space-x-2">
@@ -130,103 +135,102 @@ const Index = () => {
           </div>
         </section>
 
-      
-      {/* Featured Contractors */}
-      <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div className="animate-in">
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900">Featured Contractors</h2>
-          <p className="mt-2 text-gray-500">Top professionals in London</p>
-          
-          {isLoading && (
-            <div className="text-center py-12">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-            </div>
-          )}
+        {/* Featured Contractors */}
+        <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div className="animate-in">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Featured Contractors</h2>
+            <p className="mt-2 text-gray-500">Top professionals in London</p>
+            
+            {isLoading && (
+              <div className="text-center py-12">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+                  <span className="sr-only">Loading...</span>
+                </div>
+              </div>
+            )}
 
-          {error && (
-            <div className="text-center py-12 text-red-500">
-              <p>Failed to load contractors. Please try again later.</p>
-              <p className="text-sm mt-2">{error.message}</p>
-            </div>
-          )}
+            {error && (
+              <div className="text-center py-12 text-red-500" role="alert">
+                <p>Failed to load contractors. Please try again later.</p>
+                <p className="text-sm mt-2">{error.message}</p>
+              </div>
+            )}
 
-          {!isLoading && !error && filteredContractors.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              No contractors found matching your criteria.
-            </div>
-          )}
-          
-          <div className="grid gap-6 mt-8 md:grid-cols-2 lg:grid-cols-3">
-            {filteredContractors.map((contractor) => (
-              <a 
-                key={contractor.id} 
-                href={`/${contractor.location.toLowerCase().replace(' ', '-')}/${contractor.specialty.toLowerCase()}/${contractor.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <Card className="overflow-hidden transition-all hover:shadow-lg cursor-pointer">
-                  <img
-                    src={contractor.images?.[0] || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e'}
-                    alt={contractor.business_name}
-                    className="object-cover w-full h-48"
-                    loading="lazy"
-                  />
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900">{contractor.business_name}</h3>
-                      <Badge>{contractor.specialty}</Badge>
-                    </div>
-                    <div className="flex items-center mt-2 text-sm text-gray-500">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {contractor.location}
-                    </div>
-                    {contractor.specialty === 'Building' && contractor.project_types && (
-                      <div className="mt-3">
-                        <div className="flex flex-wrap gap-1">
-                          {contractor.project_types.slice(0, 3).map((type) => (
-                            <Badge key={type} variant="secondary" className="text-xs">
-                              {type}
-                            </Badge>
-                          ))}
-                          {contractor.project_types.length > 3 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{contractor.project_types.length - 3} more
-                            </Badge>
-                          )}
+            {!isLoading && !error && filteredContractors.length === 0 && (
+              <div className="text-center py-12 text-gray-500" role="status">
+                No contractors found matching your criteria.
+              </div>
+            )}
+            
+            <div className="grid gap-6 mt-8 md:grid-cols-2 lg:grid-cols-3">
+              {filteredContractors.map((contractor) => (
+                <a 
+                  key={contractor.id} 
+                  href={`/${contractor.location.toLowerCase().replace(' ', '-')}/${contractor.specialty.toLowerCase()}/${contractor.slug}`}
+                  className="block"
+                  aria-label={`View details for ${contractor.business_name}`}
+                >
+                  <Card className="overflow-hidden transition-all hover:shadow-lg">
+                    <img
+                      src={contractor.images?.[0] || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e'}
+                      alt={`${contractor.business_name} project example`}
+                      className="object-cover w-full h-48"
+                      loading="lazy"
+                    />
+                    <div className="p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-900">{contractor.business_name}</h3>
+                        <Badge>{contractor.specialty}</Badge>
+                      </div>
+                      <div className="flex items-center mt-2 text-sm text-gray-500">
+                        <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
+                        {contractor.location}
+                      </div>
+                      {contractor.specialty === 'Building' && contractor.project_types && (
+                        <div className="mt-3">
+                          <div className="flex flex-wrap gap-1">
+                            {contractor.project_types.slice(0, 3).map((type) => (
+                              <Badge key={type} variant="secondary" className="text-xs">
+                                {type}
+                              </Badge>
+                            ))}
+                            {contractor.project_types.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{contractor.project_types.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
                         </div>
+                      )}
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
+                          <span className="ml-1 text-sm font-medium">{contractor.rating}</span>
+                          <span className="ml-1 text-sm text-gray-500">
+                            ({contractor.review_count} reviews)
+                          </span>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-400" aria-hidden="true" />
                       </div>
-                    )}
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400" />
-                        <span className="ml-1 text-sm font-medium">{contractor.rating}</span>
-                        <span className="ml-1 text-sm text-gray-500">
-                          ({contractor.review_count} reviews)
-                        </span>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
                     </div>
-                  </div>
-                </Card>
-              </a>
-            ))}
+                  </Card>
+                </a>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* AdSense Section */}
-      <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div className="text-center">
-          {/* AdSense placeholder - Replace with actual AdSense code */}
-          <div id="contractor-list-ads" className="min-h-[250px] bg-gray-100 flex items-center justify-center">
-            <span className="text-gray-400">Advertisement Space</span>
+        {/* AdSense Section */}
+        <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div id="contractor-list-ads" className="min-h-[250px] bg-gray-100 flex items-center justify-center" role="complementary">
+              <span className="text-gray-400">Advertisement Space</span>
+            </div>
           </div>
-        </div>
-      </section>
-      </div>
+        </section>
+      </main>
       <Footer />
-    </>
+    </div>
   );
 };
 
