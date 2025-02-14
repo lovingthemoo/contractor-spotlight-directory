@@ -93,9 +93,11 @@ export type Database = {
           description: string | null
           email: string | null
           founded_year: number | null
+          google_business_scopes: string[] | null
           google_formatted_address: string | null
           google_formatted_phone: string | null
           google_photos: Json | null
+          google_place_id: string | null
           google_place_name: string | null
           google_reviews: Json | null
           id: string
@@ -142,9 +144,11 @@ export type Database = {
           description?: string | null
           email?: string | null
           founded_year?: number | null
+          google_business_scopes?: string[] | null
           google_formatted_address?: string | null
           google_formatted_phone?: string | null
           google_photos?: Json | null
+          google_place_id?: string | null
           google_place_name?: string | null
           google_reviews?: Json | null
           id?: string
@@ -191,9 +195,11 @@ export type Database = {
           description?: string | null
           email?: string | null
           founded_year?: number | null
+          google_business_scopes?: string[] | null
           google_formatted_address?: string | null
           google_formatted_phone?: string | null
           google_photos?: Json | null
+          google_place_id?: string | null
           google_place_name?: string | null
           google_reviews?: Json | null
           id?: string
