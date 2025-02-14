@@ -19,7 +19,6 @@ const Index = () => {
   const { data: contractors = [], isLoading, error } = useQuery({
     queryKey: ['contractors'],
     queryFn: async () => {
-      console.log('Fetching contractors...');
       try {
         const response = await supabase
           .from('contractors')
@@ -27,18 +26,11 @@ const Index = () => {
           .order('rating', { ascending: false });
         
         if (response.error) throw response.error;
+        if (!response.data?.length) return [];
 
-        if (!response.data || response.data.length === 0) {
-          console.log('No contractors found in database');
-          return [];
-        }
-
-        const transformedData = await Promise.all(
-          response.data.map(contractor => transformContractor(contractor))
-        );
-        return transformedData;
+        return Promise.all(response.data.map(transformContractor));
       } catch (e) {
-        console.error('Query execution error:', e);
+        console.error('Error fetching contractors:', e);
         throw e;
       }
     }
@@ -59,10 +51,13 @@ const Index = () => {
       <Header />
       <main className="flex-grow" role="main">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-white">
+        <section 
+          className="relative overflow-hidden bg-white"
+          aria-labelledby="hero-title"
+        >
           <div className="px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:px-8">
-            <div className="text-center animate-in">
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+            <div className="text-center">
+              <h1 id="hero-title" className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
                 Find Trusted London
                 <span className="block text-primary">Contractors</span>
               </h1>
@@ -87,18 +82,20 @@ const Index = () => {
         />
 
         {/* Featured Contractors */}
-        <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="animate-in">
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+        <section 
+          className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8"
+          aria-labelledby="featured-contractors-title"
+        >
+          <div>
+            <h2 id="featured-contractors-title" className="text-2xl font-bold tracking-tight text-gray-900">
               {selectedSpecialty === "All" ? "Featured Contractors" : `${selectedSpecialty} Contractors`}
             </h2>
             <p className="mt-2 text-gray-500">Top rated professionals in London</p>
             
             {isLoading && (
-              <div className="text-center py-12">
+              <div className="text-center py-12" role="status">
                 <div 
                   className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                  role="status"
                   aria-label="Loading contractors"
                 >
                   <span className="sr-only">Loading...</span>
@@ -114,12 +111,15 @@ const Index = () => {
             )}
 
             {!isLoading && !error && filteredContractors.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-500" role="status">
                 No contractors found matching your criteria.
               </div>
             )}
             
-            <div className="grid gap-6 mt-8 md:grid-cols-2 lg:grid-cols-3">
+            <div 
+              className="grid gap-6 mt-8 md:grid-cols-2 lg:grid-cols-3"
+              aria-label="Contractors list"
+            >
               {filteredContractors.map((contractor) => (
                 <ContractorCard
                   key={contractor.id}
@@ -132,13 +132,13 @@ const Index = () => {
           </div>
         </section>
 
-        {/* AdSense Section */}
-        <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        {/* Advertisement Section */}
+        <section 
+          className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8"
+          aria-label="Advertisement section"
+        >
           <div className="text-center">
-            <div 
-              className="min-h-[250px] bg-gray-100 flex items-center justify-center"
-              aria-label="Advertisement section"
-            >
+            <div className="min-h-[250px] bg-gray-100 flex items-center justify-center">
               <span className="text-gray-400">Advertisement Space</span>
             </div>
           </div>
