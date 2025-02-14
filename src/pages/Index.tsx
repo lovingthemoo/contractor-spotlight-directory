@@ -28,7 +28,23 @@ const Index = () => {
         if (response.error) throw response.error;
         if (!response.data?.length) return [];
 
-        return Promise.all(response.data.map(transformContractor));
+        // Debug log to check raw data
+        console.log('Raw contractors data:', response.data);
+
+        const transformedContractors = await Promise.all(response.data.map(transformContractor));
+        
+        // Debug log to check transformed data
+        console.log('Transformed contractors:', transformedContractors.map(c => ({
+          id: c.id,
+          name: c.business_name,
+          hasGooglePhotos: !!c.google_photos?.length,
+          hasImages: !!c.images?.length,
+          image: getDisplayImage(c),
+          rating: c.rating,
+          specialty: c.specialty
+        })));
+
+        return transformedContractors;
       } catch (e) {
         console.error('Error fetching contractors:', e);
         throw e;
