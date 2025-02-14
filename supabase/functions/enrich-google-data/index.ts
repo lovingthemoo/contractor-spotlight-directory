@@ -1,4 +1,3 @@
-
 import { corsHeaders } from '../_shared/cors.ts';
 import { GooglePlacesService } from '../_shared/google-places-service.ts';
 import { ContractorService } from '../_shared/contractor-service.ts';
@@ -10,25 +9,78 @@ const SEARCH_QUERIES = {
     "roofer",
     "roofing contractor",
     "roof repair",
+    "roofing specialist",
     "building company",
     "construction company",
-    "building contractor"
+    "building contractor",
+    "construction specialist",
+    "building specialist"
   ],
   maintenance: [
-    "electrician",
+    "electrician london",
     "electrical contractor",
-    "plumber",
+    "electrical services",
+    "emergency electrician",
+    "certified electrician",
+    "plumber london",
     "plumbing contractor",
-    "emergency plumber"
+    "emergency plumber",
+    "plumbing services",
+    "gas engineer"
   ],
   outdoor: [
-    "gardener",
+    "professional gardener",
     "landscape gardener",
     "garden maintenance",
-    "handyman",
+    "landscaping services",
+    "garden designer",
+    "handyman services",
     "home repair service",
-    "property maintenance"
+    "property maintenance",
+    "home maintenance",
+    "property repair"
   ]
+};
+
+const getSpecialtyFromQuery = (query: string): string => {
+  const queryLower = query.toLowerCase();
+  
+  // Roofing specialists
+  if (queryLower.includes('roof') || queryLower.includes('roofer')) {
+    return 'Roofing';
+  }
+  
+  // Plumbing specialists
+  if (queryLower.includes('plumb') || queryLower.includes('gas engineer')) {
+    return 'Plumbing';
+  }
+  
+  // Electrical specialists
+  if (queryLower.includes('electr')) {
+    return 'Electrical';
+  }
+  
+  // Gardening and landscaping
+  if (queryLower.includes('garden') || 
+      queryLower.includes('landscape') || 
+      queryLower.includes('landscaping')) {
+    return 'Gardening';
+  }
+  
+  // Handyman and general repairs
+  if (queryLower.includes('handyman') || 
+      queryLower.includes('repair') || 
+      queryLower.includes('maintenance')) {
+    return 'Home Repairs';
+  }
+  
+  // Construction and building
+  if (queryLower.includes('construction')) {
+    return 'Construction';
+  }
+  
+  // Default to Building for general contractors
+  return 'Building';
 };
 
 const LOCATIONS = [
@@ -39,16 +91,6 @@ const LOCATIONS = [
   "East London",
   "West London"
 ];
-
-const getSpecialtyFromQuery = (query: string): string => {
-  const queryLower = query.toLowerCase();
-  if (queryLower.includes('plumb')) return 'Plumbing';
-  if (queryLower.includes('electr')) return 'Electrical';
-  if (queryLower.includes('garden') || queryLower.includes('landscape')) return 'Gardening';
-  if (queryLower.includes('roof')) return 'Roofing';
-  if (queryLower.includes('handyman') || queryLower.includes('repair')) return 'Home Repairs';
-  return 'Building';
-};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
