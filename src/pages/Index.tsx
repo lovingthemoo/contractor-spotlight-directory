@@ -1,139 +1,16 @@
 
 import { useState } from "react";
-import { Search, MapPin, ChevronRight, Star, Clock, Phone, Globe } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import ContractorCard from "@/components/contractors/ContractorCard";
+import SearchBar from "@/components/contractors/SearchBar";
+import SpecialtyFilter from "@/components/contractors/SpecialtyFilter";
+import { transformContractor, getDisplayImage, getDisplayAddress } from "@/utils/contractor";
+import type { Contractor } from "@/types/contractor";
 
-// Constants
-const MIN_RATING = 0;
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
-
-interface GooglePhoto {
-  url: string;
-  width: number;
-  height: number;
-  type: string;
-}
-
-interface GoogleReview {
-  rating: number;
-  text: string;
-  time: string;
-  author_name: string;
-}
-
-interface Contractor {
-  id: string;
-  business_name: string;
-  images: string[];
-  rating: number;
-  review_count: number;
-  specialty: string;
-  location: string;
-  description: string;
-  slug: string;
-  project_types?: string[];
-  typical_project_size?: string;
-  minimum_project_value?: number;
-  maximum_project_value?: number;
-  google_place_name?: string;
-  google_formatted_address?: string;
-  google_formatted_phone?: string;
-  website_description?: string;
-  founded_year?: number;
-  years_in_business?: number;
-  google_reviews?: GoogleReview[];
-  google_photos?: GooglePhoto[];
-}
-
-interface DatabaseContractor extends Omit<Contractor, 'google_reviews' | 'google_photos'> {
-  google_reviews?: any;
-  google_photos?: any;
-}
-
-const transformContractor = (dbContractor: DatabaseContractor): Contractor => {
-  let google_reviews: GoogleReview[] | undefined;
-  let google_photos: GooglePhoto[] | undefined;
-  
-  if (dbContractor.google_reviews) {
-    try {
-      const reviewsData = typeof dbContractor.google_reviews === 'string' 
-        ? JSON.parse(dbContractor.google_reviews) 
-        : dbContractor.google_reviews;
-        
-      google_reviews = Array.isArray(reviewsData) 
-        ? reviewsData.map(review => ({
-            rating: Number(review.rating) || 0,
-            text: String(review.text || ''),
-            time: String(review.time || ''),
-            author_name: String(review.author_name || '')
-          }))
-        : undefined;
-    } catch (e) {
-      console.error('Error parsing google_reviews:', e);
-      google_reviews = undefined;
-    }
-  }
-
-  if (dbContractor.google_photos) {
-    try {
-      const photosData = typeof dbContractor.google_photos === 'string'
-        ? JSON.parse(dbContractor.google_photos)
-        : dbContractor.google_photos;
-
-      google_photos = Array.isArray(photosData)
-        ? photosData.map(photo => ({
-            url: String(photo.url || ''),
-            width: Number(photo.width) || 0,
-            height: Number(photo.height) || 0,
-            type: String(photo.type || '')
-          }))
-        : undefined;
-    } catch (e) {
-      console.error('Error parsing google_photos:', e);
-      google_photos = undefined;
-    }
-  }
-
-  return {
-    ...dbContractor,
-    google_reviews,
-    google_photos,
-    rating: dbContractor.rating || 0,
-    review_count: dbContractor.review_count || 0,
-    images: dbContractor.images || []
-  };
-};
-
-const getDisplayImage = (contractor: Contractor): string => {
-  // First try to get an exterior photo from Google
-  const exteriorPhoto = contractor.google_photos?.find(photo => photo.type === 'exterior');
-  if (exteriorPhoto?.url) return exteriorPhoto.url;
-
-  // Then try to get any work sample from Google
-  const workPhoto = contractor.google_photos?.find(photo => photo.type === 'work_sample');
-  if (workPhoto?.url) return workPhoto.url;
-
-  // Then try the first Google photo
-  if (contractor.google_photos?.[0]?.url) return contractor.google_photos[0].url;
-
-  // Fall back to uploaded images
-  if (contractor.images?.[0]) return contractor.images[0];
-
-  // Finally, use default image
-  return 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e';
-};
-
-const getDisplayAddress = (contractor: Contractor): string => {
-  return contractor.google_formatted_address || contractor.location;
-};
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -147,7 +24,7 @@ const Index = () => {
         const response = await supabase
           .from('contractors')
           .select('*')
-          .order('created_at', { ascending: false }); // Order by newest first
+          .order('created_at', { ascending: false });
         
         console.log('Full Supabase response:', response);
 
@@ -163,7 +40,6 @@ const Index = () => {
           return [];
         }
 
-        // Create a Map to store unique contractors by business_name
         const uniqueContractors = new Map();
         
         data.forEach(contractor => {
@@ -210,45 +86,16 @@ const Index = () => {
                 Connect with verified contractors in London. Quality service, guaranteed satisfaction.
               </p>
               
-              {/* Search Bar */}
-              <div className="flex items-center max-w-md mx-auto mt-8 overflow-hidden bg-white border rounded-full">
-                <Search className="w-5 h-5 mx-3 text-gray-400" aria-hidden="true" />
-                <Input
-                  type="text"
-                  placeholder="Search contractors..."
-                  className="flex-1 border-0 focus-visible:ring-0"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  aria-label="Search contractors"
-                />
-                <Badge variant="secondary" className="mr-2">
-                  <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
-                  London
-                </Badge>
-              </div>
+              <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
             </div>
           </div>
         </section>
 
-        {/* Specialty Filter */}
-        <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="animate-in">
-            <h2 className="text-lg font-semibold text-gray-900">Filter by Service Type</h2>
-            <RadioGroup 
-              className="flex flex-wrap gap-4 mt-4"
-              defaultValue="All"
-              onValueChange={setSelectedSpecialty}
-              aria-label="Service type filter"
-            >
-              {specialties.map((specialty) => (
-                <div key={specialty} className="flex items-center space-x-2">
-                  <RadioGroupItem value={specialty} id={specialty} />
-                  <Label htmlFor={specialty}>{specialty}</Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
-        </section>
+        <SpecialtyFilter 
+          specialties={specialties}
+          selectedSpecialty={selectedSpecialty}
+          setSelectedSpecialty={setSelectedSpecialty}
+        />
 
         {/* Featured Contractors */}
         <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -279,80 +126,12 @@ const Index = () => {
             
             <div className="grid gap-6 mt-8 md:grid-cols-2 lg:grid-cols-3">
               {filteredContractors.map((contractor) => (
-                <a 
-                  key={contractor.id} 
-                  href={`/${contractor.location.toLowerCase().replace(' ', '-')}/${contractor.specialty.toLowerCase()}/${contractor.slug}`}
-                  className="block"
-                  aria-label={`View details for ${contractor.business_name}`}
-                >
-                  <Card className="overflow-hidden transition-all hover:shadow-lg">
-                    <img
-                      src={getDisplayImage(contractor)}
-                      alt={`${contractor.business_name} project example`}
-                      className="object-cover w-full h-48"
-                      loading="lazy"
-                    />
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900">{contractor.business_name}</h3>
-                        <Badge>{contractor.specialty}</Badge>
-                      </div>
-                      
-                      <div className="mt-2 space-y-2">
-                        <div className="flex items-center text-sm text-gray-500">
-                          <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
-                          {getDisplayAddress(contractor)}
-                        </div>
-                        
-                        {contractor.google_formatted_phone && (
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Phone className="w-4 h-4 mr-1" aria-hidden="true" />
-                            {contractor.google_formatted_phone}
-                          </div>
-                        )}
-                        
-                        {contractor.years_in_business && contractor.years_in_business > 0 && (
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Clock className="w-4 h-4 mr-1" aria-hidden="true" />
-                            {contractor.years_in_business} years in business
-                          </div>
-                        )}
-                      </div>
-
-                      <p className="mt-3 text-sm text-gray-600 line-clamp-2">
-                        {contractor.website_description || contractor.description}
-                      </p>
-
-                      {contractor.specialty === 'Building' && contractor.project_types && (
-                        <div className="mt-3">
-                          <div className="flex flex-wrap gap-1">
-                            {contractor.project_types.slice(0, 3).map((type) => (
-                              <Badge key={type} variant="secondary" className="text-xs">
-                                {type}
-                              </Badge>
-                            ))}
-                            {contractor.project_types.length > 3 && (
-                              <Badge variant="secondary" className="text-xs">
-                                +{contractor.project_types.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center">
-                          <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
-                          <span className="ml-1 text-sm font-medium">{contractor.rating}</span>
-                          <span className="ml-1 text-sm text-gray-500">
-                            ({contractor.review_count} reviews)
-                          </span>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400" aria-hidden="true" />
-                      </div>
-                    </div>
-                  </Card>
-                </a>
+                <ContractorCard
+                  key={contractor.id}
+                  contractor={contractor}
+                  getDisplayImage={getDisplayImage}
+                  getDisplayAddress={getDisplayAddress}
+                />
               ))}
             </div>
           </div>
