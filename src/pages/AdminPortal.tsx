@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Settings, LogOut } from "lucide-react";
+import { Upload, Settings, LogOut, Home } from "lucide-react";
 import AdminImport from "./AdminImport";
 
 const AdminPortal = () => {
@@ -52,6 +52,10 @@ const AdminPortal = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Admin Portal</h1>
             <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/")}>
+                <Home className="h-4 w-4 mr-2" />
+                Home
+              </Button>
               <Button variant="outline" onClick={() => navigate("/admin/settings")}>
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
