@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, MapPin, ChevronRight, Star } from "lucide-react";
@@ -170,15 +171,19 @@ const Index = () => {
             
             <div className="grid gap-6 mt-8 md:grid-cols-2 lg:grid-cols-3">
               {filteredContractors.map((contractor) => (
-                <Link 
+                <a 
                   key={contractor.id} 
-                  to={`/${contractor.location.toLowerCase().replace(' ', '-')}/${contractor.specialty.toLowerCase()}/${contractor.slug}`}
+                  href={`/${contractor.location.toLowerCase().replace(' ', '-')}/${contractor.specialty.toLowerCase()}/${contractor.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
                 >
                   <Card className="overflow-hidden transition-all hover:shadow-lg cursor-pointer">
                     <img
                       src={contractor.image}
                       alt={contractor.name}
                       className="object-cover w-full h-48"
+                      loading="lazy"
                     />
                     <div className="p-4">
                       <div className="flex items-center justify-between">
@@ -201,8 +206,18 @@ const Index = () => {
                       </div>
                     </div>
                   </Card>
-                </Link>
+                </a>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* AdSense Section */}
+        <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div className="text-center">
+            {/* AdSense placeholder - Replace with actual AdSense code */}
+            <div id="contractor-list-ads" className="min-h-[250px] bg-gray-100 flex items-center justify-center">
+              <span className="text-gray-400">Advertisement Space</span>
             </div>
           </div>
         </section>
