@@ -1,3 +1,4 @@
+
 import { Contractor, DatabaseContractor, GooglePhoto, GoogleReview } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -67,12 +68,14 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
       console.log('Parsed photos data:', photosData);
 
       if (Array.isArray(photosData) && photosData.length > 0) {
-        google_photos = photosData.map(photo => ({
-          url: String(photo.url || ''),
-          width: Number(photo.width) || 0,
-          height: Number(photo.height) || 0,
-          type: String(photo.type || '')
-        }));
+        google_photos = photosData
+          .filter(photo => photo && typeof photo === 'object' && photo.url)
+          .map(photo => ({
+            url: String(photo.url || ''),
+            width: Number(photo.width) || 0,
+            height: Number(photo.height) || 0,
+            type: String(photo.type || '')
+          }));
         console.log('Transformed photos:', google_photos);
       }
     } catch (e) {
@@ -147,16 +150,16 @@ export const getDisplayImage = (contractor: Contractor): string => {
   console.log('Getting display image for:', contractor.business_name, {
     has_google_photos: !!contractor.google_photos?.length,
     has_images: !!contractor.images?.length,
-    first_google_photo: contractor.google_photos?.[0]?.url,
+    google_photos: contractor.google_photos,
     first_image: contractor.images?.[0]
   });
 
   // First priority: Company-specific Google photos
-  if (contractor.google_photos?.length > 0) {
-    const firstPhoto = contractor.google_photos[0];
-    if (firstPhoto?.url) {
-      console.log('Using Google photo:', firstPhoto.url);
-      return firstPhoto.url;
+  if (Array.isArray(contractor.google_photos) && contractor.google_photos.length > 0) {
+    const photo = contractor.google_photos[0];
+    if (photo && photo.url) {
+      console.log('Using Google photo:', photo.url);
+      return photo.url;
     }
   }
   
