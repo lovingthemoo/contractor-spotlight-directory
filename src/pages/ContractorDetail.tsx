@@ -1,5 +1,4 @@
-
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import { MapPin, Star, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ interface Contractor {
   specialty: string;
   location: string;
   description: string;
+  slug: string;
 }
 
 const contractors: Contractor[] = [
@@ -24,7 +24,8 @@ const contractors: Contractor[] = [
     reviews: 127,
     specialty: "Electrical",
     location: "Central London",
-    description: "Expert electrical contractors specializing in residential and commercial installations, rewiring, and emergency repairs. Licensed and insured with 15+ years of experience."
+    description: "Expert electrical contractors specializing in residential and commercial installations, rewiring, and emergency repairs. Licensed and insured with 15+ years of experience.",
+    slug: "elite-electrical-solutions"
   },
   {
     id: 2,
@@ -34,7 +35,8 @@ const contractors: Contractor[] = [
     reviews: 89,
     specialty: "Plumbing",
     location: "South London",
-    description: "Professional plumbing services for all your needs. Specializing in emergency repairs, bathroom installations, and central heating systems. Available 24/7."
+    description: "Professional plumbing services for all your needs. Specializing in emergency repairs, bathroom installations, and central heating systems. Available 24/7.",
+    slug: "thames-valley-plumbing"
   },
   {
     id: 3,
@@ -44,7 +46,8 @@ const contractors: Contractor[] = [
     reviews: 156,
     specialty: "Roofing",
     location: "North London",
-    description: "Expert roofing contractors providing comprehensive services including repairs, replacements, and maintenance. Fully insured with proven track record."
+    description: "Expert roofing contractors providing comprehensive services including repairs, replacements, and maintenance. Fully insured with proven track record.",
+    slug: "roofing-masters-london"
   },
   {
     id: 4,
@@ -54,7 +57,8 @@ const contractors: Contractor[] = [
     reviews: 92,
     specialty: "Gardening",
     location: "West London",
-    description: "Professional garden design and maintenance services. Specializing in landscape design, lawn care, and garden maintenance for residential and commercial properties."
+    description: "Professional garden design and maintenance services. Specializing in landscape design, lawn care, and garden maintenance for residential and commercial properties.",
+    slug: "green-gardens-landscapes"
   },
   {
     id: 5,
@@ -64,7 +68,8 @@ const contractors: Contractor[] = [
     reviews: 78,
     specialty: "Home Repair",
     location: "East London",
-    description: "Comprehensive home repair and maintenance services. From minor fixes to major renovations, we handle all aspects of home improvement."
+    description: "Comprehensive home repair and maintenance services. From minor fixes to major renovations, we handle all aspects of home improvement.",
+    slug: "homefix-repairs"
   },
   {
     id: 6,
@@ -74,13 +79,30 @@ const contractors: Contractor[] = [
     reviews: 143,
     specialty: "Building",
     location: "Greater London",
-    description: "Premier building contractors specializing in new builds, extensions, and major renovations. Fully licensed and insured with outstanding project management."
+    description: "Premier building contractors specializing in new builds, extensions, and major renovations. Fully licensed and insured with outstanding project management.",
+    slug: "london-build-pro"
   }
 ];
 
 const ContractorDetail = () => {
-  const { id } = useParams();
-  const contractor = contractors.find(c => c.id === Number(id));
+  const { region, service, companyName, id } = useParams();
+  
+  // Handle old URL format and redirect
+  if (id) {
+    const contractor = contractors.find(c => c.id === Number(id));
+    if (contractor) {
+      const region = contractor.location.toLowerCase().replace(' ', '-');
+      const service = contractor.specialty.toLowerCase();
+      return <Navigate to={`/${region}/${service}/${contractor.slug}`} replace />;
+    }
+  }
+
+  // Handle new URL format
+  const contractor = contractors.find(c => 
+    c.slug === companyName && 
+    c.specialty.toLowerCase() === service &&
+    c.location.toLowerCase().replace(' ', '-') === region
+  );
 
   if (!contractor) {
     return (
