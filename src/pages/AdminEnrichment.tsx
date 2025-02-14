@@ -14,10 +14,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Database } from "lucide-react";
+import { useState } from "react";
 
 const AdminEnrichment = () => {
   const { toast } = useToast();
-  const { data: contractors, isLoading, refetch } = useQuery({
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const { data: contractors, isLoading: isLoadingData, refetch } = useQuery({
     queryKey: ['contractors-enrichment'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -33,19 +36,38 @@ const AdminEnrichment = () => {
 
   const handleEnrichData = async () => {
     try {
-      const { error } = await supabase.functions.invoke('enrich-google-data');
+      setIsLoading(true);
+      const { data, error } = await supabase.functions.invoke('enrich-google-data');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Function error:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to collect data. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.error) {
+        console.error('Data error:', data.error);
+        toast({
+          title: "Error",
+          description: data.error || "Failed to collect data. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
-        title: "Data Collection Started",
-        description: "The system is now collecting data for high-rated London builders.",
+        title: "Data Collection Complete",
+        description: `Found ${data.totalFound || 0} businesses, processed ${data.processed || 0} entries.`,
       });
 
       // Refetch the data after a short delay to show new entries
       setTimeout(() => {
         refetch();
-      }, 5000);
+      }, 2000);
 
     } catch (error) {
       console.error('Error invoking function:', error);
@@ -54,10 +76,12 @@ const AdminEnrichment = () => {
         description: "Failed to start data collection. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoadingData) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
@@ -70,9 +94,12 @@ const AdminEnrichment = () => {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Data Enrichment Queue</h2>
-          <Button onClick={handleEnrichData}>
+          <Button 
+            onClick={handleEnrichData} 
+            disabled={isLoading}
+          >
             <Database className="mr-2 h-4 w-4" />
-            Collect London Builders Data
+            {isLoading ? "Collecting Data..." : "Collect London Builders Data"}
           </Button>
         </div>
         <p className="text-gray-600">
