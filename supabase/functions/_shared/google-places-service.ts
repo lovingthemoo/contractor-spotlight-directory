@@ -65,7 +65,7 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Include photos and authorship in the field mask
+      // Request all photo-related fields
       const fieldMask = [
         'id',
         'displayName',
@@ -78,11 +78,11 @@ export class GooglePlacesService {
         'googleMapsUri',
         'internationalPhoneNumber',
         'reviews',
-        'photos.name',
-        'photos.widthPx',
-        'photos.heightPx',
-        'photos.authorAttributions'
+        'photos',  // Request the entire photos object
+        'regularOpeningHours'
       ].join(',');
+
+      console.log('Using field mask:', fieldMask);
 
       const response = await fetch(`${this.baseUrl}/${placeId}`, {
         method: 'GET',
@@ -96,12 +96,21 @@ export class GooglePlacesService {
       }
 
       const placeDetails = await response.json();
+      
+      // Log the raw photo data for debugging
+      if (placeDetails.photos) {
+        console.log('Raw photo data:', {
+          photoCount: placeDetails.photos.length,
+          firstPhoto: placeDetails.photos[0],
+        });
+      } else {
+        console.log('No photos found in response');
+      }
+      
       console.log('Successfully fetched place details:', {
         id: placeDetails.id,
         name: placeDetails.displayName?.text,
         address: placeDetails.formattedAddress,
-        hasReviews: Array.isArray(placeDetails.reviews),
-        reviewCount: placeDetails.reviews?.length || 0,
         hasPhotos: Array.isArray(placeDetails.photos),
         photoCount: placeDetails.photos?.length || 0
       });
