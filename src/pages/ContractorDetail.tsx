@@ -1,6 +1,6 @@
 
 import { useParams, Link } from "react-router-dom";
-import { MapPin, Star, ArrowLeft } from "lucide-react";
+import { MapPin, Star, ArrowLeft, CheckCircle2, Ruler, PoundSterling } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +19,12 @@ interface Contractor {
   location: string;
   description: string;
   slug: string;
+  certifications: string[];
+  insurance_details: any;
+  project_types: string[];
+  typical_project_size: string;
+  minimum_project_value: number;
+  maximum_project_value: number;
 }
 
 const ContractorDetail = () => {
@@ -118,6 +124,57 @@ const ContractorDetail = () => {
                 {contractor.description}
               </p>
             </div>
+
+            {contractor.specialty === 'Building' && (
+              <>
+                {contractor.project_types && contractor.project_types.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Project Types</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {contractor.project_types.map((type) => (
+                        <Badge key={type} variant="secondary">{type}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {contractor.certifications && contractor.certifications.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Certifications</h3>
+                    <div className="space-y-2">
+                      {contractor.certifications.map((cert) => (
+                        <div key={cert} className="flex items-center">
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                          <span>{cert}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {contractor.typical_project_size && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Typical Project Size</h3>
+                    <div className="flex items-center text-gray-600">
+                      <Ruler className="w-4 h-4 mr-2" />
+                      {contractor.typical_project_size}
+                    </div>
+                  </div>
+                )}
+
+                {(contractor.minimum_project_value || contractor.maximum_project_value) && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Project Value Range</h3>
+                    <div className="flex items-center text-gray-600">
+                      <PoundSterling className="w-4 h-4 mr-2" />
+                      {contractor.minimum_project_value && `From £${contractor.minimum_project_value.toLocaleString()}`}
+                      {contractor.minimum_project_value && contractor.maximum_project_value && ' - '}
+                      {contractor.maximum_project_value && `Up to £${contractor.maximum_project_value.toLocaleString()}`}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

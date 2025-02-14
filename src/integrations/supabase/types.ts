@@ -87,6 +87,7 @@ export type Database = {
         Row: {
           address_verified: boolean | null
           business_name: string
+          certifications: string[] | null
           company_number: string | null
           created_at: string
           description: string | null
@@ -94,19 +95,23 @@ export type Database = {
           id: string
           identity_verified: boolean | null
           images: string[] | null
+          insurance_details: Json | null
           insurance_verified: boolean | null
           is_admin: boolean | null
           is_verified: boolean | null
           last_enrichment_attempt: string | null
           location: string
+          maximum_project_value: number | null
           meta_description: string | null
           meta_title: string | null
+          minimum_project_value: number | null
           needs_contact_enrichment: boolean | null
           needs_google_enrichment: boolean | null
           needs_image_enrichment: boolean | null
           opening_hours: Json | null
           phone: string | null
           postal_code: string | null
+          project_types: string[] | null
           rating: number | null
           review_count: number | null
           service_radius: number | null
@@ -114,6 +119,7 @@ export type Database = {
           slug: string
           specialty: Database["public"]["Enums"]["contractor_specialty"]
           trading_name: string | null
+          typical_project_size: string | null
           updated_at: string
           vat_number: string | null
           website_url: string | null
@@ -122,6 +128,7 @@ export type Database = {
         Insert: {
           address_verified?: boolean | null
           business_name: string
+          certifications?: string[] | null
           company_number?: string | null
           created_at?: string
           description?: string | null
@@ -129,19 +136,23 @@ export type Database = {
           id?: string
           identity_verified?: boolean | null
           images?: string[] | null
+          insurance_details?: Json | null
           insurance_verified?: boolean | null
           is_admin?: boolean | null
           is_verified?: boolean | null
           last_enrichment_attempt?: string | null
           location: string
+          maximum_project_value?: number | null
           meta_description?: string | null
           meta_title?: string | null
+          minimum_project_value?: number | null
           needs_contact_enrichment?: boolean | null
           needs_google_enrichment?: boolean | null
           needs_image_enrichment?: boolean | null
           opening_hours?: Json | null
           phone?: string | null
           postal_code?: string | null
+          project_types?: string[] | null
           rating?: number | null
           review_count?: number | null
           service_radius?: number | null
@@ -149,6 +160,7 @@ export type Database = {
           slug: string
           specialty: Database["public"]["Enums"]["contractor_specialty"]
           trading_name?: string | null
+          typical_project_size?: string | null
           updated_at?: string
           vat_number?: string | null
           website_url?: string | null
@@ -157,6 +169,7 @@ export type Database = {
         Update: {
           address_verified?: boolean | null
           business_name?: string
+          certifications?: string[] | null
           company_number?: string | null
           created_at?: string
           description?: string | null
@@ -164,19 +177,23 @@ export type Database = {
           id?: string
           identity_verified?: boolean | null
           images?: string[] | null
+          insurance_details?: Json | null
           insurance_verified?: boolean | null
           is_admin?: boolean | null
           is_verified?: boolean | null
           last_enrichment_attempt?: string | null
           location?: string
+          maximum_project_value?: number | null
           meta_description?: string | null
           meta_title?: string | null
+          minimum_project_value?: number | null
           needs_contact_enrichment?: boolean | null
           needs_google_enrichment?: boolean | null
           needs_image_enrichment?: boolean | null
           opening_hours?: Json | null
           phone?: string | null
           postal_code?: string | null
+          project_types?: string[] | null
           rating?: number | null
           review_count?: number | null
           service_radius?: number | null
@@ -184,6 +201,7 @@ export type Database = {
           slug?: string
           specialty?: Database["public"]["Enums"]["contractor_specialty"]
           trading_name?: string | null
+          typical_project_size?: string | null
           updated_at?: string
           vat_number?: string | null
           website_url?: string | null

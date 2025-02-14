@@ -20,10 +20,11 @@ interface Contractor {
   location: string;
   description: string;
   slug: string;
+  project_types?: string[];
+  typical_project_size?: string;
+  minimum_project_value?: number;
+  maximum_project_value?: number;
 }
-
-const MIN_RATING = 4.0;
-const specialties = ["All", "Electrical", "Plumbing", "Roofing", "Gardening", "Home Repair", "Building"];
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -149,6 +150,22 @@ const Index = () => {
                         <MapPin className="w-4 h-4 mr-1" />
                         {contractor.location}
                       </div>
+                      {contractor.specialty === 'Building' && contractor.project_types && (
+                        <div className="mt-3">
+                          <div className="flex flex-wrap gap-1">
+                            {contractor.project_types.slice(0, 3).map((type) => (
+                              <Badge key={type} variant="secondary" className="text-xs">
+                                {type}
+                              </Badge>
+                            ))}
+                            {contractor.project_types.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{contractor.project_types.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between mt-4">
                         <div className="flex items-center">
                           <Star className="w-4 h-4 text-yellow-400" />
