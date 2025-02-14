@@ -45,7 +45,6 @@ const Header = () => {
             >
               Find a Trader
             </Link>
-            <Link to="/register" className="text-gray-600 hover:text-primary">List Your Business</Link>
             <Button variant="outline" asChild>
               <Link to="/register">Register as Trader</Link>
             </Button>
@@ -63,3 +62,4 @@ const Header = () => {
 };
 
 export default Header;
+
