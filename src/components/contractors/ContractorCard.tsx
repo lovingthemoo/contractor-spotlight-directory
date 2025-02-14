@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, Phone, ChevronRight, Clock, Globe } from "lucide-react";
+import { Star, Phone, ChevronRight, Clock, Globe } from "lucide-react";
 import { Contractor } from "@/types/contractor";
 
 interface ContractorCardProps {
@@ -11,10 +11,9 @@ interface ContractorCardProps {
   getDisplayAddress: (contractor: Contractor) => string;
 }
 
-const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: ContractorCardProps) => {
+const ContractorCard = ({ contractor, getDisplayImage }: ContractorCardProps) => {
   const businessName = contractor.google_place_name || contractor.business_name;
   const displayImage = getDisplayImage(contractor);
-  const displayAddress = getDisplayAddress(contractor);
   const formattedPhone = contractor.google_formatted_phone || contractor.phone;
   
   const locationSlug = contractor.location?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || '';
@@ -45,7 +44,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
             </div>
           )}
 
-          {/* Specialty */}
+          {/* Specialty and Years */}
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge variant="secondary">{contractor.specialty}</Badge>
             {contractor.years_in_business && (
@@ -55,17 +54,6 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
               </Badge>
             )}
           </div>
-
-          {/* Location */}
-          {displayAddress && (
-            <div className="flex items-center text-sm text-gray-500 mb-3">
-              <MapPin 
-                className="w-4 h-4 mr-1 shrink-0" 
-                aria-hidden="true"
-              />
-              <span className="truncate">{displayAddress}</span>
-            </div>
-          )}
 
           {/* Phone */}
           {formattedPhone && (
