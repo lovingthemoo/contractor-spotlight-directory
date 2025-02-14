@@ -92,6 +92,18 @@ Deno.serve(async (req) => {
         
         const placeDetails = await googlePlacesService.getPlaceDetails(place.id);
         
+        let photos = [];
+        if (placeDetails.photos && Array.isArray(placeDetails.photos)) {
+          photos = placeDetails.photos.map(photo => ({
+            url: photo.name ? 
+              `https://places.googleapis.com/v1/${photo.name}/media?key=${GOOGLE_PLACES_API_KEY}&maxHeightPx=800` : 
+              undefined,
+            width: photo.widthPx || 0,
+            height: photo.heightPx || 0,
+            type: photo.authorAttributions?.[0]?.photoUri || ''
+          })).filter(photo => photo.url);
+        }
+
         const contractorData: ContractorData = {
           business_name: placeDetails.displayName?.text || '',
           google_place_id: placeDetails.id,
@@ -103,7 +115,7 @@ Deno.serve(async (req) => {
           review_count: placeDetails.userRatingCount,
           specialty: 'Building',
           google_reviews: placeDetails.reviews || [],
-          google_photos: placeDetails.photos || [],
+          google_photos: photos,
           website_url: placeDetails.websiteUri,
           google_business_scopes: placeDetails.types || [],
           needs_google_enrichment: false,
