@@ -88,10 +88,30 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     .replace(/(^-|-$)/g, '') + 
     '-' + dbContractor.id.substring(0, 6);
 
+  // Ensure rating and review_count are properly typed as numbers
+  const rating = typeof dbContractor.rating === 'string' 
+    ? parseFloat(dbContractor.rating) 
+    : typeof dbContractor.rating === 'number' 
+      ? dbContractor.rating 
+      : undefined;
+
+  const review_count = typeof dbContractor.review_count === 'string'
+    ? parseInt(dbContractor.review_count)
+    : typeof dbContractor.review_count === 'number'
+      ? dbContractor.review_count
+      : 0;
+
+  console.log('Processing rating and review count:', {
+    rawRating: dbContractor.rating,
+    processedRating: rating,
+    rawReviewCount: dbContractor.review_count,
+    processedReviewCount: review_count
+  });
+
   const contractor: Contractor = {
     ...dbContractor,
-    rating: typeof dbContractor.rating === 'number' ? dbContractor.rating : undefined,
-    review_count: typeof dbContractor.review_count === 'number' ? dbContractor.review_count : 0,
+    rating,
+    review_count,
     years_in_business: dbContractor.years_in_business || undefined,
     images: Array.isArray(dbContractor.images) ? dbContractor.images : [],
     project_types: Array.isArray(dbContractor.project_types) ? dbContractor.project_types : [],
@@ -142,3 +162,4 @@ export const getDisplayAddress = (contractor: Contractor): string => {
   if (contractor.location) return contractor.location;
   return '';
 };
+
