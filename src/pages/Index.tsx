@@ -1,9 +1,8 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Search, MapPin, ChevronRight, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
@@ -53,7 +52,6 @@ const contractors: Contractor[] = [
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedContractor, setSelectedContractor] = useState<Contractor | null>(null);
   
   return (
     <div className="min-h-screen">
@@ -102,78 +100,39 @@ const Index = () => {
                 contractor.location.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((contractor) => (
-                <Card
-                  key={contractor.id}
-                  className="overflow-hidden transition-all hover:shadow-lg cursor-pointer"
-                  onClick={() => setSelectedContractor(contractor)}
-                >
-                  <img
-                    src={contractor.image}
-                    alt={contractor.name}
-                    className="object-cover w-full h-48"
-                  />
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900">{contractor.name}</h3>
-                      <Badge>{contractor.specialty}</Badge>
-                    </div>
-                    <div className="flex items-center mt-2 text-sm text-gray-500">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {contractor.location}
-                    </div>
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400" />
-                        <span className="ml-1 text-sm font-medium">{contractor.rating}</span>
-                        <span className="ml-1 text-sm text-gray-500">
-                          ({contractor.reviews} reviews)
-                        </span>
+                <Link key={contractor.id} to={`/contractor/${contractor.id}`}>
+                  <Card className="overflow-hidden transition-all hover:shadow-lg cursor-pointer">
+                    <img
+                      src={contractor.image}
+                      alt={contractor.name}
+                      className="object-cover w-full h-48"
+                    />
+                    <div className="p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-900">{contractor.name}</h3>
+                        <Badge>{contractor.specialty}</Badge>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                      <div className="flex items-center mt-2 text-sm text-gray-500">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        {contractor.location}
+                      </div>
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 text-yellow-400" />
+                          <span className="ml-1 text-sm font-medium">{contractor.rating}</span>
+                          <span className="ml-1 text-sm text-gray-500">
+                            ({contractor.reviews} reviews)
+                          </span>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               ))}
           </div>
         </div>
       </section>
-
-      {/* Contractor Detail Modal */}
-      <Dialog open={!!selectedContractor} onOpenChange={() => setSelectedContractor(null)}>
-        <DialogContent className="max-w-2xl">
-          {selectedContractor && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{selectedContractor.name}</DialogTitle>
-              </DialogHeader>
-              <div className="mt-4">
-                <img
-                  src={selectedContractor.image}
-                  alt={selectedContractor.name}
-                  className="object-cover w-full h-64 rounded-lg"
-                />
-                <div className="mt-4">
-                  <div className="flex items-center justify-between">
-                    <Badge>{selectedContractor.specialty}</Badge>
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-400" />
-                      <span className="ml-1 font-medium">{selectedContractor.rating}</span>
-                      <span className="ml-1 text-gray-500">
-                        ({selectedContractor.reviews} reviews)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center mt-2 text-gray-500">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    {selectedContractor.location}
-                  </div>
-                  <p className="mt-4 text-gray-600">{selectedContractor.description}</p>
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
