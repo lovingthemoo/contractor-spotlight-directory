@@ -65,6 +65,7 @@ export type Database = {
           identity_verified: boolean | null
           images: string[] | null
           insurance_verified: boolean | null
+          is_admin: boolean | null
           is_verified: boolean | null
           location: string
           meta_description: string | null
@@ -95,6 +96,7 @@ export type Database = {
           identity_verified?: boolean | null
           images?: string[] | null
           insurance_verified?: boolean | null
+          is_admin?: boolean | null
           is_verified?: boolean | null
           location: string
           meta_description?: string | null
@@ -125,6 +127,7 @@ export type Database = {
           identity_verified?: boolean | null
           images?: string[] | null
           insurance_verified?: boolean | null
+          is_admin?: boolean | null
           is_verified?: boolean | null
           location?: string
           meta_description?: string | null
@@ -143,6 +146,36 @@ export type Database = {
           vat_number?: string | null
           website_url?: string | null
           years_in_business?: number | null
+        }
+        Relationships: []
+      }
+      upload_logs: {
+        Row: {
+          created_at: string
+          error_count: number | null
+          errors: Json | null
+          filename: string
+          id: string
+          status: string
+          success_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          error_count?: number | null
+          errors?: Json | null
+          filename: string
+          id?: string
+          status: string
+          success_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          error_count?: number | null
+          errors?: Json | null
+          filename?: string
+          id?: string
+          status?: string
+          success_count?: number | null
         }
         Relationships: []
       }
