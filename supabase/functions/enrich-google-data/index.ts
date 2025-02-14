@@ -1,4 +1,3 @@
-
 import { corsHeaders } from '../_shared/cors.ts';
 import { GooglePlacesService } from '../_shared/google-places-service.ts';
 import { ContractorService } from '../_shared/contractor-service.ts';
@@ -50,8 +49,9 @@ const getSpecialtyFromQuery = (query: string): string => {
 };
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -195,7 +195,10 @@ Deno.serve(async (req) => {
       errors: errorCount,
       searchErrors
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json'
+      },
       status: 200
     });
 
@@ -205,7 +208,10 @@ Deno.serve(async (req) => {
       error: error.message,
       stack: error.stack
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json'
+      },
       status: 500
     });
   }

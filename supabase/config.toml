@@ -2,4 +2,4 @@
 project_id = "wjceenmkqpyjntndqikg"
 
 [functions.enrich-google-data]
-verify_jwt = true
+verify_jwt = false
