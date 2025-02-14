@@ -24,105 +24,117 @@ Deno.serve(async (req) => {
       throw new Error('Google Places API key not configured');
     }
 
-    // Log first few characters of API key to verify it's loaded (never log full key)
-    console.log('API Key starts with:', GOOGLE_PLACES_API_KEY.substring(0, 4) + '...');
+    // Validate API key format (basic check)
+    if (!GOOGLE_PLACES_API_KEY.startsWith('AIza')) {
+      throw new Error('Invalid Google Places API key format');
+    }
+
+    console.log('Using Google Places API key starting with:', GOOGLE_PLACES_API_KEY.substring(0, 6) + '...');
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // More generic search terms
+    // Try a single, simple search first to validate API connectivity
+    const testSearchBody = {
+      textQuery: "builders in London",
+      maxResultCount: 5,
+      languageCode: "en"
+    };
+
+    console.log('Testing API with simple search:', testSearchBody);
+
+    const testResponse = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+        'X-Goog-FieldMask': 'places.id,places.displayName'
+      },
+      body: JSON.stringify(testSearchBody)
+    });
+
+    const testData = await testResponse.text();
+    console.log('Test API response status:', testResponse.status);
+    console.log('Test API response:', testData);
+
+    if (!testResponse.ok) {
+      throw new Error(`Google Places API test failed: ${testResponse.status} ${testData}`);
+    }
+
+    // If test passed, proceed with full search
     const searchQueries = [
       "builders",
-      "construction",
-      "building company"
+      "building contractor",
+      "construction company"
     ];
 
     let allPlaces: PlaceSearchResult[] = [];
 
-    // Try each search query
     for (const searchQuery of searchQueries) {
-      console.log('Searching for:', searchQuery);
-      
-      const findPlaceUrl = `https://places.googleapis.com/v1/places:searchText`;
+      console.log(`Searching for: "${searchQuery}"`);
       
       const searchBody = {
         textQuery: `${searchQuery} in London`,
         maxResultCount: 20,
-        languageCode: "en-GB",
-        locationBias: {
-          circle: {
-            center: {
-              latitude: 51.5074,
-              longitude: -0.1278
-            },
-            radius: 20000.0
-          }
-        }
+        languageCode: "en",
+        includedType: "builder"
       };
-      
-      console.log('Search request body:', JSON.stringify(searchBody));
 
-      try {
-        const searchResponse = await fetch(findPlaceUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.types'
-          },
-          body: JSON.stringify(searchBody)
-        });
+      const searchResponse = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.types'
+        },
+        body: JSON.stringify(searchBody)
+      });
 
-        if (!searchResponse.ok) {
-          const errorText = await searchResponse.text();
-          console.error('Search API error:', {
-            status: searchResponse.status,
-            statusText: searchResponse.statusText,
-            body: errorText
-          });
-          continue;
-        }
-
-        const searchData = await searchResponse.json();
-        console.log('Search response:', {
+      if (!searchResponse.ok) {
+        const errorText = await searchResponse.text();
+        console.error('Search failed:', {
           query: searchQuery,
-          totalPlaces: searchData.places?.length || 0
+          status: searchResponse.status,
+          error: errorText
         });
-
-        if (searchData.places && Array.isArray(searchData.places)) {
-          // Include all places, we'll filter by rating later
-          allPlaces = [...allPlaces, ...searchData.places];
-        }
-      } catch (searchError) {
-        console.error('Error during search:', searchError);
         continue;
+      }
+
+      const searchData = await searchResponse.json();
+      
+      console.log('Search results:', {
+        query: searchQuery,
+        responseKeys: Object.keys(searchData),
+        placesFound: searchData.places?.length || 0
+      });
+
+      if (searchData.places && Array.isArray(searchData.places)) {
+        allPlaces = [...allPlaces, ...searchData.places];
       }
     }
 
-    console.log(`Total places found: ${allPlaces.length}`);
+    console.log(`Total places found before filtering: ${allPlaces.length}`);
 
-    // Now filter for rating, but with a lower threshold initially
-    const highRatedPlaces = allPlaces.filter((place: PlaceSearchResult) => 
-      place.rating && place.rating >= 3.5  // Lowered threshold from 4.0
-    );
-
-    console.log(`High-rated places (>=3.5 stars): ${highRatedPlaces.length}`);
-
-    if (highRatedPlaces.length === 0) {
-      // If no places found, log all places for debugging
-      console.log('All places found:', allPlaces);
-      throw new Error('No high-rated places found. Total places found: ' + allPlaces.length);
+    // Accept all places initially, we can filter by rating later
+    if (allPlaces.length === 0) {
+      console.log('Places API is working but returned no results');
+      return new Response(JSON.stringify({
+        message: 'No places found in search response',
+        searchQueries
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404
+      });
     }
 
-    // Process each high-rated place
-    let successfullyProcessed = 0;
-    for (const place of highRatedPlaces) {
+    // Process each place
+    let processedCount = 0;
+    for (const place of allPlaces) {
       try {
-        console.log('Processing place:', place.displayName.text);
+        console.log(`Processing place: ${place.displayName?.text}`);
         
-        // Get detailed place information
         const placeUrl = `https://places.googleapis.com/v1/places/${place.id}`;
         const placeResponse = await fetch(placeUrl, {
           headers: {
@@ -132,17 +144,12 @@ Deno.serve(async (req) => {
         });
 
         if (!placeResponse.ok) {
-          console.error('Error fetching place details:', {
-            placeId: place.id,
-            status: placeResponse.status,
-            statusText: placeResponse.statusText
-          });
+          console.error(`Failed to fetch details for place ${place.id}:`, await placeResponse.text());
           continue;
         }
 
         const placeDetails = await placeResponse.json();
         
-        // Prepare contractor data
         const contractorData = {
           business_name: placeDetails.displayName?.text,
           google_place_id: placeDetails.id,
@@ -175,34 +182,29 @@ Deno.serve(async (req) => {
           });
 
         if (upsertError) {
-          console.error('Error upserting contractor:', upsertError);
+          console.error('Failed to upsert contractor:', upsertError);
           continue;
         }
 
-        successfullyProcessed++;
+        processedCount++;
         console.log(`Successfully processed: ${contractorData.business_name}`);
-
-      } catch (placeError) {
-        console.error('Error processing place:', {
-          placeId: place.id,
-          error: placeError
-        });
+      } catch (error) {
+        console.error('Error processing place:', error);
       }
     }
 
     return new Response(JSON.stringify({
       message: 'Processing completed',
-      totalPlaces: allPlaces.length,
-      highRatedPlaces: highRatedPlaces.length,
-      successfullyProcessed
+      totalFound: allPlaces.length,
+      processed: processedCount
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     });
 
   } catch (error) {
-    console.error('Error:', error);
-    return new Response(JSON.stringify({ 
+    console.error('Function error:', error);
+    return new Response(JSON.stringify({
       error: error.message,
       stack: error.stack
     }), {
