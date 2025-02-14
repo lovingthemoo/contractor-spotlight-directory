@@ -32,15 +32,15 @@ interface PreviewData {
 
 // Define common header variations for automatic mapping
 const headerMappings: Record<string, string[]> = {
-  business_name: ['business name', 'businessname', 'company', 'company name', 'name', 'business', 'rgnusb'],
-  trading_name: ['trading name', 'tradingname', 'trade name', 'tradename'],
-  specialty: ['specialty', 'speciality', 'trade', 'service', 'type', 'hgz87c'],
-  phone: ['phone', 'telephone', 'contact', 'phone number', 'tel', 'mobile', 'hgz87c3'],
-  email: ['email', 'e-mail', 'mail', 'contact email'],
-  website_url: ['website', 'url', 'web', 'website url', 'site', 'keychainify-checked href'],
-  location: ['location', 'city', 'area', 'region', 'address', 'hgz87c2'],
-  postal_code: ['postal code', 'postcode', 'zip', 'zip code', 'post code'],
-  description: ['description', 'about', 'details', 'info', 'summary']
+  business_name: ['business name', 'businessname', 'company', 'company name', 'name', 'business', 'rgnusb', 'business_name', 'company_name'],
+  trading_name: ['trading name', 'tradingname', 'trade name', 'tradename', 'trading_name', 'trade_name'],
+  specialty: ['specialty', 'speciality', 'trade', 'service', 'type', 'hgz87c', 'business_type', 'contractor_type'],
+  phone: ['phone', 'telephone', 'contact', 'phone number', 'tel', 'mobile', 'hgz87c3', 'phone_number', 'contact_number'],
+  email: ['email', 'e-mail', 'mail', 'contact email', 'contact_email', 'email_address'],
+  website_url: ['website', 'url', 'web', 'website url', 'site', 'keychainify-checked href', 'website_url', 'web_address'],
+  location: ['location', 'city', 'area', 'region', 'address', 'hgz87c2', 'town', 'county'],
+  postal_code: ['postal code', 'postcode', 'zip', 'zip code', 'post code', 'postal_code', 'zip_code'],
+  description: ['description', 'about', 'details', 'info', 'summary', 'business_description']
 };
 
 const AdminImport = () => {
@@ -65,36 +65,46 @@ const AdminImport = () => {
 
   // Find the correct field name based on the header mappings
   const findMatchingField = (header: string): string | null => {
-    const normalizedHeader = header.toLowerCase().trim();
+    const normalizedHeader = header.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
     
     for (const [field, variations] of Object.entries(headerMappings)) {
-      if (variations.includes(normalizedHeader)) {
+      const normalizedVariations = variations.map(v => 
+        v.toLowerCase().trim().replace(/[^a-z0-9]/g, '')
+      );
+      
+      if (normalizedVariations.includes(normalizedHeader)) {
         return field;
       }
     }
+    
+    // Log unmapped header for debugging
+    console.log('Unmapped header:', header, 'Normalized:', normalizedHeader);
     return null;
   };
 
   const validateRecord = (record: any): PreviewData => {
+    console.log('Processing record:', record); // Debug log
+    
     // Create a standardized object with mapped fields
     const mappedRecord: Record<string, any> = {};
     
     // Try to map each field in the record to the correct database field
     for (const [key, value] of Object.entries(record)) {
-      const normalizedKey = key.toLowerCase().trim();
-      const mappedField = findMatchingField(normalizedKey);
+      const mappedField = findMatchingField(key);
       if (mappedField) {
         mappedRecord[mappedField] = value;
       }
     }
+    
+    console.log('Mapped record:', mappedRecord); // Debug log
 
     const data: PreviewData = {
-      business_name: mappedRecord.business_name || '',
-      trading_name: mappedRecord.trading_name || null,
-      specialty: (mappedRecord.specialty || 'GENERAL').toString().toUpperCase(),
-      phone: mappedRecord.phone || null,
-      email: mappedRecord.email || null,
-      location: mappedRecord.location || 'London',
+      business_name: mappedRecord.business_name?.trim() || '',
+      trading_name: mappedRecord.trading_name?.trim() || null,
+      specialty: (mappedRecord.specialty?.trim() || 'GENERAL').toString().toUpperCase(),
+      phone: mappedRecord.phone?.trim() || null,
+      email: mappedRecord.email?.trim() || null,
+      location: mappedRecord.location?.trim() || 'London',
       isValid: true
     };
 
@@ -108,9 +118,9 @@ const AdminImport = () => {
       data.error = 'Invalid email format';
     }
 
-    if (!['ELECTRICAL', 'PLUMBING', 'ROOFING', 'BUILDING', 'HOME REPAIR', 'GARDENING', 'CONSTRUCTION', 'HANDYMAN', 'GENERAL'].includes(data.specialty)) {
-      data.isValid = false;
-      data.error = 'Invalid specialty';
+    const validSpecialties = ['ELECTRICAL', 'PLUMBING', 'ROOFING', 'BUILDING', 'HOME REPAIR', 'GARDENING', 'CONSTRUCTION', 'HANDYMAN', 'GENERAL'];
+    if (!validSpecialties.includes(data.specialty)) {
+      data.specialty = 'GENERAL';
     }
 
     return data;
@@ -131,11 +141,20 @@ const AdminImport = () => {
 
     try {
       const text = await file.text();
-      const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+      const lines = text
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line);
+      
       const headers = lines[0].split(',').map(h => h.trim());
+      console.log('Original headers:', headers); // Debug log
       
       // Map headers to database fields
-      const mappedHeaders = headers.map(header => findMatchingField(header) || header);
+      const mappedHeaders = headers.map(header => {
+        const mappedField = findMatchingField(header);
+        console.log(`Mapping header "${header}" to "${mappedField}"`); // Debug log
+        return mappedField || header;
+      });
       
       const rows = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim());
@@ -150,6 +169,8 @@ const AdminImport = () => {
         return record;
       });
 
+      console.log('Processed rows:', rows); // Debug log
+
       const validatedData = rows
         .filter(row => Object.keys(row).length > 0)
         .map(validateRecord);
@@ -158,11 +179,12 @@ const AdminImport = () => {
       setShowPreview(true);
 
       // Show header mapping results
-      const unmappedHeaders = headers.filter((_, i) => !findMatchingField(headers[i]));
+      const unmappedHeaders = headers.filter(h => !findMatchingField(h));
       if (unmappedHeaders.length > 0) {
+        console.log('Unmapped headers:', unmappedHeaders); // Debug log
         toast({
           title: "Some headers couldn't be mapped",
-          description: `Unmapped headers: ${unmappedHeaders.join(', ')}`,
+          description: `Unmapped headers: ${unmappedHeaders.join(', ')}. They will be ignored.`,
           variant: "default"
         });
       }
@@ -242,8 +264,8 @@ const AdminImport = () => {
             )}
           </div>
           <p className="mt-4 text-sm text-gray-500">
-            Supported headers: Business Name, Trading Name, Specialty, Phone, Email, Website, Location, 
-            Postal Code, Description (variations allowed)
+            Expected CSV headers: Business Name (required), Trading Name, Specialty, Phone, Email, Website, Location, 
+            Postal Code, Description. Various formats accepted.
           </p>
         </Card>
 
