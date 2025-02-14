@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +40,7 @@ const Index = () => {
         }
 
         let contractorsData = response.data || [];
+        console.log('Contractors with images:', contractorsData.length);
 
         // If we don't have enough contractors with uploaded images, get ones with Google photos
         if (contractorsData.length < 10) {
@@ -59,6 +59,7 @@ const Index = () => {
               gc => !contractorsData.some(c => c.id === gc.id)
             );
             contractorsData = [...contractorsData, ...newContractors];
+            console.log('Added contractors with Google photos:', newContractors.length);
           }
         }
 
@@ -78,10 +79,18 @@ const Index = () => {
               fb => !contractorsData.some(c => c.id === fb.id)
             );
             contractorsData = [...contractorsData, ...newContractors];
+            console.log('Added additional contractors:', newContractors.length);
           }
         }
 
         const transformedContractors = await Promise.all(contractorsData.map(transformContractor));
+        
+        // Log specialty distribution
+        const specialtyCounts = transformedContractors.reduce((acc, contractor) => {
+          acc[contractor.specialty || 'Unknown'] = (acc[contractor.specialty || 'Unknown'] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('Specialty distribution:', specialtyCounts);
         
         // Sort contractors: those with images first, then by rating
         const sortedContractors = transformedContractors.sort((a, b) => {
@@ -117,9 +126,12 @@ const Index = () => {
   };
 
   const filteredContractors = contractors
-    .filter(contractor => 
-      selectedSpecialty === "All" || contractor.specialty === selectedSpecialty
-    )
+    .filter(contractor => {
+      if (selectedSpecialty === "All") return true;
+      // Log the specialty comparison for debugging
+      console.log(`Comparing contractor specialty: "${contractor.specialty}" with selected: "${selectedSpecialty}"`);
+      return contractor.specialty?.toLowerCase() === selectedSpecialty.toLowerCase();
+    })
     .filter(contractor => 
       selectedRating === "All" || (contractor.rating && contractor.rating >= getRatingThreshold(selectedRating))
     )
@@ -128,6 +140,11 @@ const Index = () => {
       contractor.specialty?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contractor.location?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+  // Log filtered results
+  console.log('Total contractors:', contractors.length);
+  console.log('Filtered contractors:', filteredContractors.length);
+  console.log('Selected specialty:', selectedSpecialty);
 
   return (
     <div className="flex flex-col min-h-screen">
