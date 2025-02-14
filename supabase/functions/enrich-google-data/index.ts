@@ -83,14 +83,14 @@ const getSpecialtyFromQuery = (query: string): string => {
   return 'Building';
 };
 
+// Reduced locations to minimize processing time
 const LOCATIONS = [
   "London",
-  "Greater London",
-  "North London",
-  "South London",
-  "East London",
-  "West London"
+  "Greater London"
 ];
+
+// Maximum number of places to process per run
+const MAX_PLACES_PER_RUN = 5;
 
 Deno.serve(async (req) => {
   // Always add CORS headers
@@ -180,33 +180,43 @@ Deno.serve(async (req) => {
     let allPlaces: PlaceSearchResult[] = [];
     let searchErrors = 0;
 
-    // Search across selected category queries
-    for (const searchQuery of queries) {
-      for (const location of LOCATIONS) {
-        try {
-          console.log(`Searching for: "${searchQuery}" in "${location}"`);
-          const places = await googlePlacesService.searchPlaces(searchQuery, location);
-          
-          // Filter out duplicates
-          const newPlaces = places.filter(
-            place => !allPlaces.some(existing => existing.id === place.id)
-          );
-          allPlaces = [...allPlaces, ...newPlaces];
-          
-          // Rate limiting
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (error) {
-          console.error(`Search error for ${searchQuery} in ${location}:`, error);
-          searchErrors++;
+    // Search across selected category queries (limit to first query for testing)
+    const firstQuery = queries[0];
+    for (const location of LOCATIONS) {
+      try {
+        console.log(`Searching for: "${firstQuery}" in "${location}"`);
+        const places = await googlePlacesService.searchPlaces(firstQuery, location);
+        
+        // Filter out duplicates
+        const newPlaces = places.filter(
+          place => !allPlaces.some(existing => existing.id === place.id)
+        );
+        allPlaces = [...allPlaces, ...newPlaces];
+        
+        // Limit total places
+        if (allPlaces.length >= MAX_PLACES_PER_RUN) {
+          allPlaces = allPlaces.slice(0, MAX_PLACES_PER_RUN);
+          break;
         }
+        
+        // Rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (error) {
+        console.error(`Search error for ${firstQuery} in ${location}:`, error);
+        searchErrors++;
       }
     }
+
+    console.log(`Found ${allPlaces.length} places to process`);
 
     let processedCount = 0;
     let errorCount = 0;
 
-    for (const place of allPlaces) {
+    // Process only the first few places for testing
+    const placesToProcess = allPlaces.slice(0, MAX_PLACES_PER_RUN);
+    for (const place of placesToProcess) {
       try {
+        console.log(`Processing place: ${place.id}`);
         const placeDetails = await googlePlacesService.getPlaceDetails(place.id);
         
         const contractorData: ContractorData = {
@@ -218,11 +228,7 @@ Deno.serve(async (req) => {
           location: 'London',
           rating: placeDetails.rating,
           review_count: placeDetails.userRatingCount,
-          specialty: getSpecialtyFromQuery(queries.find(q => 
-            placeDetails.types?.some(type => 
-              type.toLowerCase().includes(q.toLowerCase())
-            )
-          ) || queries[0]),
+          specialty: getSpecialtyFromQuery(firstQuery),
           google_reviews: placeDetails.reviews || [],
           google_photos: placeDetails.photos || [],
           website_url: placeDetails.websiteUri,
@@ -240,6 +246,7 @@ Deno.serve(async (req) => {
 
         if (await contractorService.upsertContractor(contractorData)) {
           processedCount++;
+          console.log(`Successfully processed place ${processedCount}/${placesToProcess.length}`);
         }
 
         // Rate limiting
@@ -250,15 +257,20 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Send success response
+    const response = {
+      message: `Processing completed for ${category}`,
+      totalFound: allPlaces.length,
+      processed: processedCount,
+      errors: errorCount,
+      searchErrors,
+      category
+    };
+
+    console.log('Sending response:', response);
+
     return new Response(
-      JSON.stringify({
-        message: `Processing completed for ${category}`,
-        totalFound: allPlaces.length,
-        processed: processedCount,
-        errors: errorCount,
-        searchErrors,
-        category
-      }), 
+      JSON.stringify(response), 
       { headers }
     );
 
