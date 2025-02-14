@@ -29,27 +29,35 @@ export class ContractorService {
         return false;
       }
 
-      // Log the exact data being sent to Supabase
-      console.log('Upserting data:', {
-        business_name: contractorData.business_name,
-        google_place_id: contractorData.google_place_id,
-        google_place_name: contractorData.google_place_name,
-        google_formatted_address: contractorData.google_formatted_address,
-        slug: contractorData.slug
+      // Determine enrichment flags based on data presence
+      const enrichmentFlags = {
+        needs_google_enrichment: !contractorData.rating || !contractorData.google_business_scopes,
+        needs_image_enrichment: !contractorData.google_photos?.length,
+        needs_contact_enrichment: !contractorData.google_formatted_phone && !contractorData.website_url,
+      };
+
+      console.log('Enrichment flags:', {
+        business: contractorData.business_name,
+        ...enrichmentFlags,
+        hasRating: !!contractorData.rating,
+        hasPhotos: !!contractorData.google_photos?.length,
+        hasPhone: !!contractorData.google_formatted_phone,
+        hasWebsite: !!contractorData.website_url
       });
+
+      // Prepare data for upsert
+      const upsertData = {
+        ...contractorData,
+        ...enrichmentFlags,
+        updated_at: new Date().toISOString()
+      };
 
       const { data, error } = await this.supabase
         .from('contractors')
-        .upsert(
-          {
-            ...contractorData,
-            updated_at: new Date().toISOString()
-          },
-          {
-            onConflict: 'google_place_id'
-          }
-        )
-        .select('id');
+        .upsert(upsertData, {
+          onConflict: 'google_place_id'
+        })
+        .select('id, business_name, needs_google_enrichment, needs_image_enrichment, needs_contact_enrichment');
 
       if (error) {
         console.error('Supabase upsert error:', error);
@@ -58,8 +66,14 @@ export class ContractorService {
 
       console.log('Successfully upserted contractor:', {
         business_name: contractorData.business_name,
-        id: data?.[0]?.id
+        id: data?.[0]?.id,
+        enrichmentFlags: data?.[0] ? {
+          needs_google_enrichment: data[0].needs_google_enrichment,
+          needs_image_enrichment: data[0].needs_image_enrichment,
+          needs_contact_enrichment: data[0].needs_contact_enrichment
+        } : 'No data returned'
       });
+
       return true;
     } catch (error) {
       console.error('Error in upsertContractor:', error);
