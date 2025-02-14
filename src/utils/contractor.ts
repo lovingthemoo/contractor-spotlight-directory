@@ -129,19 +129,28 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
 };
 
 export const getDisplayImage = (contractor: Contractor): string | undefined => {
-  // First priority: Company-specific Google photos
+  // Log available images for debugging
+  console.log('Image sources for', contractor.business_name, {
+    uploadedImages: contractor.images?.length || 0,
+    googlePhotos: contractor.google_photos?.length || 0
+  });
+
+  // First priority: Company-specific uploaded images
+  if (contractor.images && contractor.images.length > 0) {
+    console.log('Using uploaded image:', contractor.images[0]);
+    return contractor.images[0];
+  }
+  
+  // Second priority: Google photos
   if (contractor.google_photos && contractor.google_photos.length > 0) {
     const photo = contractor.google_photos[0];
     if (photo?.url) {
+      console.log('Using Google photo:', photo.url);
       return photo.url;
     }
   }
   
-  // Second priority: Uploaded images
-  if (contractor.images && contractor.images.length > 0) {
-    return contractor.images[0];
-  }
-  
+  console.log('No images found for:', contractor.business_name);
   // If no image is available, return undefined
   return undefined;
 };

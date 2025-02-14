@@ -53,6 +53,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
               alt={`${contractor.business_name} project`}
               className="object-cover w-full h-full transform transition-transform duration-300 hover:scale-105"
               onError={(e) => {
+                console.warn(`Image load failed for ${contractor.business_name}:`, imageUrl);
                 const target = e.target as HTMLImageElement;
                 target.onerror = null; // Prevent infinite loop
                 target.src = getFallbackImage();
