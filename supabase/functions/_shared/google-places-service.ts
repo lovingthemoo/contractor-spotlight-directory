@@ -62,14 +62,43 @@ export class GooglePlacesService {
   }
 
   async getPlaceDetails(placeId: string): Promise<any> {
-    const response = await fetch(`${this.baseUrl}/${placeId}`, {
-      headers: this.getHeaders('id,displayName,formattedAddress,businessStatus,reviews,photos,primaryType,types,rating,userRatingCount,websiteUri,phoneNumbers,openingHours')
-    });
+    try {
+      console.log(`Fetching details for place: ${placeId}`);
+      
+      // Updated field mask to match the exact API field names
+      const fieldMask = [
+        'id',
+        'displayName',
+        'formattedAddress',
+        'editorialSummary',
+        'rating',
+        'userRatingCount',
+        'websiteUri',
+        'formattedPhoneNumber',
+        'regularOpeningHours',
+        'photos',
+        'reviews',
+        'types'
+      ].join(',');
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch details for place ${placeId}`);
+      const response = await fetch(`${this.baseUrl}/${placeId}`, {
+        method: 'GET',
+        headers: this.getHeaders(fieldMask)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Place details error: ${response.status}`, errorText);
+        throw new Error(`Failed to fetch place details: ${response.status}`);
+      }
+
+      const placeDetails = await response.json();
+      console.log(`Successfully fetched details for place: ${placeId}`);
+      
+      return placeDetails;
+    } catch (error) {
+      console.error(`Error fetching place details for ${placeId}:`, error);
+      throw error;
     }
-
-    return response.json();
   }
 }
