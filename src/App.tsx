@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import About from "./pages/About";
+import FindTrader from "./pages/FindTrader";
+import Register from "./pages/Register";
 import ContractorDetail from "./pages/ContractorDetail";
 import NotFound from "./pages/NotFound";
 
@@ -20,6 +22,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/about" element={<About />} />
+          <Route path="/search" element={<FindTrader />} />
+          <Route path="/register" element={<Register />} />
           {/* New URL structure */}
           <Route path="/:region/:service/:companyName" element={<ContractorDetail />} />
           {/* Redirect old URLs to new format */}
