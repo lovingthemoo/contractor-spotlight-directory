@@ -131,6 +131,10 @@ const getDisplayImage = (contractor: Contractor): string => {
   return 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e';
 };
 
+const getDisplayAddress = (contractor: Contractor): string => {
+  return contractor.google_formatted_address || contractor.location;
+};
+
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
@@ -287,7 +291,7 @@ const Index = () => {
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center text-sm text-gray-500">
                           <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
-                          {contractor.google_formatted_address || contractor.location}
+                          {getDisplayAddress(contractor)}
                         </div>
                         
                         {contractor.google_formatted_phone && (
