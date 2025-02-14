@@ -28,8 +28,10 @@ const Index = () => {
         const response = await supabase
           .from('contractors')
           .select('*')
-          .order('rating', { ascending: false })
-          .not('rating', 'is', null);
+          .not('rating', 'is', null)
+          // First sort by whether they have images (either uploaded or from Google)
+          .or('images.neq.{}', 'google_photos.neq.[]')
+          .order('rating', { ascending: false });
         
         if (response.error) {
           toast.error('Failed to fetch contractors');
@@ -41,12 +43,39 @@ const Index = () => {
           return [];
         }
 
+        // Get contractors without images as a fallback
+        if (response.data.length < 10) {
+          const fallbackResponse = await supabase
+            .from('contractors')
+            .select('*')
+            .not('rating', 'is', null)
+            .order('rating', { ascending: false });
+            
+          if (!fallbackResponse.error && fallbackResponse.data) {
+            // Filter out contractors we already have
+            const newContractors = fallbackResponse.data.filter(
+              fb => !response.data.some(c => c.id === fb.id)
+            );
+            response.data = [...response.data, ...newContractors];
+          }
+        }
+
         const transformedContractors = await Promise.all(response.data.map(transformContractor));
         
-        // Randomly shuffle the contractors
-        const shuffledContractors = [...transformedContractors].sort(() => Math.random() - 0.5);
+        // Sort contractors: those with images first, then by rating
+        const sortedContractors = transformedContractors.sort((a, b) => {
+          const aHasImages = (a.images?.length > 0 || a.google_photos?.length > 0) ? 1 : 0;
+          const bHasImages = (b.images?.length > 0 || b.google_photos?.length > 0) ? 1 : 0;
+          
+          if (aHasImages !== bHasImages) {
+            return bHasImages - aHasImages; // Contractors with images come first
+          }
+          
+          // If both have or don't have images, sort by rating
+          return (b.rating || 0) - (a.rating || 0);
+        });
         
-        return shuffledContractors;
+        return sortedContractors;
       } catch (e) {
         console.error('Error fetching contractors:', e);
         throw e;
