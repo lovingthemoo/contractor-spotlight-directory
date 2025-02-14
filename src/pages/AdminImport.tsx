@@ -83,12 +83,10 @@ const AdminImport = () => {
   };
 
   const validateRecord = (record: any): PreviewData => {
-    console.log('Processing record:', record); // Debug log
+    console.log('Processing record:', record);
     
-    // Create a standardized object with mapped fields
     const mappedRecord: Record<string, any> = {};
     
-    // Try to map each field in the record to the correct database field
     for (const [key, value] of Object.entries(record)) {
       const mappedField = findMatchingField(key);
       if (mappedField) {
@@ -96,12 +94,37 @@ const AdminImport = () => {
       }
     }
     
-    console.log('Mapped record:', mappedRecord); // Debug log
+    console.log('Mapped record:', mappedRecord);
+
+    // Map common specialty terms to valid enum values
+    const mapSpecialty = (specialty: string): string => {
+      const normalizedSpecialty = specialty.trim().toLowerCase();
+      const specialtyMap: Record<string, string> = {
+        'electrical': 'Electrical',
+        'electrician': 'Electrical',
+        'plumbing': 'Plumbing',
+        'plumber': 'Plumbing',
+        'roofing': 'Roofing',
+        'roofer': 'Roofing',
+        'building': 'Building',
+        'builder': 'Building',
+        'home repair': 'Home Repair',
+        'repairs': 'Home Repair',
+        'gardening': 'Gardening',
+        'gardener': 'Gardening',
+        'landscape': 'Gardening',
+        'construction': 'Construction',
+        'handyman': 'Handyman',
+        'general': 'Handyman'  // Map general to Handyman as default
+      };
+
+      return specialtyMap[normalizedSpecialty] || 'Handyman';
+    };
 
     const data: PreviewData = {
       business_name: mappedRecord.business_name?.trim() || '',
       trading_name: mappedRecord.trading_name?.trim() || null,
-      specialty: (mappedRecord.specialty?.trim() || 'GENERAL').toString().toUpperCase(),
+      specialty: mapSpecialty(mappedRecord.specialty || 'Handyman'),
       phone: mappedRecord.phone?.trim() || null,
       email: mappedRecord.email?.trim() || null,
       location: mappedRecord.location?.trim() || 'London',
@@ -116,11 +139,6 @@ const AdminImport = () => {
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       data.isValid = false;
       data.error = 'Invalid email format';
-    }
-
-    const validSpecialties = ['ELECTRICAL', 'PLUMBING', 'ROOFING', 'BUILDING', 'HOME REPAIR', 'GARDENING', 'CONSTRUCTION', 'HANDYMAN', 'GENERAL'];
-    if (!validSpecialties.includes(data.specialty)) {
-      data.specialty = 'GENERAL';
     }
 
     return data;
