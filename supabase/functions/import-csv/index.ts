@@ -80,19 +80,32 @@ serve(async (req) => {
 
     for (const record of records) {
       try {
+        console.log('Processing raw record:', record)
+
+        // Clean and prepare data
+        const cleanValue = (value: any) => {
+          if (typeof value === 'string') {
+            // Remove quotes and trim
+            return value.replace(/^["']|["']$/g, '').trim()
+          }
+          return value
+        }
+
         // Try to map the record using common variations of field names
         const contractorData = {
-          business_name: record.business_name || record.businessName || record.rgnuSb || record['Business Name'],
-          trading_name: record.trading_name || record.tradingName || record['Trading Name'] || null,
-          specialty: mapSpecialty((record.specialty || record.speciality || record.hGz87c || record['Specialty'] || 'Handyman').toString()),
-          phone: record.phone || record.phoneNumber || record.hGz87c3 || record['Phone'] || null,
-          email: record.email || record['Email'] || null,
-          website_url: record.website_url || record.websiteUrl || record['Website URL'] || 
-            record['keychainify-checked href'] || null,
-          location: record.location || record.hGz87c2 || record['Location'] || 'London',
-          postal_code: record.postal_code || record.postalCode || record['Postal Code'] || null,
-          description: record.description || record['Description'] || null
+          business_name: cleanValue(record.business_name || record.businessName || record.rgnuSb || record['Business Name'] || record['business name']),
+          trading_name: cleanValue(record.trading_name || record.tradingName || record['Trading Name'] || record['trading name'] || null),
+          specialty: mapSpecialty(cleanValue(record.specialty || record.speciality || record.hGz87c || record['Specialty'] || record['specialty'] || 'Handyman')),
+          phone: cleanValue(record.phone || record.phoneNumber || record.hGz87c3 || record['Phone'] || record['phone'] || null),
+          email: cleanValue(record.email || record['Email'] || record['email'] || null),
+          website_url: cleanValue(record.website_url || record.websiteUrl || record['Website URL'] || record['website url'] || 
+            record['keychainify-checked href'] || null),
+          location: cleanValue(record.location || record.hGz87c2 || record['Location'] || record['location'] || 'London'),
+          postal_code: cleanValue(record.postal_code || record.postalCode || record['Postal Code'] || record['postal code'] || null),
+          description: cleanValue(record.description || record['Description'] || record['description'] || null)
         }
+
+        console.log('Mapped data:', contractorData)
 
         // Validate required fields
         if (!contractorData.business_name) {
@@ -100,12 +113,15 @@ serve(async (req) => {
         }
 
         // Generate slug if not provided
-        contractorData.slug = record.slug || 
-          contractorData.business_name.toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '')
+        const baseSlug = contractorData.business_name.toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
 
-        console.log('Inserting contractor with data:', contractorData)
+        // Add a random suffix to make the slug unique
+        const timestamp = new Date().getTime()
+        contractorData.slug = `${baseSlug}-${timestamp.toString().slice(-6)}`
+
+        console.log('Final contractor data:', contractorData)
 
         const { error } = await supabase
           .from('contractors')
