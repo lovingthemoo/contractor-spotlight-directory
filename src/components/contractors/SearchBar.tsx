@@ -19,7 +19,7 @@ const SearchBar = ({ searchQuery, setSearchQuery, "aria-label": ariaLabel }: Sea
       <Search 
         className="w-5 h-5 mx-3 text-gray-400" 
         aria-hidden="true"
-        title="Search icon" 
+        aria-label="Search"
       />
       <Input
         type="search"
@@ -29,14 +29,13 @@ const SearchBar = ({ searchQuery, setSearchQuery, "aria-label": ariaLabel }: Sea
         className="flex-1 border-0 focus-visible:ring-0 [-webkit-user-select:text] [user-select:text]"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        title="Search contractors"
         aria-label={ariaLabel || "Search contractors"}
       />
       <Badge variant="secondary" className="mr-2">
         <MapPin 
           className="w-4 h-4 mr-1" 
-          aria-hidden="true" 
-          title="Location icon"
+          aria-hidden="true"
+          aria-label="Location"
         />
         <span>London</span>
       </Badge>
