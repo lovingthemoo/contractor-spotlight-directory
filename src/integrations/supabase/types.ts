@@ -274,6 +274,12 @@ export type Database = {
         }
         Returns: number
       }
+      get_random_description: {
+        Args: {
+          descriptions: string[]
+        }
+        Returns: string
+      }
       is_admin: {
         Args: {
           user_id: string
