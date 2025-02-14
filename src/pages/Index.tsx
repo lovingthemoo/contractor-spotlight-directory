@@ -146,7 +146,8 @@ const Index = () => {
       try {
         const response = await supabase
           .from('contractors')
-          .select('*');
+          .select('*')
+          .order('created_at', { ascending: false }); // Order by newest first
         
         console.log('Full Supabase response:', response);
 
@@ -162,8 +163,17 @@ const Index = () => {
           return [];
         }
 
-        const transformedData = data.map(transformContractor);
-        console.log(`Found ${transformedData.length} contractors:`, transformedData);
+        // Create a Map to store unique contractors by business_name
+        const uniqueContractors = new Map();
+        
+        data.forEach(contractor => {
+          if (!uniqueContractors.has(contractor.business_name)) {
+            uniqueContractors.set(contractor.business_name, contractor);
+          }
+        });
+
+        const transformedData = Array.from(uniqueContractors.values()).map(transformContractor);
+        console.log(`Found ${transformedData.length} unique contractors:`, transformedData);
         return transformedData;
       } catch (e) {
         console.error('Query execution error:', e);
