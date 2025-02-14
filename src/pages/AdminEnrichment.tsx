@@ -68,7 +68,7 @@ const AdminEnrichment = () => {
 
       toast({
         title: "Data Collection Started",
-        description: `Started collecting data for ${data.totalFound || 0} businesses.`,
+        description: `Started collecting data for ${data.totalFound || 0} London service providers.`,
       });
 
       await Promise.all([refetchContractors(), refetchLogs()]);
@@ -119,11 +119,11 @@ const AdminEnrichment = () => {
             disabled={isLoading}
           >
             <Database className="mr-2 h-4 w-4" />
-            {isLoading ? "Collecting Data..." : "Collect London Builders Data"}
+            {isLoading ? "Collecting Data..." : "Collect London Data"}
           </Button>
         </div>
         <p className="text-gray-600">
-          Contractors that need additional data or verification.
+          Service providers that need additional data or verification.
         </p>
       </div>
 

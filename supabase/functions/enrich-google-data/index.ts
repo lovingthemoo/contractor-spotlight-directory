@@ -5,11 +5,29 @@ import { ContractorService } from '../_shared/contractor-service.ts';
 import { PlaceSearchResult, ContractorData } from '../_shared/types.ts';
 
 const SEARCH_QUERIES = [
+  // Building and Construction
   "building company",
   "construction company",
-  "home builder",
-  "property developer",
-  "building contractor"
+  "building contractor",
+  // Electricians
+  "electrician",
+  "electrical contractor",
+  // Gardeners
+  "gardener",
+  "landscape gardener",
+  "garden maintenance",
+  // Home Repairs
+  "handyman",
+  "home repair service",
+  "property maintenance",
+  // Plumbers
+  "plumber",
+  "plumbing contractor",
+  "emergency plumber",
+  // Roofers
+  "roofer",
+  "roofing contractor",
+  "roof repair"
 ];
 
 const LOCATIONS = [
@@ -20,6 +38,16 @@ const LOCATIONS = [
   "East London",
   "West London"
 ];
+
+const getSpecialtyFromQuery = (query: string): string => {
+  const queryLower = query.toLowerCase();
+  if (queryLower.includes('plumb')) return 'Plumbing';
+  if (queryLower.includes('electr')) return 'Electrical';
+  if (queryLower.includes('garden') || queryLower.includes('landscape')) return 'Gardening';
+  if (queryLower.includes('roof')) return 'Roofing';
+  if (queryLower.includes('handyman') || queryLower.includes('repair')) return 'Home Repairs';
+  return 'Building';
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -104,6 +132,15 @@ Deno.serve(async (req) => {
           console.log(`Processing ${photos.length} photos for ${placeDetails.displayName?.text}`);
         }
 
+        // Determine the specialty based on the search query that found this place
+        const specialty = getSpecialtyFromQuery(
+          SEARCH_QUERIES.find(query => 
+            placeDetails.types?.some(type => 
+              type.toLowerCase().includes(query.toLowerCase())
+            )
+          ) || 'building company'
+        );
+
         const contractorData: ContractorData = {
           business_name: placeDetails.displayName?.text || '',
           google_place_id: placeDetails.id,
@@ -113,7 +150,7 @@ Deno.serve(async (req) => {
           location: 'London',
           rating: placeDetails.rating,
           review_count: placeDetails.userRatingCount,
-          specialty: 'Building',
+          specialty,
           google_reviews: placeDetails.reviews || [],
           google_photos: photos,
           website_url: placeDetails.websiteUri,
@@ -131,6 +168,7 @@ Deno.serve(async (req) => {
 
         console.log('Attempting to upsert contractor:', {
           name: contractorData.business_name,
+          specialty: contractorData.specialty,
           photoCount: contractorData.google_photos?.length || 0
         });
 
