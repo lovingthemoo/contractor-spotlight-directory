@@ -17,7 +17,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
   const businessName = contractor.google_place_name || contractor.business_name;
   
   // Create URL-friendly slug from location and specialty
-  const locationSlug = contractor.location.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const locationSlug = (contractor.location || 'london').toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const specialtySlug = contractor.specialty.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   
   return (
@@ -42,7 +42,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
           <div className="mt-2 space-y-2">
             <div className="flex items-center text-sm text-gray-500">
               <MapPin className="w-4 h-4 mr-1" aria-label="Location" />
-              <span>{formattedLocation}</span>
+              <span>{formattedLocation || 'London'}</span>
             </div>
             
             {formattedPhone && (
