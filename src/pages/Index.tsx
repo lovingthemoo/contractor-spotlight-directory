@@ -25,13 +25,15 @@ const Index = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       try {
-        // First, get contractors with images
-        const response = await supabase
+        // First, get contractors with uploaded images
+        const withImagesQuery = supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .not('images', 'eq', '{}')
+          .contains('images', ['{}'].slice(0)) // Filter for non-empty arrays
           .order('rating', { ascending: false });
+        
+        const response = await withImagesQuery;
         
         if (response.error) {
           toast.error('Failed to fetch contractors');
@@ -42,12 +44,14 @@ const Index = () => {
 
         // If we don't have enough contractors with uploaded images, get ones with Google photos
         if (contractorsData.length < 10) {
-          const googlePhotosResponse = await supabase
+          const withGooglePhotosQuery = supabase
             .from('contractors')
             .select('*')
             .not('rating', 'is', null)
-            .not('google_photos', 'eq', '[]')
+            .contains('google_photos', ['[]'].slice(0)) // Filter for non-empty arrays
             .order('rating', { ascending: false });
+
+          const googlePhotosResponse = await withGooglePhotosQuery;
 
           if (!googlePhotosResponse.error && googlePhotosResponse.data) {
             // Filter out duplicates
@@ -60,12 +64,14 @@ const Index = () => {
 
         // If we still need more contractors, get the rest
         if (contractorsData.length < 10) {
-          const fallbackResponse = await supabase
+          const fallbackQuery = supabase
             .from('contractors')
             .select('*')
             .not('rating', 'is', null)
             .order('rating', { ascending: false });
             
+          const fallbackResponse = await fallbackQuery;
+
           if (!fallbackResponse.error && fallbackResponse.data) {
             // Filter out contractors we already have
             const newContractors = fallbackResponse.data.filter(
