@@ -13,14 +13,37 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Database } from "lucide-react";
+import { Database, Trash2 } from "lucide-react";
 import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { formatDistanceToNow } from "date-fns";
+
+interface EnrichmentLog {
+  id: string;
+  created_at: string;
+  status: string;
+  businesses_found: number;
+  businesses_processed: number;
+  errors?: any;
+  start_time?: string;
+  end_time?: string;
+}
 
 const AdminEnrichment = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  const { data: contractors, isLoading: isLoadingData, refetch } = useQuery({
+  const { data: contractors, isLoading: isLoadingData, refetch: refetchContractors } = useQuery({
     queryKey: ['contractors-enrichment'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -31,6 +54,20 @@ const AdminEnrichment = () => {
 
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: enrichmentLogs = [], refetch: refetchLogs } = useQuery({
+    queryKey: ['enrichment-logs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('enrichment_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data as EnrichmentLog[];
     },
   });
 
@@ -60,14 +97,12 @@ const AdminEnrichment = () => {
       }
 
       toast({
-        title: "Data Collection Complete",
-        description: `Found ${data.totalFound || 0} businesses, processed ${data.processed || 0} entries.`,
+        title: "Data Collection Started",
+        description: `Started collecting data for ${data.totalFound || 0} businesses.`,
       });
 
-      // Refetch the data after a short delay to show new entries
-      setTimeout(() => {
-        refetch();
-      }, 2000);
+      // Refetch both contractors and logs
+      await Promise.all([refetchContractors(), refetchLogs()]);
 
     } catch (error) {
       console.error('Error invoking function:', error);
@@ -79,6 +114,39 @@ const AdminEnrichment = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteLog = async (logId: string) => {
+    try {
+      const { error } = await supabase
+        .from('enrichment_logs')
+        .delete()
+        .eq('id', logId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Log deleted",
+        description: "The enrichment log has been removed.",
+      });
+
+      refetchLogs();
+    } catch (error) {
+      console.error('Error deleting log:', error);
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete the enrichment log.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatDuration = (start?: string, end?: string) => {
+    if (!start) return "Not started";
+    if (!end) return "In progress...";
+    
+    const duration = new Date(end).getTime() - new Date(start).getTime();
+    return `${Math.round(duration / 1000)}s`;
   };
 
   if (isLoadingData) {
@@ -136,7 +204,7 @@ const AdminEnrichment = () => {
               </TableCell>
               <TableCell>
                 {contractor.last_enrichment_attempt 
-                  ? new Date(contractor.last_enrichment_attempt).toLocaleDateString()
+                  ? formatDistanceToNow(new Date(contractor.last_enrichment_attempt), { addSuffix: true })
                   : 'Never'}
               </TableCell>
             </TableRow>
@@ -150,6 +218,68 @@ const AdminEnrichment = () => {
           )}
         </TableBody>
       </Table>
+
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold mb-4">Recent Enrichment Runs</h3>
+        <div className="space-y-4">
+          {enrichmentLogs.map((log) => (
+            <Card key={log.id} className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={log.status === 'completed' ? 'success' : 'secondary'}>
+                      {log.status}
+                    </Badge>
+                    <span className="text-sm text-gray-500">
+                      {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="text-sm text-gray-600">
+                      Found: {log.businesses_found}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      Processed: {log.businesses_processed}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      Duration: {formatDuration(log.start_time, log.end_time)}
+                    </span>
+                  </div>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Enrichment Log</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this enrichment log? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDeleteLog(log.id)}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </Card>
+          ))}
+          {!enrichmentLogs.length && (
+            <div className="text-center py-8 text-gray-500">
+              No enrichment runs recorded yet
+            </div>
+          )}
+        </div>
+      </div>
     </Card>
   );
 };

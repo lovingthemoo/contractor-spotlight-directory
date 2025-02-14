@@ -242,6 +242,39 @@ export type Database = {
         }
         Relationships: []
       }
+      enrichment_logs: {
+        Row: {
+          businesses_found: number | null
+          businesses_processed: number | null
+          created_at: string
+          end_time: string | null
+          errors: Json | null
+          id: string
+          start_time: string | null
+          status: string
+        }
+        Insert: {
+          businesses_found?: number | null
+          businesses_processed?: number | null
+          created_at?: string
+          end_time?: string | null
+          errors?: Json | null
+          id?: string
+          start_time?: string | null
+          status?: string
+        }
+        Update: {
+          businesses_found?: number | null
+          businesses_processed?: number | null
+          created_at?: string
+          end_time?: string | null
+          errors?: Json | null
+          id?: string
+          start_time?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       upload_logs: {
         Row: {
           created_at: string
