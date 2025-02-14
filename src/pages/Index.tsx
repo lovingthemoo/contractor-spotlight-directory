@@ -38,17 +38,29 @@ const Index = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       console.log('Fetching contractors...');
-      const { data, error } = await supabase
-        .from('contractors')
-        .select('*')
-        .gte('rating', MIN_RATING);
-      
-      if (error) {
-        console.error('Error fetching contractors:', error);
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('contractors')
+          .select('*');
+        
+        if (error) {
+          console.error('Supabase error:', error);
+          throw error;
+        }
+
+        console.log('Raw Supabase response:', { data, error });
+        
+        if (!data || data.length === 0) {
+          console.log('No contractors found in database');
+        } else {
+          console.log(`Found ${data.length} contractors`);
+        }
+
+        return data as Contractor[];
+      } catch (e) {
+        console.error('Query execution error:', e);
+        throw e;
       }
-      console.log('Fetched contractors:', data);
-      return data as Contractor[];
     }
   });
 
@@ -118,92 +130,100 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Featured Contractors */}
-        <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="animate-in">
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Featured Contractors</h2>
-            <p className="mt-2 text-gray-500">Top-rated professionals in London (4★ and above)</p>
-            
-            {isLoading && (
-              <div className="text-center py-12">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-              </div>
-            )}
+      
+      {/* Featured Contractors */}
+      <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="animate-in">
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900">Featured Contractors</h2>
+          <p className="mt-2 text-gray-500">Top professionals in London</p>
+          
+          {isLoading && (
+            <div className="text-center py-12">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+            </div>
+          )}
 
-            {error && (
-              <div className="text-center py-12 text-red-500">
-                Failed to load contractors. Please try again later.
-              </div>
-            )}
-            
-            <div className="grid gap-6 mt-8 md:grid-cols-2 lg:grid-cols-3">
-              {filteredContractors.map((contractor) => (
-                <a 
-                  key={contractor.id} 
-                  href={`/${contractor.location.toLowerCase().replace(' ', '-')}/${contractor.specialty.toLowerCase()}/${contractor.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <Card className="overflow-hidden transition-all hover:shadow-lg cursor-pointer">
-                    <img
-                      src={contractor.images?.[0] || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e'}
-                      alt={contractor.business_name}
-                      className="object-cover w-full h-48"
-                      loading="lazy"
-                    />
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900">{contractor.business_name}</h3>
-                        <Badge>{contractor.specialty}</Badge>
-                      </div>
-                      <div className="flex items-center mt-2 text-sm text-gray-500">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {contractor.location}
-                      </div>
-                      {contractor.specialty === 'Building' && contractor.project_types && (
-                        <div className="mt-3">
-                          <div className="flex flex-wrap gap-1">
-                            {contractor.project_types.slice(0, 3).map((type) => (
-                              <Badge key={type} variant="secondary" className="text-xs">
-                                {type}
-                              </Badge>
-                            ))}
-                            {contractor.project_types.length > 3 && (
-                              <Badge variant="secondary" className="text-xs">
-                                +{contractor.project_types.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center">
-                          <Star className="w-4 h-4 text-yellow-400" />
-                          <span className="ml-1 text-sm font-medium">{contractor.rating}</span>
-                          <span className="ml-1 text-sm text-gray-500">
-                            ({contractor.review_count} reviews)
-                          </span>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
-                      </div>
+          {error && (
+            <div className="text-center py-12 text-red-500">
+              <p>Failed to load contractors. Please try again later.</p>
+              <p className="text-sm mt-2">{error.message}</p>
+            </div>
+          )}
+
+          {!isLoading && !error && filteredContractors.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              No contractors found matching your criteria.
+            </div>
+          )}
+          
+          <div className="grid gap-6 mt-8 md:grid-cols-2 lg:grid-cols-3">
+            {filteredContractors.map((contractor) => (
+              <a 
+                key={contractor.id} 
+                href={`/${contractor.location.toLowerCase().replace(' ', '-')}/${contractor.specialty.toLowerCase()}/${contractor.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <Card className="overflow-hidden transition-all hover:shadow-lg cursor-pointer">
+                  <img
+                    src={contractor.images?.[0] || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e'}
+                    alt={contractor.business_name}
+                    className="object-cover w-full h-48"
+                    loading="lazy"
+                  />
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-gray-900">{contractor.business_name}</h3>
+                      <Badge>{contractor.specialty}</Badge>
                     </div>
-                  </Card>
-                </a>
-              ))}
-            </div>
+                    <div className="flex items-center mt-2 text-sm text-gray-500">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      {contractor.location}
+                    </div>
+                    {contractor.specialty === 'Building' && contractor.project_types && (
+                      <div className="mt-3">
+                        <div className="flex flex-wrap gap-1">
+                          {contractor.project_types.slice(0, 3).map((type) => (
+                            <Badge key={type} variant="secondary" className="text-xs">
+                              {type}
+                            </Badge>
+                          ))}
+                          {contractor.project_types.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{contractor.project_types.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="flex items-center">
+                        <Star className="w-4 h-4 text-yellow-400" />
+                        <span className="ml-1 text-sm font-medium">{contractor.rating}</span>
+                        <span className="ml-1 text-sm text-gray-500">
+                          ({contractor.review_count} reviews)
+                        </span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </div>
+                </Card>
+              </a>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* AdSense Section */}
-        <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="text-center">
-            {/* AdSense placeholder - Replace with actual AdSense code */}
-            <div id="contractor-list-ads" className="min-h-[250px] bg-gray-100 flex items-center justify-center">
-              <span className="text-gray-400">Advertisement Space</span>
-            </div>
+      {/* AdSense Section */}
+      <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="text-center">
+          {/* AdSense placeholder - Replace with actual AdSense code */}
+          <div id="contractor-list-ads" className="min-h-[250px] bg-gray-100 flex items-center justify-center">
+            <span className="text-gray-400">Advertisement Space</span>
           </div>
-        </section>
+        </div>
+      </section>
       </div>
       <Footer />
     </>
