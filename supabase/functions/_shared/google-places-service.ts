@@ -78,11 +78,12 @@ export class GooglePlacesService {
         'googleMapsUri',
         'internationalPhoneNumber',
         'reviews',
-        'photos.name,photos.widthPx,photos.heightPx,photos.authorAttributions',  // Specific photo fields
+        'photos',  // Request all photo fields
         'regularOpeningHours'
       ].join(',');
 
       console.log('Using field mask:', fieldMask);
+      console.log('Making request to:', `${this.baseUrl}/${placeId}`);
 
       const response = await fetch(`${this.baseUrl}/${placeId}`, {
         method: 'GET',
@@ -97,19 +98,24 @@ export class GooglePlacesService {
 
       const placeDetails = await response.json();
       
-      // Log the raw photo data for debugging
-      if (placeDetails.photos) {
-        console.log('Raw photo data:', {
-          photoCount: placeDetails.photos.length,
-          firstPhoto: placeDetails.photos[0],
-        });
+      console.log('Raw place details response:', {
+        id: placeDetails.id,
+        name: placeDetails.displayName?.text,
+        hasPhotosField: 'photos' in placeDetails,
+        photosIsArray: Array.isArray(placeDetails.photos),
+        photosLength: placeDetails.photos?.length,
+        firstPhoto: placeDetails.photos?.[0]
+      });
 
-        // Transform photos to use the format similar to the provided examples
+      // Transform photos to use the format similar to the provided examples
+      if (placeDetails.photos && Array.isArray(placeDetails.photos)) {
         placeDetails.photos = placeDetails.photos.map((photo: any) => {
           if (!photo.name) {
             console.log('Photo missing name:', photo);
             return null;
           }
+          
+          console.log('Processing photo:', photo);
           
           const photoRef = photo.name.split('/').pop();
           if (!photoRef) {
@@ -125,6 +131,13 @@ export class GooglePlacesService {
           const height = photo.heightPx || 600;
           const aspectRatio = width / height;
           
+          console.log('Photo dimensions:', {
+            width,
+            height,
+            aspectRatio,
+            photoId
+          });
+          
           let dimensions;
           if (Math.abs(aspectRatio - 1) < 0.1) {
             // Square-ish image
@@ -134,29 +147,18 @@ export class GooglePlacesService {
             dimensions = 'w231-h165';
           }
           
+          const url = `https://lh5.googleusercontent.com/p/${photoId}=${dimensions}-n-k-no-nu`;
+          console.log('Generated photo URL:', url);
+          
           return {
             ...photo,
-            url: `https://lh5.googleusercontent.com/p/${photoId}=${dimensions}-n-k-no-nu`
+            url
           };
         }).filter(Boolean); // Remove any null entries
 
-        console.log('Transformed photos:', {
-          photoCount: placeDetails.photos.length,
-          sampleUrl: placeDetails.photos[0]?.url,
-          photoUrls: placeDetails.photos.map(p => p.url),
-          originalRefs: placeDetails.photos.map(p => p.name)
-        });
       } else {
-        console.log('No photos found in response');
+        console.log('No photos array in place details:', placeDetails);
       }
-      
-      console.log('Successfully fetched place details:', {
-        id: placeDetails.id,
-        name: placeDetails.displayName?.text,
-        address: placeDetails.formattedAddress,
-        hasPhotos: Array.isArray(placeDetails.photos),
-        photoCount: placeDetails.photos?.length || 0
-      });
       
       return placeDetails;
     } catch (error) {
