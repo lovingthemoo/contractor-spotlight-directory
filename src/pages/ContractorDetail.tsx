@@ -1,10 +1,13 @@
 
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { MapPin, Star, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type ContractorSpecialty = Database["public"]["Enums"]["contractor_specialty"];
 
 interface Contractor {
   id: string;
@@ -12,7 +15,7 @@ interface Contractor {
   images: string[];
   rating: number;
   review_count: number;
-  specialty: string;
+  specialty: ContractorSpecialty;
   location: string;
   description: string;
   slug: string;
@@ -24,11 +27,19 @@ const ContractorDetail = () => {
   const { data: contractor, isLoading, error } = useQuery({
     queryKey: ['contractor', companyName],
     queryFn: async () => {
+      if (!service) throw new Error("Service is required");
+      
+      // Convert service to proper enum value
+      const specialty = service.charAt(0).toUpperCase() + service.slice(1).toLowerCase();
+      if (!isValidSpecialty(specialty)) {
+        throw new Error("Invalid specialty");
+      }
+
       const { data, error } = await supabase
         .from('contractors')
         .select('*')
         .eq('slug', companyName)
-        .eq('specialty', service?.toUpperCase())
+        .eq('specialty', specialty)
         .single();
       
       if (error) throw error;
@@ -36,6 +47,11 @@ const ContractorDetail = () => {
     },
     enabled: !!companyName && !!service
   });
+
+  // Helper function to validate specialty
+  function isValidSpecialty(value: string): value is ContractorSpecialty {
+    return ['Electrical', 'Plumbing', 'Roofing', 'Building', 'Home Repair', 'Gardening', 'Construction', 'Handyman'].includes(value);
+  }
 
   if (isLoading) {
     return (
