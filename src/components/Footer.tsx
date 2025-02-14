@@ -35,11 +35,11 @@ const Footer = () => {
           <div>
             <h3 className="text-xl font-bold text-white mb-4">Our Services</h3>
             <ul className="space-y-2">
-              <li><Link to="/central-london/electrical/search" className="hover:text-primary">Electrical Services</Link></li>
-              <li><Link to="/central-london/plumbing/search" className="hover:text-primary">Plumbing Services</Link></li>
-              <li><Link to="/central-london/building/search" className="hover:text-primary">Building & Construction</Link></li>
-              <li><Link to="/central-london/roofing/search" className="hover:text-primary">Roofing Services</Link></li>
-              <li><Link to="/central-london/gardening/search" className="hover:text-primary">Gardening & Landscaping</Link></li>
+              <li><Link to="/central-london/electrical/search" className="hover:text-primary">Find Electrical Services</Link></li>
+              <li><Link to="/central-london/plumbing/search" className="hover:text-primary">Find Plumbing Services</Link></li>
+              <li><Link to="/central-london/building/search" className="hover:text-primary">Find Building & Construction</Link></li>
+              <li><Link to="/central-london/roofing/search" className="hover:text-primary">Find Roofing Services</Link></li>
+              <li><Link to="/central-london/gardening/search" className="hover:text-primary">Find Gardening & Landscaping</Link></li>
             </ul>
           </div>
 
