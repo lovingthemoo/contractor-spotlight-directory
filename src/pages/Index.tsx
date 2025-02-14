@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, MapPin, ChevronRight, Star } from "lucide-react";
+import { Search, MapPin, ChevronRight, Star, Clock, Phone, Globe } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,18 @@ interface Contractor {
   typical_project_size?: string;
   minimum_project_value?: number;
   maximum_project_value?: number;
+  google_place_name?: string;
+  google_formatted_address?: string;
+  google_formatted_phone?: string;
+  website_description?: string;
+  founded_year?: number;
+  years_in_business?: number;
+  google_reviews?: {
+    rating: number;
+    text: string;
+    time: string;
+    author_name: string;
+  }[];
 }
 
 const Index = () => {
@@ -182,10 +194,32 @@ const Index = () => {
                         <h3 className="font-semibold text-gray-900">{contractor.business_name}</h3>
                         <Badge>{contractor.specialty}</Badge>
                       </div>
-                      <div className="flex items-center mt-2 text-sm text-gray-500">
-                        <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
-                        {contractor.location}
+                      
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center text-sm text-gray-500">
+                          <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
+                          {contractor.google_formatted_address || contractor.location}
+                        </div>
+                        
+                        {contractor.google_formatted_phone && (
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Phone className="w-4 h-4 mr-1" aria-hidden="true" />
+                            {contractor.google_formatted_phone}
+                          </div>
+                        )}
+                        
+                        {contractor.years_in_business && (
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Clock className="w-4 h-4 mr-1" aria-hidden="true" />
+                            {contractor.years_in_business} years in business
+                          </div>
+                        )}
                       </div>
+
+                      <p className="mt-3 text-sm text-gray-600 line-clamp-2">
+                        {contractor.website_description || contractor.description}
+                      </p>
+
                       {contractor.specialty === 'Building' && contractor.project_types && (
                         <div className="mt-3">
                           <div className="flex flex-wrap gap-1">
@@ -202,6 +236,7 @@ const Index = () => {
                           </div>
                         </div>
                       )}
+
                       <div className="flex items-center justify-between mt-4">
                         <div className="flex items-center">
                           <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />

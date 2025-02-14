@@ -92,6 +92,11 @@ export type Database = {
           created_at: string
           description: string | null
           email: string | null
+          founded_year: number | null
+          google_formatted_address: string | null
+          google_formatted_phone: string | null
+          google_place_name: string | null
+          google_reviews: Json | null
           id: string
           identity_verified: boolean | null
           images: string[] | null
@@ -122,6 +127,7 @@ export type Database = {
           typical_project_size: string | null
           updated_at: string
           vat_number: string | null
+          website_description: string | null
           website_url: string | null
           years_in_business: number | null
         }
@@ -133,6 +139,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           email?: string | null
+          founded_year?: number | null
+          google_formatted_address?: string | null
+          google_formatted_phone?: string | null
+          google_place_name?: string | null
+          google_reviews?: Json | null
           id?: string
           identity_verified?: boolean | null
           images?: string[] | null
@@ -163,6 +174,7 @@ export type Database = {
           typical_project_size?: string | null
           updated_at?: string
           vat_number?: string | null
+          website_description?: string | null
           website_url?: string | null
           years_in_business?: number | null
         }
@@ -174,6 +186,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           email?: string | null
+          founded_year?: number | null
+          google_formatted_address?: string | null
+          google_formatted_phone?: string | null
+          google_place_name?: string | null
+          google_reviews?: Json | null
           id?: string
           identity_verified?: boolean | null
           images?: string[] | null
@@ -204,6 +221,7 @@ export type Database = {
           typical_project_size?: string | null
           updated_at?: string
           vat_number?: string | null
+          website_description?: string | null
           website_url?: string | null
           years_in_business?: number | null
         }
