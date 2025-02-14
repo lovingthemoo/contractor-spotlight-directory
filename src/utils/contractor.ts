@@ -137,20 +137,32 @@ export const getDisplayImage = (contractor: Contractor): string | undefined => {
 
   // First priority: Company-specific uploaded images
   if (contractor.images && contractor.images.length > 0) {
-    console.log('Using uploaded image:', contractor.images[0]);
-    return contractor.images[0];
+    const validUploadedImage = contractor.images.find(img => img && img.startsWith('http'));
+    if (validUploadedImage) {
+      console.log('Using uploaded image:', validUploadedImage);
+      return validUploadedImage;
+    }
   }
   
   // Second priority: Google photos
   if (contractor.google_photos && contractor.google_photos.length > 0) {
-    const photo = contractor.google_photos[0];
-    if (photo?.url) {
-      console.log('Using Google photo:', photo.url);
-      return photo.url;
+    // Find the first valid Google photo
+    const validGooglePhoto = contractor.google_photos.find(photo => 
+      photo && 
+      typeof photo === 'object' && 
+      photo.url && 
+      photo.url.startsWith('http')
+    );
+
+    if (validGooglePhoto) {
+      console.log('Using Google photo:', validGooglePhoto.url);
+      return validGooglePhoto.url;
+    } else {
+      console.warn('Google photos found but none were valid for:', contractor.business_name);
     }
   }
   
-  console.log('No images found for:', contractor.business_name);
+  console.log('No valid images found for:', contractor.business_name);
   // If no image is available, return undefined
   return undefined;
 };

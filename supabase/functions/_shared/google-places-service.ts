@@ -1,3 +1,4 @@
+
 import { PlaceSearchResult } from './types.ts';
 
 export class GooglePlacesService {
@@ -81,7 +82,7 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Simplified field mask focusing on photos
+      // Updated field mask to include all necessary photo metadata
       const fieldMask = [
         'id',
         'displayName',
