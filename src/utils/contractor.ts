@@ -146,7 +146,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   return contractor;
 };
 
-export const getDisplayImage = (contractor: Contractor): string => {
+export const getDisplayImage = (contractor: Contractor): string | undefined => {
   console.log('Getting display image for:', contractor.business_name, {
     has_google_photos: !!contractor.google_photos?.length,
     has_images: !!contractor.images?.length,
@@ -169,9 +169,9 @@ export const getDisplayImage = (contractor: Contractor): string => {
     return contractor.images[0];
   }
   
-  // Fallback: Default construction image
-  console.log('Using fallback image for:', contractor.business_name);
-  return 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f';
+  // If no image is available, return undefined
+  console.log('No image available for:', contractor.business_name);
+  return undefined;
 };
 
 export const getDisplayAddress = (contractor: Contractor): string => {

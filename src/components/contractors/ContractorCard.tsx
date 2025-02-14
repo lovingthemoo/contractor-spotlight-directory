@@ -6,7 +6,7 @@ import type { Contractor } from "@/types/contractor";
 
 interface ContractorCardProps {
   contractor: Contractor;
-  getDisplayImage: (contractor: Contractor) => string;
+  getDisplayImage: (contractor: Contractor) => string | undefined;
   getDisplayAddress: (contractor: Contractor) => string;
 }
 
@@ -30,10 +30,6 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
               src={imageUrl}
               alt={`${contractor.business_name} project`}
               className="object-cover w-full h-full transform transition-transform duration-300 hover:scale-105"
-              onError={(e) => {
-                e.currentTarget.src = 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f';
-                console.log('Image failed to load, using fallback:', contractor.business_name);
-              }}
             />
           ) : (
             <div className="w-full h-full bg-gray-200 flex items-center justify-center">
