@@ -32,32 +32,39 @@ Deno.serve(async (req) => {
       throw new Error('Google Places API key not configured');
     }
 
-    if (!GOOGLE_PLACES_API_KEY.startsWith('AIza')) {
-      throw new Error('Invalid Google Places API key format');
-    }
-
+    console.log('Starting enrichment process...');
     const googlePlacesService = new GooglePlacesService(GOOGLE_PLACES_API_KEY);
     const contractorService = new ContractorService();
 
     // Test API connection
     await googlePlacesService.testApiConnection();
+    console.log('API connection test successful');
 
     let allPlaces: PlaceSearchResult[] = [];
+    let searchErrors = 0;
 
     // Search across all combinations
     for (const searchQuery of SEARCH_QUERIES) {
       for (const location of LOCATIONS) {
-        console.log(`Searching for: "${searchQuery}" in "${location}"`);
-        
-        const places = await googlePlacesService.searchPlaces(searchQuery, location);
-        
-        // Filter out duplicates
-        const newPlaces = places.filter(
-          place => !allPlaces.some(existing => existing.id === place.id)
-        );
-        allPlaces = [...allPlaces, ...newPlaces];
+        try {
+          console.log(`Searching for: "${searchQuery}" in "${location}"`);
+          
+          const places = await googlePlacesService.searchPlaces(searchQuery, location);
+          
+          // Filter out duplicates
+          const newPlaces = places.filter(
+            place => !allPlaces.some(existing => existing.id === place.id)
+          );
+          allPlaces = [...allPlaces, ...newPlaces];
 
-        await new Promise(resolve => setTimeout(resolve, 200));
+          console.log(`Found ${newPlaces.length} new places in ${location}`);
+          
+          // Rate limiting
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (error) {
+          console.error(`Search error for ${searchQuery} in ${location}:`, error);
+          searchErrors++;
+        }
       }
     }
 
@@ -67,7 +74,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         message: 'No places found in search response',
         searchQueries: SEARCH_QUERIES,
-        locations: LOCATIONS
+        locations: LOCATIONS,
+        searchErrors
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 404
@@ -76,6 +84,8 @@ Deno.serve(async (req) => {
 
     // Process each place
     let processedCount = 0;
+    let errorCount = 0;
+
     for (const place of allPlaces) {
       try {
         console.log(`Processing place: ${place.displayName?.text}`);
@@ -87,6 +97,7 @@ Deno.serve(async (req) => {
           google_place_id: placeDetails.id,
           google_place_name: placeDetails.displayName?.text || '',
           google_formatted_address: placeDetails.formattedAddress || '',
+          google_formatted_phone: placeDetails.internationalPhoneNumber || '',
           location: 'London',
           rating: placeDetails.rating,
           review_count: placeDetails.userRatingCount,
@@ -106,22 +117,18 @@ Deno.serve(async (req) => {
             '-' + placeDetails.id.substring(0, 6)
         };
 
-        // Log the data we're about to insert
-        console.log('Attempting to insert contractor data:', {
-          businessName: contractorData.business_name,
-          placeId: contractorData.google_place_id,
-          address: contractorData.google_formatted_address
-        });
-
         if (await contractorService.upsertContractor(contractorData)) {
           processedCount++;
           console.log(`Successfully processed: ${contractorData.business_name}`);
         } else {
+          errorCount++;
           console.error(`Failed to process: ${contractorData.business_name}`);
         }
 
+        // Rate limiting
         await new Promise(resolve => setTimeout(resolve, 200));
       } catch (error) {
+        errorCount++;
         console.error('Error processing place:', error);
       }
     }
@@ -129,7 +136,9 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       message: 'Processing completed',
       totalFound: allPlaces.length,
-      processed: processedCount
+      processed: processedCount,
+      errors: errorCount,
+      searchErrors
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200

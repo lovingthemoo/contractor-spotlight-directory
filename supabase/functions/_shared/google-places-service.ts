@@ -65,10 +65,25 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Fixed field mask to include only the fields we need and that are valid
+      // Include reviews and photos in the field mask
+      const fieldMask = [
+        'id',
+        'displayName',
+        'formattedAddress',
+        'rating',
+        'userRatingCount',
+        'websiteUri',
+        'types',
+        'editorialSummary',
+        'googleMapsUri',
+        'internationalPhoneNumber',
+        'reviews',
+        'photos'
+      ].join(',');
+
       const response = await fetch(`${this.baseUrl}/${placeId}`, {
         method: 'GET',
-        headers: this.getHeaders('id,displayName,formattedAddress,rating,userRatingCount,websiteUri,types,editorialSummary')
+        headers: this.getHeaders(fieldMask)
       });
 
       if (!response.ok) {
@@ -81,7 +96,11 @@ export class GooglePlacesService {
       console.log('Successfully fetched place details:', {
         id: placeDetails.id,
         name: placeDetails.displayName?.text,
-        address: placeDetails.formattedAddress
+        address: placeDetails.formattedAddress,
+        hasReviews: Array.isArray(placeDetails.reviews),
+        reviewCount: placeDetails.reviews?.length || 0,
+        hasPhotos: Array.isArray(placeDetails.photos),
+        photoCount: placeDetails.photos?.length || 0
       });
       
       return placeDetails;
