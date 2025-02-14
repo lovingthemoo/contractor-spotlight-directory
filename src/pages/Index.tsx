@@ -24,7 +24,7 @@ const Index = () => {
         const response = await supabase
           .from('contractors')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('rating', { ascending: false }); // Order by rating descending to show highest rated first
         
         if (response.error) {
           console.error('Supabase error:', response.error);
@@ -99,8 +99,10 @@ const Index = () => {
         {/* Featured Contractors */}
         <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8" aria-labelledby="featured-heading">
           <div className="animate-in">
-            <h2 id="featured-heading" className="text-2xl font-bold tracking-tight text-gray-900">Featured Contractors</h2>
-            <p className="mt-2 text-gray-500">Top professionals in London</p>
+            <h2 id="featured-heading" className="text-2xl font-bold tracking-tight text-gray-900">
+              {selectedSpecialty === "All" ? "Featured Contractors" : `${selectedSpecialty} Contractors`}
+            </h2>
+            <p className="mt-2 text-gray-500">Top rated professionals in London</p>
             
             {isLoading && (
               <div className="text-center py-12" role="status" aria-live="polite">

@@ -95,6 +95,11 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
   // Format website URL
   const website_url = formatWebsiteUrl(dbContractor.website_url);
 
+  // Ensure rating is a number with 1 decimal place
+  const rating = dbContractor.rating 
+    ? Number(Number(dbContractor.rating).toFixed(1))
+    : 0;
+
   return {
     ...dbContractor,
     google_reviews,
@@ -102,7 +107,7 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
     certifications,
     years_in_business,
     website_url,
-    rating: dbContractor.rating || 0,
+    rating,
     review_count: dbContractor.review_count || 0,
     images: dbContractor.images || []
   };
