@@ -24,9 +24,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
   // Format review text
   const reviewText = contractor.review_count === 1 
     ? "1 review" 
-    : contractor.review_count > 0 
-      ? `${contractor.review_count} reviews`
-      : "0 reviews";
+    : `${contractor.review_count} reviews`;
   
   return (
     <Link 
@@ -62,33 +60,41 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
               </div>
             )}
             
-            <div className="flex items-center text-sm text-gray-500">
-              <Clock className="w-4 h-4 mr-1 shrink-0" aria-label="Years in business" />
-              <span>5 years in business</span>
-            </div>
+            {contractor.years_in_business && (
+              <div className="flex items-center text-sm text-gray-500">
+                <Clock className="w-4 h-4 mr-1 shrink-0" aria-label="Years in business" />
+                <span>{contractor.years_in_business} years in business</span>
+              </div>
+            )}
           </div>
 
           <p className="mt-3 text-sm text-gray-600 line-clamp-2">
             {contractor.website_description || contractor.description}
           </p>
 
-          <div className="mt-3">
-            <div className="flex flex-wrap gap-1" role="list" aria-label="Project types">
-              {['New Builds', 'Extensions', 'Renovations'].map((type) => (
-                <Badge key={type} variant="secondary" className="text-xs">
-                  {type}
-                </Badge>
-              ))}
-              <Badge variant="secondary" className="text-xs">
-                +2 more
-              </Badge>
+          {contractor.project_types && contractor.project_types.length > 0 && (
+            <div className="mt-3">
+              <div className="flex flex-wrap gap-1" role="list" aria-label="Project types">
+                {contractor.project_types.slice(0, 3).map((type) => (
+                  <Badge key={type} variant="secondary" className="text-xs">
+                    {type}
+                  </Badge>
+                ))}
+                {contractor.project_types.length > 3 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{contractor.project_types.length - 3} more
+                  </Badge>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center" aria-label={`Rating: ${contractor.rating.toFixed(1)} out of 5 stars`}>
+            <div className="flex items-center" aria-label={`Rating: ${contractor.rating?.toFixed(1) || 'No'} out of 5 stars`}>
               <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
-              <span className="ml-1 text-sm font-medium">4.5</span>
+              <span className="ml-1 text-sm font-medium">
+                {contractor.rating?.toFixed(1) || 'No rating'}
+              </span>
               <span className="ml-1 text-sm text-gray-500">
                 ({reviewText})
               </span>

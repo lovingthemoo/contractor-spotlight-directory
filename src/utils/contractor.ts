@@ -20,14 +20,10 @@ const formatWebsiteUrl = (url: string | null | undefined): string | undefined =>
   
   let formattedUrl = url.trim();
   
-  // Check if it's a valid URL
   try {
-    // Add https:// if no protocol is specified
     if (!formattedUrl.match(/^https?:\/\//i)) {
       formattedUrl = `https://${formattedUrl}`;
     }
-    
-    // Test if it's a valid URL
     new URL(formattedUrl);
     return formattedUrl;
   } catch (e) {
@@ -40,6 +36,7 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
   let google_reviews: GoogleReview[] | undefined;
   let google_photos: GooglePhoto[] | undefined;
   
+  // Parse Google reviews if available
   if (dbContractor.google_reviews) {
     try {
       const reviewsData = typeof dbContractor.google_reviews === 'string' 
@@ -60,6 +57,7 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
     }
   }
 
+  // Parse Google photos if available
   if (dbContractor.google_photos) {
     try {
       const photosData = typeof dbContractor.google_photos === 'string'
@@ -80,10 +78,13 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
     }
   }
 
-  // Parse years in business
-  const years_in_business = extractYearsInBusiness(dbContractor.years_in_business) || 5; // Default to 5 years if not specified
+  // Use database years_in_business or calculate from founded_year if available
+  const years_in_business = dbContractor.years_in_business || 
+    (dbContractor.founded_year 
+      ? new Date().getFullYear() - dbContractor.founded_year 
+      : undefined);
 
-  // Transform certification data
+  // Use database certifications or parse from string if needed
   const certifications = dbContractor.certifications 
     ? (Array.isArray(dbContractor.certifications) 
         ? dbContractor.certifications 
@@ -92,14 +93,18 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
           : undefined)
     : undefined;
 
-  // Format website URL
   const website_url = formatWebsiteUrl(dbContractor.website_url);
 
-  // Set default project types if none are specified
-  const project_types = dbContractor.project_types || ['New Builds', 'Extensions', 'Renovations', 'Property Maintenance', 'General Building'];
+  // Use database rating if available, or calculate from Google reviews if present
+  const rating = dbContractor.rating 
+    ? Number(Number(dbContractor.rating).toFixed(1))
+    : google_reviews && google_reviews.length > 0
+      ? Number((google_reviews.reduce((sum, review) => sum + review.rating, 0) / google_reviews.length).toFixed(1))
+      : undefined;
 
-  // Ensure rating is 4.5 if not specified (matching the image)
-  const rating = 4.5;
+  // Use database review count if available, or count Google reviews if present
+  const review_count = dbContractor.review_count || 
+    (google_reviews ? google_reviews.length : 0);
 
   return {
     ...dbContractor,
@@ -109,9 +114,9 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
     years_in_business,
     website_url,
     rating,
-    project_types,
-    review_count: dbContractor.review_count || 0,
-    images: dbContractor.images || []
+    review_count,
+    images: dbContractor.images || [],
+    project_types: dbContractor.project_types || []
   };
 };
 
@@ -130,5 +135,5 @@ export const getDisplayImage = (contractor: Contractor): string => {
 };
 
 export const getDisplayAddress = (contractor: Contractor): string => {
-  return contractor.google_formatted_address || contractor.location || 'London, London';
+  return contractor.google_formatted_address || contractor.location || 'London';
 };
