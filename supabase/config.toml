@@ -1,5 +1,5 @@
 
 project_id = "wjceenmkqpyjntndqikg"
 
-[functions.import-csv]
+[functions.enrich-google-data]
 verify_jwt = true
