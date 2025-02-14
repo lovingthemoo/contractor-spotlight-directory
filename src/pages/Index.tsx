@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +23,7 @@ const Index = () => {
         const response = await supabase
           .from('contractors')
           .select('*')
-          .order('rating', { ascending: false }); // Order by rating descending to show highest rated first
+          .order('rating', { ascending: false });
         
         if (response.error) {
           console.error('Supabase error:', response.error);
@@ -36,7 +35,9 @@ const Index = () => {
           return [];
         }
 
-        const transformedData = response.data.map(contractor => transformContractor(contractor));
+        const transformedData = await Promise.all(
+          response.data.map(contractor => transformContractor(contractor))
+        );
         console.log('Transformed contractors:', transformedData);
         return transformedData;
       } catch (e) {

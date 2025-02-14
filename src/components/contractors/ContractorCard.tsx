@@ -92,7 +92,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
           )}
 
           <div className="flex items-center justify-between mt-4">
-            {contractor.rating !== undefined && (
+            {contractor.rating !== undefined && contractor.rating > 0 && (
               <div className="flex items-center">
                 <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
                 <span className="ml-1 text-sm font-medium">

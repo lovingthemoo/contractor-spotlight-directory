@@ -1,18 +1,6 @@
 
 import { Contractor, DatabaseContractor, GooglePhoto, GoogleReview } from "@/types/contractor";
-
-const extractYearsInBusiness = (value: string | number | null): number | undefined => {
-  if (!value) return undefined;
-  
-  if (typeof value === 'number') return value;
-  
-  const match = String(value).match(/(\d+)(?:\+)?\s*(?:years?)/i);
-  if (match && match[1]) {
-    return parseInt(match[1], 10);
-  }
-  
-  return undefined;
-};
+import { supabase } from "@/integrations/supabase/client";
 
 const formatWebsiteUrl = (url: string | null | undefined): string | undefined => {
   if (!url) return undefined;
@@ -31,10 +19,11 @@ const formatWebsiteUrl = (url: string | null | undefined): string | undefined =>
   }
 };
 
-export const transformContractor = (dbContractor: DatabaseContractor): Contractor => {
+export const transformContractor = async (dbContractor: DatabaseContractor): Promise<Contractor> => {
   let google_reviews: GoogleReview[] | undefined;
   let google_photos: GooglePhoto[] | undefined;
   
+  // Parse Google reviews if available
   if (dbContractor.google_reviews) {
     try {
       const reviewsData = typeof dbContractor.google_reviews === 'string' 
@@ -55,6 +44,7 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
     }
   }
 
+  // Parse Google photos if available
   if (dbContractor.google_photos) {
     try {
       const photosData = typeof dbContractor.google_photos === 'string'
@@ -75,33 +65,34 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
     }
   }
 
-  const years_in_business = dbContractor.years_in_business || 
-    (dbContractor.founded_year 
-      ? new Date().getFullYear() - dbContractor.founded_year 
-      : undefined);
+  // Check if enrichment is needed
+  const needsEnrichment = !dbContractor.rating || 
+    !dbContractor.years_in_business || 
+    !dbContractor.description ||
+    !dbContractor.google_reviews;
 
-  const certifications = dbContractor.certifications 
-    ? (Array.isArray(dbContractor.certifications) 
-        ? dbContractor.certifications 
-        : typeof dbContractor.certifications === 'string'
-          ? JSON.parse(dbContractor.certifications)
-          : undefined)
-    : undefined;
+  if (needsEnrichment) {
+    // Update the contractor to mark it for enrichment
+    await supabase
+      .from('contractors')
+      .update({
+        needs_google_enrichment: true,
+        last_enrichment_attempt: null
+      })
+      .eq('id', dbContractor.id);
+  }
 
   const website_url = formatWebsiteUrl(dbContractor.website_url);
 
-  const rating = dbContractor.rating 
-    ? Number(dbContractor.rating)
-    : undefined;
-
+  // Only use values that are actually present in the database
   return {
     ...dbContractor,
     google_reviews,
     google_photos,
-    certifications,
-    years_in_business,
+    certifications: dbContractor.certifications || undefined,
+    years_in_business: dbContractor.years_in_business || undefined,
     website_url,
-    rating,
+    rating: dbContractor.rating || undefined,
     review_count: dbContractor.review_count || 0,
     images: dbContractor.images || [],
     project_types: dbContractor.project_types || []
