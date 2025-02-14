@@ -16,23 +16,29 @@ const SearchBar = ({ searchQuery, setSearchQuery, "aria-label": ariaLabel }: Sea
       role="search"
       onSubmit={(e) => e.preventDefault()}
     >
-      <label className="sr-only" htmlFor="contractor-search">
-        Search contractors
-      </label>
-      <Search className="w-5 h-5 mx-3 text-gray-400" aria-hidden="true" />
+      <Search 
+        className="w-5 h-5 mx-3 text-gray-400" 
+        aria-hidden="true"
+        title="Search icon" 
+      />
       <Input
         type="search"
         id="contractor-search"
-        name="contractor-search"
-        placeholder="Search contractors..."
-        className="flex-1 border-0 focus-visible:ring-0"
+        name="search"
+        placeholder="Enter contractor name, specialty, or location..."
+        className="flex-1 border-0 focus-visible:ring-0 [-webkit-user-select:text] [user-select:text]"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        aria-label={ariaLabel}
+        title="Search contractors"
+        aria-label={ariaLabel || "Search contractors"}
       />
       <Badge variant="secondary" className="mr-2">
-        <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
-        London
+        <MapPin 
+          className="w-4 h-4 mr-1" 
+          aria-hidden="true" 
+          title="Location icon"
+        />
+        <span>London</span>
       </Badge>
     </form>
   );

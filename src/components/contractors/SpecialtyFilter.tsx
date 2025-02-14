@@ -22,7 +22,7 @@ const SpecialtyFilter = ({
           Filter by Service Type
         </h2>
         <RadioGroup 
-          className="flex flex-wrap gap-4 mt-4"
+          className="flex flex-wrap gap-4 mt-4 [-webkit-user-select:text] [user-select:text]"
           defaultValue={selectedSpecialty}
           onValueChange={setSelectedSpecialty}
           aria-label={ariaLabel || "Service type filter"}
@@ -33,8 +33,14 @@ const SpecialtyFilter = ({
               <RadioGroupItem 
                 value={specialty} 
                 id={`specialty-${specialty.toLowerCase()}`}
+                title={`Select ${specialty} specialty`}
               />
-              <Label htmlFor={`specialty-${specialty.toLowerCase()}`}>{specialty}</Label>
+              <Label 
+                htmlFor={`specialty-${specialty.toLowerCase()}`}
+                className="cursor-pointer"
+              >
+                {specialty}
+              </Label>
             </div>
           ))}
         </RadioGroup>

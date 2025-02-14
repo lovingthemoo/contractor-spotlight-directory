@@ -45,9 +45,12 @@ const Index = () => {
       }
     },
     meta: {
-      cacheControl: 'max-age=3600',
-      contentType: 'utf-8',
-      xContentTypeOptions: 'nosniff'
+      headers: {
+        'Cache-Control': 'max-age=3600',
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+      }
     }
   });
 
