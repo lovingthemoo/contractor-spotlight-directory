@@ -29,43 +29,65 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Search for builders in London
-    const searchQuery = "builders in London";
-    const findPlaceUrl = `https://places.googleapis.com/v1/places:searchText`;
-    
-    console.log('Initiating search for:', searchQuery);
-    
-    const searchResponse = await fetch(findPlaceUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.types'
-      },
-      body: JSON.stringify({
-        textQuery: searchQuery,
-        maxResultCount: 20, // Adjust as needed
-        languageCode: "en-GB",
-        regionCode: "GB"
-      })
-    });
+    // Search for builders in London with more specific terms
+    const searchQueries = [
+      "construction companies in London",
+      "building contractors London",
+      "home builders London",
+      "building companies London"
+    ];
 
-    const searchData = await searchResponse.json();
-    console.log('Search response:', searchData);
+    let allHighRatedPlaces: PlaceSearchResult[] = [];
 
-    if (!searchData.places || !Array.isArray(searchData.places)) {
-      throw new Error('No places found in search response');
+    // Try multiple search queries to get more results
+    for (const searchQuery of searchQueries) {
+      console.log('Searching for:', searchQuery);
+      
+      const findPlaceUrl = `https://places.googleapis.com/v1/places:searchText`;
+      const searchResponse = await fetch(findPlaceUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.types,places.primaryType'
+        },
+        body: JSON.stringify({
+          textQuery: searchQuery,
+          maxResultCount: 20,
+          languageCode: "en-GB",
+          regionCode: "GB",
+          locationBias: {
+            circle: {
+              center: {
+                latitude: 51.5074,  // London's approximate center
+                longitude: -0.1278
+              },
+              radius: 20000.0  // 20km radius
+            }
+          }
+        })
+      });
+
+      const searchData = await searchResponse.json();
+      console.log('Search response for query:', searchQuery, 'Response:', searchData);
+
+      if (searchData.places && Array.isArray(searchData.places)) {
+        // Filter for places with rating >= 4.0
+        const highRatedPlaces = searchData.places.filter((place: PlaceSearchResult) => 
+          place.rating && place.rating >= 4.0
+        );
+        allHighRatedPlaces = [...allHighRatedPlaces, ...highRatedPlaces];
+      }
     }
 
-    // Filter for places with rating >= 4.0
-    const highRatedPlaces = searchData.places.filter((place: PlaceSearchResult) => 
-      place.rating && place.rating >= 4.0
-    );
+    if (allHighRatedPlaces.length === 0) {
+      throw new Error('No high-rated places found in any search');
+    }
 
-    console.log(`Found ${highRatedPlaces.length} high-rated places`);
+    console.log(`Found total of ${allHighRatedPlaces.length} high-rated places`);
 
     // Process each high-rated place
-    for (const place of highRatedPlaces) {
+    for (const place of allHighRatedPlaces) {
       try {
         // Get detailed place information
         const placeUrl = `https://places.googleapis.com/v1/places/${place.id}`;
@@ -77,7 +99,7 @@ Deno.serve(async (req) => {
         });
 
         const placeDetails = await placeResponse.json();
-        console.log('Place details:', placeDetails);
+        console.log('Place details for:', place.displayName.text, 'Details:', placeDetails);
 
         // Prepare contractor data
         const contractorData = {
@@ -127,7 +149,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       message: 'Processing completed',
-      processed: highRatedPlaces.length
+      processed: allHighRatedPlaces.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
