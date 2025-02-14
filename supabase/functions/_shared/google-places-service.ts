@@ -1,4 +1,3 @@
-
 import { PlaceSearchResult } from './types.ts';
 
 export class GooglePlacesService {
@@ -65,7 +64,7 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Expanded field mask to get more photo details
+      // Corrected field mask without the invalid placePhotoMetadata field
       const fieldMask = [
         'id',
         'displayName',
@@ -82,7 +81,6 @@ export class GooglePlacesService {
         'photos.widthPx',
         'photos.heightPx',
         'photos.authorAttributions',
-        'photos.placePhotoMetadata',
         'regularOpeningHours'
       ].join(',');
 
