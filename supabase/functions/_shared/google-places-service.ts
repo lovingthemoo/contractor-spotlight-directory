@@ -1,4 +1,3 @@
-
 import { PlaceSearchResult } from './types.ts';
 
 export class GooglePlacesService {
@@ -82,28 +81,22 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Corrected field mask without the invalid placePhotoMetadata field
+      // Simplified field mask focusing on photos
       const fieldMask = [
         'id',
         'displayName',
         'formattedAddress',
+        'photos',
         'rating',
         'userRatingCount',
         'websiteUri',
         'types',
         'editorialSummary',
         'googleMapsUri',
-        'internationalPhoneNumber',
-        'reviews',
-        'photos.name',
-        'photos.widthPx',
-        'photos.heightPx',
-        'photos.authorAttributions',
-        'regularOpeningHours'
+        'internationalPhoneNumber'
       ].join(',');
 
       console.log('Using field mask:', fieldMask);
-      console.log('Making request to:', `${this.baseUrl}/${placeId}`);
 
       const response = await fetch(`${this.baseUrl}/${placeId}`, {
         method: 'GET',
@@ -118,77 +111,64 @@ export class GooglePlacesService {
 
       const placeDetails = await response.json();
       
-      console.log('Raw place details response:', {
-        id: placeDetails.id,
-        name: placeDetails.displayName?.text,
-        hasPhotosField: 'photos' in placeDetails,
-        photosIsArray: Array.isArray(placeDetails.photos),
-        photosLength: placeDetails.photos?.length,
-        firstPhotoRaw: placeDetails.photos?.[0]
-      });
-
-      // Transform photos to use the format similar to the provided examples
+      // Log the entire raw response for debugging
+      console.log('Raw place details:', JSON.stringify(placeDetails, null, 2));
+      
+      // Process photos if they exist
       if (placeDetails.photos && Array.isArray(placeDetails.photos)) {
+        console.log(`Found ${placeDetails.photos.length} photos for place ${placeId}`);
+        
         placeDetails.photos = placeDetails.photos.map((photo: any, index: number) => {
-          if (!photo.name) {
-            console.log(`Photo ${index} missing name:`, photo);
-            return null;
-          }
-          
           console.log(`Processing photo ${index}:`, photo);
           
-          // Extract the photo reference from the full name path
-          const photoRef = photo.name.split('/').pop();
-          if (!photoRef) {
-            console.log(`Invalid photo reference for photo ${index}:`, photo.name);
+          if (!photo.name) {
+            console.error(`Photo ${index} missing name:`, photo);
             return null;
           }
 
-          // Extract the unique photo ID
-          const photoId = photoRef.replace('places/', '');
-          
-          // Calculate aspect ratio to determine dimensions
-          const width = photo.widthPx || 800;
-          const height = photo.heightPx || 600;
-          const aspectRatio = width / height;
-          
-          console.log(`Photo ${index} dimensions:`, {
-            width,
-            height,
-            aspectRatio,
-            photoId,
-            authorAttribution: photo.authorAttributions?.[0]
-          });
-          
-          // Generate both preview and full-size URLs
-          const previewDimensions = Math.abs(aspectRatio - 1) < 0.1 ? 'w231-h231' : 'w231-h165';
-          const fullDimensions = 'w1024-h768';
-          
-          const previewUrl = `https://lh5.googleusercontent.com/p/${photoId}=${previewDimensions}-n-k-no-nu`;
-          const fullUrl = `https://lh5.googleusercontent.com/p/${photoId}=${fullDimensions}-n-k-no-nu`;
-          
-          console.log(`Generated URLs for photo ${index}:`, {
-            preview: previewUrl,
-            full: fullUrl
-          });
-          
-          return {
-            id: photoId,
-            name: photo.name,
-            width,
-            height,
-            previewUrl,
-            fullUrl,
-            attribution: photo.authorAttributions?.[0]?.displayName || null
-          };
+          try {
+            // Extract the last part of the name which contains the photo reference
+            const photoRef = photo.name.split('/').pop();
+            if (!photoRef) {
+              console.error(`Invalid photo reference for photo ${index}:`, photo.name);
+              return null;
+            }
+
+            // Remove 'places/' prefix if present
+            const photoId = photoRef.replace(/^places\//, '');
+
+            // Use appropriate dimensions for each URL
+            const previewUrl = `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=231&maxWidthPx=231&key=${this.apiKey}`;
+            const fullUrl = `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=800&maxWidthPx=800&key=${this.apiKey}`;
+
+            console.log(`Generated URLs for photo ${index}:`, {
+              photoId,
+              hasPreviewUrl: !!previewUrl,
+              hasFullUrl: !!fullUrl
+            });
+
+            return {
+              id: photoId,
+              name: photo.name,
+              width: photo.widthPx || 800,
+              height: photo.heightPx || 600,
+              previewUrl,
+              fullUrl,
+              attribution: photo.authorAttributions?.[0]?.displayName || null
+            };
+          } catch (error) {
+            console.error(`Error processing photo ${index}:`, error);
+            return null;
+          }
         }).filter(Boolean); // Remove any null entries
 
-        console.log('Successfully processed photos:', {
+        console.log('Processed photos:', {
           totalPhotos: placeDetails.photos.length,
           samplePhoto: placeDetails.photos[0]
         });
       } else {
-        console.log('No photos array in place details:', placeDetails);
+        console.log('No photos found in place details');
+        placeDetails.photos = [];
       }
       
       return placeDetails;
