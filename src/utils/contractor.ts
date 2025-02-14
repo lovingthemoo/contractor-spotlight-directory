@@ -1,6 +1,20 @@
 
 import { Contractor, DatabaseContractor, GooglePhoto, GoogleReview } from "@/types/contractor";
 
+const extractYearsInBusiness = (value: string | number | null): number | undefined => {
+  if (!value) return undefined;
+  
+  if (typeof value === 'number') return value;
+  
+  // Handle string formats like "10+ years in business" or "5+ years"
+  const match = String(value).match(/(\d+)(?:\+)?\s*(?:years?)/i);
+  if (match && match[1]) {
+    return parseInt(match[1], 10);
+  }
+  
+  return undefined;
+};
+
 export const transformContractor = (dbContractor: DatabaseContractor): Contractor => {
   let google_reviews: GoogleReview[] | undefined;
   let google_photos: GooglePhoto[] | undefined;
@@ -45,10 +59,24 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
     }
   }
 
+  // Parse years in business
+  const years_in_business = extractYearsInBusiness(dbContractor.years_in_business);
+
+  // Transform certification data
+  const certifications = dbContractor.certifications 
+    ? (Array.isArray(dbContractor.certifications) 
+        ? dbContractor.certifications 
+        : typeof dbContractor.certifications === 'string'
+          ? JSON.parse(dbContractor.certifications)
+          : undefined)
+    : undefined;
+
   return {
     ...dbContractor,
     google_reviews,
     google_photos,
+    certifications,
+    years_in_business,
     rating: dbContractor.rating || 0,
     review_count: dbContractor.review_count || 0,
     images: dbContractor.images || []
