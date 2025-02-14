@@ -21,7 +21,7 @@ const Header = () => {
           </div>
           <div className="flex items-center">
             <Mail className="w-4 h-4 mr-2" />
-            <span>info@londoncontractors.com</span>
+            <span>info@protradesdirectory.co.uk</span>
           </div>
         </div>
       </div>
@@ -30,7 +30,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <nav className="flex justify-between items-center">
           <Link to="/" className="text-2xl font-bold text-primary">
-            London Contractors
+            Pro Trades Directory UK
           </Link>
           
           <div className="hidden md:flex items-center space-x-6">
@@ -38,7 +38,7 @@ const Header = () => {
             <Link to="/about" className="text-gray-600 hover:text-primary">About</Link>
             <Link to="/services" className="text-gray-600 hover:text-primary">Services</Link>
             <Link to="/contact" className="text-gray-600 hover:text-primary">Contact</Link>
-            <Button variant="outline">Register as Contractor</Button>
+            <Button variant="outline">Register as Trader</Button>
             <Button>Get a Quote</Button>
           </div>
         </nav>

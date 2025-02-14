@@ -9,8 +9,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="text-xl font-bold text-white mb-4">London Contractors</h3>
-            <p className="mb-4">Connecting you with London's most trusted and qualified contractors. All professionals are verified and rated 4★ or above.</p>
+            <h3 className="text-xl font-bold text-white mb-4">Pro Trades Directory UK</h3>
+            <p className="mb-4">Connecting you with the UK's most trusted and qualified trade professionals. All professionals are verified and rated 4★ or above.</p>
             <div className="flex space-x-4">
               <Facebook className="w-5 h-5 hover:text-primary cursor-pointer" />
               <Twitter className="w-5 h-5 hover:text-primary cursor-pointer" />
@@ -27,7 +27,7 @@ const Footer = () => {
               <li><Link to="/services" className="hover:text-primary">Our Services</Link></li>
               <li><Link to="/testimonials" className="hover:text-primary">Testimonials</Link></li>
               <li><Link to="/contact" className="hover:text-primary">Contact Us</Link></li>
-              <li><Link to="/register" className="hover:text-primary">Become a Contractor</Link></li>
+              <li><Link to="/register" className="hover:text-primary">Become a Trader</Link></li>
             </ul>
           </div>
 
@@ -57,7 +57,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center">
                 <Mail className="w-5 h-5 mr-2 text-primary" />
-                <span>info@londoncontractors.com</span>
+                <span>info@protradesdirectory.co.uk</span>
               </li>
             </ul>
           </div>
@@ -65,7 +65,7 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-12 pt-8 text-sm text-center">
-          <p>&copy; {new Date().getFullYear()} London Contractors. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Pro Trades Directory UK. All rights reserved.</p>
           <div className="mt-2 space-x-4">
             <Link to="/privacy" className="hover:text-primary">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-primary">Terms of Service</Link>
