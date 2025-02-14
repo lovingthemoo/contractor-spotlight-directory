@@ -20,15 +20,24 @@ const formatWebsiteUrl = (url: string | null | undefined): string | undefined =>
 };
 
 export const transformContractor = async (dbContractor: DatabaseContractor): Promise<Contractor> => {
+  console.log('Raw contractor data:', dbContractor);
+  
   let google_reviews: GoogleReview[] | undefined;
   let google_photos: GooglePhoto[] | undefined;
   
   // Parse Google reviews if available
   if (dbContractor.google_reviews) {
     try {
-      const reviewsData = typeof dbContractor.google_reviews === 'string' 
-        ? JSON.parse(dbContractor.google_reviews) 
-        : dbContractor.google_reviews;
+      console.log('Raw google_reviews:', dbContractor.google_reviews);
+      let reviewsData;
+      
+      if (typeof dbContractor.google_reviews === 'string') {
+        reviewsData = JSON.parse(dbContractor.google_reviews);
+      } else {
+        reviewsData = dbContractor.google_reviews;
+      }
+      
+      console.log('Parsed reviews data:', reviewsData);
         
       if (Array.isArray(reviewsData) && reviewsData.length > 0) {
         google_reviews = reviewsData.map(review => ({
@@ -37,6 +46,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
           time: String(review.time || ''),
           author_name: String(review.author_name || '')
         }));
+        console.log('Transformed reviews:', google_reviews);
       }
     } catch (e) {
       console.error('Error parsing google_reviews:', e);
@@ -46,9 +56,16 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   // Parse Google photos if available
   if (dbContractor.google_photos) {
     try {
-      const photosData = typeof dbContractor.google_photos === 'string'
-        ? JSON.parse(dbContractor.google_photos)
-        : dbContractor.google_photos;
+      console.log('Raw google_photos:', dbContractor.google_photos);
+      let photosData;
+      
+      if (typeof dbContractor.google_photos === 'string') {
+        photosData = JSON.parse(dbContractor.google_photos);
+      } else {
+        photosData = dbContractor.google_photos;
+      }
+      
+      console.log('Parsed photos data:', photosData);
 
       if (Array.isArray(photosData) && photosData.length > 0) {
         google_photos = photosData.map(photo => ({
@@ -57,6 +74,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
           height: Number(photo.height) || 0,
           type: String(photo.type || '')
         }));
+        console.log('Transformed photos:', google_photos);
       }
     } catch (e) {
       console.error('Error parsing google_photos:', e);
@@ -72,8 +90,8 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
 
   const contractor: Contractor = {
     ...dbContractor,
-    rating: dbContractor.rating || undefined,
-    review_count: dbContractor.review_count || 0,
+    rating: typeof dbContractor.rating === 'number' ? dbContractor.rating : undefined,
+    review_count: typeof dbContractor.review_count === 'number' ? dbContractor.review_count : 0,
     years_in_business: dbContractor.years_in_business || undefined,
     images: Array.isArray(dbContractor.images) ? dbContractor.images : [],
     project_types: Array.isArray(dbContractor.project_types) ? dbContractor.project_types : [],
@@ -83,6 +101,18 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     website_url: formatWebsiteUrl(dbContractor.website_url),
     slug
   };
+
+  // Log the final transformed contractor
+  console.log('Transformed contractor:', {
+    id: contractor.id,
+    business_name: contractor.business_name,
+    google_place_name: contractor.google_place_name,
+    rating: contractor.rating,
+    review_count: contractor.review_count,
+    has_photos: contractor.google_photos?.length || 0,
+    has_reviews: contractor.google_reviews?.length || 0,
+    phone: contractor.google_formatted_phone || contractor.phone
+  });
 
   // Remove any undefined values to ensure clean data
   Object.keys(contractor).forEach(key => {
@@ -95,6 +125,13 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
 };
 
 export const getDisplayImage = (contractor: Contractor): string => {
+  console.log('Getting display image for:', contractor.business_name, {
+    has_google_photos: !!contractor.google_photos?.length,
+    has_images: !!contractor.images?.length,
+    first_google_photo: contractor.google_photos?.[0]?.url,
+    first_image: contractor.images?.[0]
+  });
+  
   if (contractor.google_photos?.[0]?.url) return contractor.google_photos[0].url;
   if (Array.isArray(contractor.images) && contractor.images[0]) return contractor.images[0];
   return '';
