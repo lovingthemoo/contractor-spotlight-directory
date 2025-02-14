@@ -35,6 +35,9 @@ export interface Contractor {
   years_in_business?: number;
   google_reviews?: GoogleReview[];
   google_photos?: GooglePhoto[];
+  phone?: string;     // Added this field
+  email?: string;     // Added this field
+  website_url?: string; // Added this field
 }
 
 export interface DatabaseContractor extends Omit<Contractor, 'google_reviews' | 'google_photos'> {
