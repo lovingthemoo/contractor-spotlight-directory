@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import About from "./pages/About";
 import FindTrader from "./pages/FindTrader";
 import Register from "./pages/Register";
+import GetQuotes from "./pages/GetQuotes";
 import ContractorDetail from "./pages/ContractorDetail";
 import NotFound from "./pages/NotFound";
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/search" element={<FindTrader />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/get-quotes" element={<GetQuotes />} />
           {/* New URL structure */}
           <Route path="/:region/:service/:companyName" element={<ContractorDetail />} />
           {/* Redirect old URLs to new format */}
