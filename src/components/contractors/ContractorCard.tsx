@@ -29,7 +29,11 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
             <img
               src={imageUrl}
               alt={`${contractor.business_name} project`}
-              className="object-cover w-full h-full"
+              className="object-cover w-full h-full transform transition-transform duration-300 hover:scale-105"
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f';
+                console.log('Image failed to load, using fallback:', contractor.business_name);
+              }}
             />
           ) : (
             <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -39,7 +43,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
         </div>
         
         <CardContent className="p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
             {contractor.business_name}
           </h3>
           
@@ -58,7 +62,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
           </div>
           
           {address && (
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 line-clamp-1">
               {address}
             </div>
           )}

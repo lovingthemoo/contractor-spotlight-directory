@@ -152,9 +152,18 @@ export const getDisplayImage = (contractor: Contractor): string => {
     first_image: contractor.images?.[0]
   });
   
-  if (contractor.google_photos?.[0]?.url) return contractor.google_photos[0].url;
-  if (Array.isArray(contractor.images) && contractor.images[0]) return contractor.images[0];
-  return '';
+  // First try to get a Google photo
+  if (contractor.google_photos?.[0]?.url) {
+    return contractor.google_photos[0].url;
+  }
+  
+  // Then try to get an uploaded image
+  if (Array.isArray(contractor.images) && contractor.images[0]) {
+    return contractor.images[0];
+  }
+  
+  // Return a default image if nothing else is available
+  return 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f';
 };
 
 export const getDisplayAddress = (contractor: Contractor): string => {
@@ -162,4 +171,3 @@ export const getDisplayAddress = (contractor: Contractor): string => {
   if (contractor.location) return contractor.location;
   return '';
 };
-
