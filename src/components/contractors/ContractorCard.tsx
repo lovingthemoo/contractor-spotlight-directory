@@ -11,35 +11,43 @@ interface ContractorCardProps {
 }
 
 const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: ContractorCardProps) => {
+  const formattedLocation = contractor.google_formatted_address || contractor.location;
+  const formattedPhone = contractor.google_formatted_phone || contractor.phone;
+  const businessName = contractor.google_place_name || contractor.business_name;
+  
+  // Create URL-friendly slug from location and specialty
+  const locationSlug = contractor.location.toLowerCase().replace(/\s+/g, '-');
+  const specialtySlug = contractor.specialty.toLowerCase().replace(/\s+/g, '-');
+  
   return (
     <a 
-      href={`/${contractor.location.toLowerCase().replace(' ', '-')}/${contractor.specialty.toLowerCase()}/${contractor.slug}`}
+      href={`/${locationSlug}/${specialtySlug}/${contractor.slug}`}
       className="block"
-      aria-label={`View details for ${contractor.business_name}`}
+      aria-label={`View details for ${businessName}`}
     >
       <Card className="overflow-hidden transition-all hover:shadow-lg">
         <img
           src={getDisplayImage(contractor)}
-          alt={`${contractor.business_name} project example`}
+          alt={`${businessName} project example`}
           className="object-cover w-full h-48"
           loading="lazy"
         />
         <div className="p-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">{contractor.business_name}</h3>
+            <h3 className="font-semibold text-gray-900">{businessName}</h3>
             <Badge>{contractor.specialty}</Badge>
           </div>
           
           <div className="mt-2 space-y-2">
             <div className="flex items-center text-sm text-gray-500">
               <MapPin className="w-4 h-4 mr-1" aria-hidden="true" />
-              {getDisplayAddress(contractor)}
+              {formattedLocation}
             </div>
             
-            {contractor.google_formatted_phone && (
+            {formattedPhone && (
               <div className="flex items-center text-sm text-gray-500">
                 <Phone className="w-4 h-4 mr-1" aria-hidden="true" />
-                {contractor.google_formatted_phone}
+                {formattedPhone}
               </div>
             )}
             
