@@ -4,14 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Database } from "lucide-react";
+import { Database, Building2, Wrench, Leaf } from "lucide-react";
 import { useState } from "react";
 import ContractorsQueue from "@/components/admin/ContractorsQueue";
 import EnrichmentLogs from "@/components/admin/EnrichmentLogs";
 
 const AdminEnrichment = () => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<string | null>(null);
   
   const { data: contractors, isLoading: isLoadingData, refetch: refetchContractors } = useQuery({
     queryKey: ['contractors-enrichment'],
@@ -41,10 +41,12 @@ const AdminEnrichment = () => {
     },
   });
 
-  const handleEnrichData = async () => {
+  const handleEnrichData = async (category: string) => {
     try {
-      setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke('enrich-google-data');
+      setIsLoading(category);
+      const { data, error } = await supabase.functions.invoke('enrich-google-data', {
+        body: { category }
+      });
       
       if (error) {
         console.error('Function error:', error);
@@ -68,7 +70,7 @@ const AdminEnrichment = () => {
 
       toast({
         title: "Data Collection Started",
-        description: `Started collecting data for ${data.totalFound || 0} London service providers.`,
+        description: `Started collecting data for ${data.totalFound || 0} London ${category} providers.`,
       });
 
       await Promise.all([refetchContractors(), refetchLogs()]);
@@ -80,7 +82,7 @@ const AdminEnrichment = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoading(null);
     }
   };
 
@@ -112,15 +114,34 @@ const AdminEnrichment = () => {
   return (
     <Card className="p-6">
       <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col space-y-4 mb-4">
           <h2 className="text-2xl font-bold">Data Enrichment Queue</h2>
-          <Button 
-            onClick={handleEnrichData} 
-            disabled={isLoading}
-          >
-            <Database className="mr-2 h-4 w-4" />
-            {isLoading ? "Collecting Data..." : "Collect London Data"}
-          </Button>
+          <div className="flex flex-wrap gap-4">
+            <Button 
+              onClick={() => handleEnrichData('construction')} 
+              disabled={isLoading !== null}
+              className="flex-1"
+            >
+              <Building2 className="mr-2 h-4 w-4" />
+              {isLoading === 'construction' ? "Collecting..." : "Collect Construction & Roofing"}
+            </Button>
+            <Button 
+              onClick={() => handleEnrichData('maintenance')} 
+              disabled={isLoading !== null}
+              className="flex-1"
+            >
+              <Wrench className="mr-2 h-4 w-4" />
+              {isLoading === 'maintenance' ? "Collecting..." : "Collect Plumbing & Electrical"}
+            </Button>
+            <Button 
+              onClick={() => handleEnrichData('outdoor')} 
+              disabled={isLoading !== null}
+              className="flex-1"
+            >
+              <Leaf className="mr-2 h-4 w-4" />
+              {isLoading === 'outdoor' ? "Collecting..." : "Collect Home Repair & Gardening"}
+            </Button>
+          </div>
         </div>
         <p className="text-gray-600">
           Service providers that need additional data or verification.
