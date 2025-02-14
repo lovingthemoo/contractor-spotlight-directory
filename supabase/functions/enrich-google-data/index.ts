@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
         
         const placeDetails = await googlePlacesService.getPlaceDetails(place.id);
         
+        // Process photos - generate URLs for each photo
         let photos = [];
         if (placeDetails.photos && Array.isArray(placeDetails.photos)) {
           photos = placeDetails.photos.map(photo => ({
@@ -102,6 +103,11 @@ Deno.serve(async (req) => {
             height: photo.heightPx || 0,
             type: photo.authorAttributions?.[0]?.photoUri || ''
           })).filter(photo => photo.url);
+
+          console.log('Processed photos:', {
+            totalPhotos: photos.length,
+            sampleUrl: photos[0]?.url
+          });
         }
 
         const contractorData: ContractorData = {
@@ -132,6 +138,11 @@ Deno.serve(async (req) => {
         if (await contractorService.upsertContractor(contractorData)) {
           processedCount++;
           console.log(`Successfully processed: ${contractorData.business_name}`);
+          console.log('Photo data:', {
+            businessName: contractorData.business_name,
+            photoCount: photos.length,
+            hasPhotos: photos.length > 0
+          });
         } else {
           errorCount++;
           console.error(`Failed to process: ${contractorData.business_name}`);
