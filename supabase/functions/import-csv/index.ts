@@ -33,6 +33,40 @@ const mapSpecialty = (specialty: string): string => {
   return 'Handyman'; // Default fallback
 };
 
+// Extract and clean image URLs from various possible formats
+const extractImages = (record: any): string[] => {
+  const images: string[] = [];
+  
+  // Check various possible image field names
+  const imageFields = [
+    'images', 'image_urls', 'photos', 'photo_urls', 
+    'google_photos', 'business_photos', 'place_photos'
+  ];
+
+  for (const field of imageFields) {
+    if (record[field]) {
+      try {
+        // Handle both array and string formats
+        const imageData = typeof record[field] === 'string' 
+          ? record[field].split(',') 
+          : record[field];
+        
+        // Clean and validate URLs
+        imageData.forEach((url: string) => {
+          const cleanUrl = url.trim().replace(/^["']|["']$/g, '');
+          if (cleanUrl.startsWith('http')) {
+            images.push(cleanUrl);
+          }
+        });
+      } catch (error) {
+        console.warn(`Error processing images from field ${field}:`, error);
+      }
+    }
+  }
+
+  return images;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -53,11 +87,9 @@ serve(async (req) => {
     let records
 
     try {
-      // First try parsing as regular CSV
       records = parse(fileContent, { skipFirstRow: true })
     } catch (parseError) {
       console.error('Error parsing CSV:', parseError)
-      // If regular parsing fails, try parsing as JSON
       try {
         const jsonData = JSON.parse(fileContent)
         records = Array.isArray(jsonData) ? jsonData : [jsonData]
@@ -82,16 +114,21 @@ serve(async (req) => {
       try {
         console.log('Processing raw record:', record)
 
-        // Clean and prepare data
         const cleanValue = (value: any) => {
           if (typeof value === 'string') {
-            // Remove quotes and trim
             return value.replace(/^["']|["']$/g, '').trim()
           }
           return value
         }
 
-        // Try to map the record using common variations of field names
+        // Extract Google Place ID and other metadata
+        const googleData = {
+          place_id: cleanValue(record.google_place_id || record.place_id || record['Place ID']),
+          rating: parseFloat(cleanValue(record.rating || record.google_rating || record['Rating'])) || null,
+          review_count: parseInt(cleanValue(record.review_count || record.reviews_count || record['Review Count'])) || null,
+        };
+
+        // Extended contractor data with enriched fields
         const contractorData = {
           business_name: cleanValue(record.business_name || record.businessName || record.rgnuSb || record['Business Name'] || record['business name']),
           trading_name: cleanValue(record.trading_name || record.tradingName || record['Trading Name'] || record['trading name'] || null),
@@ -102,7 +139,18 @@ serve(async (req) => {
             record['keychainify-checked href'] || null),
           location: cleanValue(record.location || record.hGz87c2 || record['Location'] || record['location'] || 'London'),
           postal_code: cleanValue(record.postal_code || record.postalCode || record['Postal Code'] || record['postal code'] || null),
-          description: cleanValue(record.description || record['Description'] || record['description'] || null)
+          description: cleanValue(record.description || record['Description'] || record['description'] || null),
+          company_number: cleanValue(record.company_number || record.companyNumber || record['Company Number'] || null),
+          vat_number: cleanValue(record.vat_number || record.vatNumber || record['VAT Number'] || null),
+          service_radius: parseInt(cleanValue(record.service_radius || record['Service Radius'])) || null,
+          years_in_business: parseInt(cleanValue(record.years_in_business || record['Years in Business'])) || null,
+          services_offered: Array.isArray(record.services_offered) 
+            ? record.services_offered 
+            : cleanValue(record.services_offered || record['Services Offered'])?.split(',').map((s: string) => s.trim()) || null,
+          images: extractImages(record),
+          rating: googleData.rating,
+          review_count: googleData.review_count,
+          opening_hours: record.opening_hours || record['Opening Hours'] || null,
         }
 
         console.log('Mapped data:', contractorData)
@@ -112,12 +160,10 @@ serve(async (req) => {
           throw new Error('Business name is required')
         }
 
-        // Generate slug if not provided
+        // Generate unique slug
         const baseSlug = contractorData.business_name.toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/(^-|-$)/g, '')
-
-        // Add a random suffix to make the slug unique
         const timestamp = new Date().getTime()
         contractorData.slug = `${baseSlug}-${timestamp.toString().slice(-6)}`
 
@@ -139,7 +185,7 @@ serve(async (req) => {
       }
     }
 
-    // Log the import results
+    // Log import results
     const { error: logError } = await supabase
       .from('upload_logs')
       .insert({
