@@ -65,24 +65,18 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Updated field mask to match the exact API field names and include all needed fields
+      // Simplified field mask to match exactly what Google Places API v1 accepts
       const fieldMask = [
         'id',
         'displayName',
         'formattedAddress',
-        'editorialSummary',
         'rating',
         'userRatingCount',
         'websiteUri',
-        'formattedPhoneNumber',
-        'regularOpeningHours',
-        'photos',
-        'reviews',
+        'editorialSummary',
         'types',
-        'primaryType',
-        'displayName.languageCode',
-        'editorialSummary.text',
-        'editorialSummary.languageCode'
+        'reviews',
+        'photos'
       ].join(',');
 
       const response = await fetch(`${this.baseUrl}/${placeId}`, {

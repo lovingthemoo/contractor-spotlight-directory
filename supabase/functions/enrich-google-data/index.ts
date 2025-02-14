@@ -83,34 +83,41 @@ Deno.serve(async (req) => {
         const placeDetails = await googlePlacesService.getPlaceDetails(place.id);
         
         const contractorData: ContractorData = {
-          business_name: placeDetails.displayName?.text,
+          business_name: placeDetails.displayName?.text || '',
           google_place_id: placeDetails.id,
-          google_place_name: placeDetails.displayName?.text,
-          google_formatted_address: placeDetails.formattedAddress,
-          google_formatted_phone: placeDetails.formattedPhoneNumber,
+          google_place_name: placeDetails.displayName?.text || '',
+          google_formatted_address: placeDetails.formattedAddress || '',
           location: 'London',
           rating: placeDetails.rating,
           review_count: placeDetails.userRatingCount,
           specialty: 'Building',
-          google_reviews: placeDetails.reviews,
-          google_photos: placeDetails.photos,
+          google_reviews: placeDetails.reviews || [],
+          google_photos: placeDetails.photos || [],
           website_url: placeDetails.websiteUri,
-          opening_hours: placeDetails.regularOpeningHours,
-          google_business_scopes: placeDetails.types,
+          google_business_scopes: placeDetails.types || [],
           needs_google_enrichment: false,
           last_enrichment_attempt: new Date().toISOString(),
           description: placeDetails.editorialSummary?.text || '',
           website_description: placeDetails.editorialSummary?.text || '',
-          slug: placeDetails.displayName?.text
+          slug: (placeDetails.displayName?.text || '')
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '') + 
             '-' + placeDetails.id.substring(0, 6)
         };
 
+        // Log the data we're about to insert
+        console.log('Attempting to insert contractor data:', {
+          businessName: contractorData.business_name,
+          placeId: contractorData.google_place_id,
+          address: contractorData.google_formatted_address
+        });
+
         if (await contractorService.upsertContractor(contractorData)) {
           processedCount++;
           console.log(`Successfully processed: ${contractorData.business_name}`);
+        } else {
+          console.error(`Failed to process: ${contractorData.business_name}`);
         }
 
         await new Promise(resolve => setTimeout(resolve, 200));
