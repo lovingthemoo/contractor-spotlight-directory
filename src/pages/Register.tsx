@@ -1,4 +1,3 @@
-
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
@@ -9,8 +8,17 @@ const Register = () => {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
+      <main className="min-h-screen bg-gray-50 relative">
+        {/* Coming Soon Overlay */}
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+          <h2 className="text-4xl font-bold text-primary mb-4">Coming Soon</h2>
+          <p className="text-xl text-gray-600 text-center max-w-lg px-4">
+            We're currently working on making our business registration system available. 
+            Check back soon to list your trade business!
+          </p>
+        </div>
+
+        {/* Existing content (dimmed in background) */}
         <section className="bg-white py-16">
           <div className="container mx-auto px-4">
             <h1 className="text-4xl font-bold text-center mb-8">List Your Business</h1>
@@ -20,7 +28,6 @@ const Register = () => {
           </div>
         </section>
 
-        {/* Pricing Plans */}
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
