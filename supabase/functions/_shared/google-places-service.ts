@@ -106,22 +106,45 @@ export class GooglePlacesService {
 
         // Transform photos to use the format similar to the provided examples
         placeDetails.photos = placeDetails.photos.map((photo: any) => {
-          if (!photo.name) return null;
+          if (!photo.name) {
+            console.log('Photo missing name:', photo);
+            return null;
+          }
           
           const photoRef = photo.name.split('/').pop();
-          // Get everything after 'places/' to create the unique photo ID
+          if (!photoRef) {
+            console.log('Invalid photo reference:', photo.name);
+            return null;
+          }
+
+          // Extract the unique photo ID
           const photoId = photoRef.replace('places/', '');
+          
+          // Calculate aspect ratio to determine dimensions
+          const width = photo.widthPx || 800;
+          const height = photo.heightPx || 600;
+          const aspectRatio = width / height;
+          
+          let dimensions;
+          if (Math.abs(aspectRatio - 1) < 0.1) {
+            // Square-ish image
+            dimensions = 'w231-h231';
+          } else {
+            // Rectangular image
+            dimensions = 'w231-h165';
+          }
           
           return {
             ...photo,
-            url: `https://lh5.googleusercontent.com/p/${photoId}=w800-h500-n-k-no`
+            url: `https://lh5.googleusercontent.com/p/${photoId}=${dimensions}-n-k-no-nu`
           };
         }).filter(Boolean); // Remove any null entries
 
         console.log('Transformed photos:', {
           photoCount: placeDetails.photos.length,
           sampleUrl: placeDetails.photos[0]?.url,
-          photoRefs: placeDetails.photos.map(p => p.url)
+          photoUrls: placeDetails.photos.map(p => p.url),
+          originalRefs: placeDetails.photos.map(p => p.name)
         });
       } else {
         console.log('No photos found in response');
