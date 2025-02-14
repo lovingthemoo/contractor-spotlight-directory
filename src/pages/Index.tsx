@@ -8,8 +8,10 @@ import ContractorCard from "@/components/contractors/ContractorCard";
 import SearchBar from "@/components/contractors/SearchBar";
 import SpecialtyFilter from "@/components/contractors/SpecialtyFilter";
 import { transformContractor, getDisplayImage, getDisplayAddress } from "@/utils/contractor";
+import { toast } from "sonner";
 import type { Contractor } from "@/types/contractor";
 
+// Get unique specialties from the database
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
 
 const Index = () => {
@@ -23,35 +25,33 @@ const Index = () => {
         const response = await supabase
           .from('contractors')
           .select('*')
-          .order('rating', { ascending: false });
+          .order('rating', { ascending: false })
+          .not('rating', 'is', null); // Only get contractors with ratings
         
-        if (response.error) throw response.error;
-        if (!response.data?.length) return [];
+        if (response.error) {
+          toast.error('Failed to fetch contractors');
+          throw response.error;
+        }
 
-        // Debug log to check raw data
-        console.log('Raw contractors data with ratings:', response.data.map(c => ({
-          id: c.id,
-          name: c.business_name,
-          rating: c.rating,
-          review_count: c.review_count
-        })));
+        if (!response.data?.length) {
+          console.log('No contractors found in database');
+          return [];
+        }
 
         const transformedContractors = await Promise.all(response.data.map(transformContractor));
         
-        // Debug log to check transformed data
-        console.log('Transformed contractors with ratings:', transformedContractors.map(c => ({
-          id: c.id,
-          name: c.business_name,
-          rating: c.rating,
-          review_count: c.review_count
-        })));
+        // Log the transformed contractors for debugging
+        console.log('Fetched contractors:', transformedContractors.length);
+        console.log('Sample contractor:', transformedContractors[0]);
 
         return transformedContractors;
       } catch (e) {
         console.error('Error fetching contractors:', e);
         throw e;
       }
-    }
+    },
+    staleTime: 1000 * 60 * 5, // Cache data for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 
   const filteredContractors = contractors
@@ -108,7 +108,9 @@ const Index = () => {
             <h2 id="featured-contractors-title" className="text-2xl font-bold tracking-tight text-gray-900">
               {selectedSpecialty === "All" ? "Featured Contractors" : `${selectedSpecialty} Contractors`}
             </h2>
-            <p className="mt-2 text-gray-500">Top rated professionals in London</p>
+            <p className="mt-2 text-gray-500">
+              {isLoading ? 'Loading top rated professionals...' : 'Top rated professionals in London'}
+            </p>
             
             {isLoading && (
               <div className="text-center py-12" role="status">
@@ -130,7 +132,9 @@ const Index = () => {
 
             {!isLoading && !error && filteredContractors.length === 0 && (
               <div className="text-center py-12 text-gray-500" role="status">
-                No contractors found matching your criteria.
+                {searchQuery || selectedSpecialty !== "All" 
+                  ? "No contractors found matching your criteria."
+                  : "No contractors available at the moment."}
               </div>
             )}
             
@@ -168,4 +172,3 @@ const Index = () => {
 };
 
 export default Index;
-
