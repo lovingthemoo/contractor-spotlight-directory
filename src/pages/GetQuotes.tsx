@@ -15,11 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MapPin, Star, Mail } from "lucide-react";
+import { MapPin, Star, Mail, AtSign } from "lucide-react";
 
 const GetQuotes = () => {
   const [service, setService] = useState("");
   const [location, setLocation] = useState("");
+  const [email, setEmail] = useState("");
   const [numCompanies, setNumCompanies] = useState<number[]>([5]);
   const [distance, setDistance] = useState<number[]>([10]);
   const [minRating, setMinRating] = useState<number[]>([3]);
@@ -27,10 +28,18 @@ const GetQuotes = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // This would typically connect to a backend service
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description: "Please provide your email address to receive quotes.",
+        variant: "destructive"
+      });
+      return;
+    }
+    // This would connect to a backend service
     toast({
       title: "Quote Request Sent",
-      description: `Your request will be sent to ${numCompanies[0]} companies in your area.`,
+      description: `Your request will be sent to ${numCompanies[0]} companies. Responses will be sent to ${email}`,
     });
   };
 
@@ -48,6 +57,25 @@ const GetQuotes = () => {
 
             <Card className="max-w-3xl mx-auto p-6">
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Email Input */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Your Email Address</label>
+                  <div className="relative">
+                    <AtSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input 
+                      type="email"
+                      placeholder="Enter your email address" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Traders will send their quotes to this email address
+                  </p>
+                </div>
+
                 {/* Service Selection */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Select Service</label>
