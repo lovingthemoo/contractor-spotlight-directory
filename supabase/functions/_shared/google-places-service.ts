@@ -104,13 +104,16 @@ export class GooglePlacesService {
           firstPhoto: placeDetails.photos[0],
         });
 
-        // Transform photos to use the format similar to Google Business Profile
-        placeDetails.photos = placeDetails.photos.map((photo: any) => ({
-          ...photo,
-          url: photo.name ? 
-            `https://lh3.googleusercontent.com/${photo.name.split('/').pop()}=w800-h500-k-no` : 
-            undefined
-        }));
+        // Transform photos to use the format similar to the provided examples
+        placeDetails.photos = placeDetails.photos.map((photo: any) => {
+          const photoRef = photo.name.split('/').pop();
+          // Extract the base64-like portion after places/ from the photo reference
+          const photoId = photoRef.replace('places/', '');
+          return {
+            ...photo,
+            url: `https://lh5.googleusercontent.com/p/AF1QipP${photoId}=w800-h500-n-k-no`
+          };
+        });
 
         console.log('Transformed photos:', {
           photoCount: placeDetails.photos.length,
