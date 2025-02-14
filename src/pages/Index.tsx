@@ -15,6 +15,13 @@ import { supabase } from "@/integrations/supabase/client";
 const MIN_RATING = 0;
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
 
+interface GoogleReview {
+  rating: number;
+  text: string;
+  time: string;
+  author_name: string;
+}
+
 interface Contractor {
   id: string;
   business_name: string;
@@ -35,13 +42,47 @@ interface Contractor {
   website_description?: string;
   founded_year?: number;
   years_in_business?: number;
-  google_reviews?: {
-    rating: number;
-    text: string;
-    time: string;
-    author_name: string;
-  }[];
+  google_reviews?: GoogleReview[];
 }
+
+interface DatabaseContractor extends Omit<Contractor, 'google_reviews'> {
+  google_reviews?: any;
+}
+
+const transformContractor = (dbContractor: DatabaseContractor): Contractor => {
+  let google_reviews: GoogleReview[] | undefined;
+  
+  if (dbContractor.google_reviews) {
+    try {
+      // If it's a string, parse it, if it's already an object, use it
+      const reviewsData = typeof dbContractor.google_reviews === 'string' 
+        ? JSON.parse(dbContractor.google_reviews) 
+        : dbContractor.google_reviews;
+        
+      // Ensure the reviews match our expected format
+      google_reviews = Array.isArray(reviewsData) 
+        ? reviewsData.map(review => ({
+            rating: Number(review.rating) || 0,
+            text: String(review.text || ''),
+            time: String(review.time || ''),
+            author_name: String(review.author_name || '')
+          }))
+        : undefined;
+    } catch (e) {
+      console.error('Error parsing google_reviews:', e);
+      google_reviews = undefined;
+    }
+  }
+
+  return {
+    ...dbContractor,
+    google_reviews,
+    // Ensure other required fields have default values
+    rating: dbContractor.rating || 0,
+    review_count: dbContractor.review_count || 0,
+    images: dbContractor.images || []
+  };
+};
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,8 +111,10 @@ const Index = () => {
           return [];
         }
 
-        console.log(`Found ${data.length} contractors:`, data);
-        return data as Contractor[];
+        // Transform the data to match our Contractor interface
+        const transformedData = data.map(transformContractor);
+        console.log(`Found ${transformedData.length} contractors:`, transformedData);
+        return transformedData;
       } catch (e) {
         console.error('Query execution error:', e);
         throw e;
