@@ -6,12 +6,13 @@ import { PlaceSearchResult, ContractorData } from '../_shared/types.ts';
 
 const SEARCH_QUERIES = {
   construction: [
-    "building company",
-    "construction company",
-    "building contractor",
+    "roofing company",
     "roofer",
     "roofing contractor",
-    "roof repair"
+    "roof repair",
+    "building company",
+    "construction company",
+    "building contractor"
   ],
   maintenance: [
     "electrician",
