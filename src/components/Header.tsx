@@ -52,6 +52,9 @@ const Header = () => {
             <Button asChild>
               <Link to="/get-quotes">Get Quotes</Link>
             </Button>
+            <Button variant="outline" asChild>
+              <Link to="/admin/login">Admin</Link>
+            </Button>
           </div>
         </nav>
       </div>
