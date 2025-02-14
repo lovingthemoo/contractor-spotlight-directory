@@ -18,6 +18,23 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
   const displayRating = contractor.rating?.toFixed(1) || '0.0';
   const reviewCount = contractor.review_count || 0;
 
+  // Function to get a consistent fallback image based on contractor specialty
+  const getFallbackImage = () => {
+    const baseUrl = "https://images.unsplash.com/photo-";
+    switch (contractor.specialty?.toLowerCase()) {
+      case "building":
+        return `${baseUrl}1487958449943-2429e8be8625`;
+      case "construction":
+        return `${baseUrl}1527576539890-dfa815648363`;
+      case "plumbing":
+        return `${baseUrl}1518005020951-eccb494ad742`;
+      case "electrical":
+        return `${baseUrl}1496307653780-42ee777d4833`;
+      default:
+        return `${baseUrl}1487958449943-2429e8be8625`; // Default building image
+    }
+  };
+
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-lg">
       <Link 
@@ -30,11 +47,18 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
               src={imageUrl}
               alt={`${contractor.business_name} project`}
               className="object-cover w-full h-full transform transition-transform duration-300 hover:scale-105"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // Prevent infinite loop
+                target.src = getFallbackImage();
+              }}
             />
           ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400">No image available</span>
-            </div>
+            <img
+              src={getFallbackImage()}
+              alt={`${contractor.business_name} project`}
+              className="object-cover w-full h-full transform transition-transform duration-300 hover:scale-105"
+            />
           )}
         </div>
         
