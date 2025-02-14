@@ -1,4 +1,5 @@
 
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Star, Clock, Phone, ChevronRight } from "lucide-react";
@@ -16,12 +17,12 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
   const businessName = contractor.google_place_name || contractor.business_name;
   
   // Create URL-friendly slug from location and specialty
-  const locationSlug = contractor.location.toLowerCase().replace(/\s+/g, '-');
-  const specialtySlug = contractor.specialty.toLowerCase().replace(/\s+/g, '-');
+  const locationSlug = contractor.location.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const specialtySlug = contractor.specialty.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   
   return (
-    <a 
-      href={`/${locationSlug}/${specialtySlug}/${contractor.slug}`}
+    <Link 
+      to={`/${locationSlug}/${specialtySlug}/${contractor.slug}`}
       className="block"
       aria-label={`View details for ${businessName}`}
     >
@@ -92,7 +93,7 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
           </div>
         </div>
       </Card>
-    </a>
+    </Link>
   );
 };
 

@@ -26,30 +26,19 @@ const Index = () => {
           .select('*')
           .order('created_at', { ascending: false });
         
-        console.log('Full Supabase response:', response);
-
         if (response.error) {
           console.error('Supabase error:', response.error);
           throw response.error;
         }
 
-        const { data } = response;
-        
-        if (!data || data.length === 0) {
+        if (!response.data || response.data.length === 0) {
           console.log('No contractors found in database');
           return [];
         }
 
-        const uniqueContractors = new Map();
-        
-        data.forEach(contractor => {
-          if (!uniqueContractors.has(contractor.business_name)) {
-            uniqueContractors.set(contractor.business_name, contractor);
-          }
-        });
-
-        const transformedData = Array.from(uniqueContractors.values()).map(transformContractor);
-        console.log(`Found ${transformedData.length} unique contractors:`, transformedData);
+        // Transform each contractor data
+        const transformedData = response.data.map(contractor => transformContractor(contractor));
+        console.log('Transformed contractors:', transformedData);
         return transformedData;
       } catch (e) {
         console.error('Query execution error:', e);
@@ -67,8 +56,6 @@ const Index = () => {
       contractor.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contractor.location.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    
-  console.log('Filtered contractors:', filteredContractors);
 
   return (
     <div className="flex flex-col min-h-screen">
