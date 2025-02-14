@@ -34,15 +34,19 @@ const AdminLogin = () => {
 
       if (error) throw error;
 
-      // Check if user is admin
+      // Check if user is admin using maybeSingle() instead of single()
       const { data: adminData, error: adminError } = await supabase
         .from("admins")
         .select("two_factor_enabled")
         .eq("user_id", data.user.id)
-        .single();
+        .maybeSingle();
 
-      if (adminError || !adminData) {
-        throw new Error("Unauthorized access");
+      if (adminError) {
+        throw adminError;
+      }
+
+      if (!adminData) {
+        throw new Error("You do not have admin access");
       }
 
       if (adminData.two_factor_enabled) {
