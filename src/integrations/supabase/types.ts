@@ -9,7 +9,143 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      contractor_reviews: {
+        Row: {
+          contractor_id: string
+          created_at: string
+          id: string
+          rating: number
+          response_date: string | null
+          response_text: string | null
+          review_text: string | null
+          reviewer_name: string
+          verified_customer: boolean | null
+        }
+        Insert: {
+          contractor_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          response_date?: string | null
+          response_text?: string | null
+          review_text?: string | null
+          reviewer_name: string
+          verified_customer?: boolean | null
+        }
+        Update: {
+          contractor_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          response_date?: string | null
+          response_text?: string | null
+          review_text?: string | null
+          reviewer_name?: string
+          verified_customer?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_reviews_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contractors: {
+        Row: {
+          address_verified: boolean | null
+          business_name: string
+          company_number: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          identity_verified: boolean | null
+          images: string[] | null
+          insurance_verified: boolean | null
+          is_verified: boolean | null
+          location: string
+          meta_description: string | null
+          meta_title: string | null
+          opening_hours: Json | null
+          phone: string | null
+          postal_code: string | null
+          rating: number | null
+          review_count: number | null
+          service_radius: number | null
+          services_offered: string[] | null
+          slug: string
+          specialty: Database["public"]["Enums"]["contractor_specialty"]
+          trading_name: string | null
+          updated_at: string
+          vat_number: string | null
+          website_url: string | null
+          years_in_business: number | null
+        }
+        Insert: {
+          address_verified?: boolean | null
+          business_name: string
+          company_number?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          identity_verified?: boolean | null
+          images?: string[] | null
+          insurance_verified?: boolean | null
+          is_verified?: boolean | null
+          location: string
+          meta_description?: string | null
+          meta_title?: string | null
+          opening_hours?: Json | null
+          phone?: string | null
+          postal_code?: string | null
+          rating?: number | null
+          review_count?: number | null
+          service_radius?: number | null
+          services_offered?: string[] | null
+          slug: string
+          specialty: Database["public"]["Enums"]["contractor_specialty"]
+          trading_name?: string | null
+          updated_at?: string
+          vat_number?: string | null
+          website_url?: string | null
+          years_in_business?: number | null
+        }
+        Update: {
+          address_verified?: boolean | null
+          business_name?: string
+          company_number?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          identity_verified?: boolean | null
+          images?: string[] | null
+          insurance_verified?: boolean | null
+          is_verified?: boolean | null
+          location?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          opening_hours?: Json | null
+          phone?: string | null
+          postal_code?: string | null
+          rating?: number | null
+          review_count?: number | null
+          service_radius?: number | null
+          services_offered?: string[] | null
+          slug?: string
+          specialty?: Database["public"]["Enums"]["contractor_specialty"]
+          trading_name?: string | null
+          updated_at?: string
+          vat_number?: string | null
+          website_url?: string | null
+          years_in_business?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +154,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      contractor_specialty:
+        | "Electrical"
+        | "Plumbing"
+        | "Roofing"
+        | "Building"
+        | "Home Repair"
+        | "Gardening"
+        | "Construction"
+        | "Handyman"
     }
     CompositeTypes: {
       [_ in never]: never

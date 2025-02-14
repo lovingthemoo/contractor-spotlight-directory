@@ -1,110 +1,51 @@
+
 import { useParams, Link, Navigate } from "react-router-dom";
 import { MapPin, Star, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Contractor {
-  id: number;
-  name: string;
-  image: string;
+  id: string;
+  business_name: string;
+  images: string[];
   rating: number;
-  reviews: number;
+  review_count: number;
   specialty: string;
   location: string;
   description: string;
   slug: string;
 }
 
-const contractors: Contractor[] = [
-  {
-    id: 1,
-    name: "Elite Electrical Solutions - Licensed Electrician Near Me",
-    image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e",
-    rating: 4.8,
-    reviews: 127,
-    specialty: "Electrical",
-    location: "Central London",
-    description: "24 hour electrician and emergency electrician services in Central London. Commercial electrician services available. Our licensed electricians provide professional electrical services with 15+ years of experience. Local electrician serving all areas of London.",
-    slug: "elite-electrical-solutions"
-  },
-  {
-    id: 2,
-    name: "Thames Valley Plumbing - Emergency Plumber Near Me",
-    image: "https://images.unsplash.com/photo-1594322436404-5a0526db4d13",
-    rating: 4.9,
-    reviews: 89,
-    specialty: "Plumbing",
-    location: "South London",
-    description: "24 hour plumber and emergency plumber services. Best plumbers near me in South London. Local plumbers providing comprehensive plumbing services near me. Commercial plumber services available. Emergency repairs, bathroom installations, and central heating systems.",
-    slug: "thames-valley-plumbing"
-  },
-  {
-    id: 3,
-    name: "Roofing Masters London - Local Roofers Near Me",
-    image: "https://images.unsplash.com/photo-1632759145355-8b8f6d37d27c",
-    rating: 4.7,
-    reviews: 156,
-    specialty: "Roofing",
-    location: "North London",
-    description: "Roof repair near me and emergency roof repair services. One of the leading roofing companies near me in North London. Local roofers providing commercial roofing and comprehensive roofing services near me. Fully insured with proven track record.",
-    slug: "roofing-masters-london"
-  },
-  {
-    id: 4,
-    name: "Green Gardens & Landscapes - Professional Gardener Near Me",
-    image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b",
-    rating: 4.8,
-    reviews: 92,
-    specialty: "Gardening",
-    location: "West London",
-    description: "Expert landscaping services and gardener near me in West London. Professional lawn care near me and garden maintenance services. Tree trimming services available. Comprehensive gardening services for all your needs. Quality lawn care services for residential and commercial properties.",
-    slug: "green-gardens-landscapes"
-  },
-  {
-    id: 5,
-    name: "Homefix Repairs - Handyman Services Near Me",
-    image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952",
-    rating: 4.6,
-    reviews: 78,
-    specialty: "Home Repair",
-    location: "East London",
-    description: "Professional handyman near me and home repair services in East London. Trusted handyman services and home maintenance solutions. House repair near me and home renovation services available. General handyman for all your repair needs.",
-    slug: "homefix-repairs"
-  },
-  {
-    id: 6,
-    name: "London Build Pro - Best Home Builders Near Me",
-    image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e",
-    rating: 4.9,
-    reviews: 143,
-    specialty: "Building",
-    location: "Greater London",
-    description: "Local builders near me specializing in new home builders and residential builders services. Trusted builders in my area and best home builders in Greater London. House builders near me providing commercial builders services. Premier building contractors for new builds and extensions.",
-    slug: "london-build-pro"
-  }
-];
-
 const ContractorDetail = () => {
-  const { region, service, companyName, id } = useParams();
+  const { region, service, companyName } = useParams();
   
-  // Handle old URL format and redirect
-  if (id) {
-    const contractor = contractors.find(c => c.id === Number(id));
-    if (contractor) {
-      const region = contractor.location.toLowerCase().replace(' ', '-');
-      const service = contractor.specialty.toLowerCase();
-      return <Navigate to={`/${region}/${service}/${contractor.slug}`} replace />;
-    }
+  const { data: contractor, isLoading, error } = useQuery({
+    queryKey: ['contractor', companyName],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contractors')
+        .select('*')
+        .eq('slug', companyName)
+        .eq('specialty', service?.toUpperCase())
+        .single();
+      
+      if (error) throw error;
+      return data as Contractor;
+    },
+    enabled: !!companyName && !!service
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+      </div>
+    );
   }
 
-  // Handle new URL format
-  const contractor = contractors.find(c => 
-    c.slug === companyName && 
-    c.specialty.toLowerCase() === service &&
-    c.location.toLowerCase().replace(' ', '-') === region
-  );
-
-  if (!contractor) {
+  if (error || !contractor) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <h1 className="text-2xl font-bold">Contractor not found</h1>
@@ -128,8 +69,8 @@ const ContractorDetail = () => {
         <div className="grid gap-8 md:grid-cols-2">
           <div>
             <img
-              src={contractor.image}
-              alt={contractor.name}
+              src={contractor.images?.[0] || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e'}
+              alt={contractor.business_name}
               className="object-cover w-full rounded-lg shadow-lg aspect-video"
             />
           </div>
@@ -137,7 +78,7 @@ const ContractorDetail = () => {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                {contractor.name}
+                {contractor.business_name}
               </h1>
               <div className="flex items-center mt-2 space-x-4">
                 <Badge>{contractor.specialty}</Badge>
@@ -145,7 +86,7 @@ const ContractorDetail = () => {
                   <Star className="w-4 h-4 text-yellow-400" />
                   <span className="ml-1 font-medium">{contractor.rating}</span>
                   <span className="ml-1 text-gray-500">
-                    ({contractor.reviews} reviews)
+                    ({contractor.review_count} reviews)
                   </span>
                 </div>
               </div>
@@ -161,8 +102,6 @@ const ContractorDetail = () => {
                 {contractor.description}
               </p>
             </div>
-            
-            {/* Additional sections can be added here */}
           </div>
         </div>
       </div>
