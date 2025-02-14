@@ -30,7 +30,7 @@ const Index = () => {
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .not('images', '@@', '[]') // Filter for non-empty arrays using containment operator
+          .gt('images', '{}') // Filter for non-empty arrays using greater than empty array
           .order('rating', { ascending: false });
         
         const response = await withImagesQuery;
@@ -48,7 +48,7 @@ const Index = () => {
             .from('contractors')
             .select('*')
             .not('rating', 'is', null)
-            .not('google_photos', '@@', '[]') // Filter for non-empty arrays using containment operator
+            .neq('google_photos', '[]') // Filter for non-empty JSONB array
             .order('rating', { ascending: false });
 
           const googlePhotosResponse = await withGooglePhotosQuery;
