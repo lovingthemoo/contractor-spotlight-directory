@@ -15,6 +15,27 @@ const extractYearsInBusiness = (value: string | number | null): number | undefin
   return undefined;
 };
 
+const formatWebsiteUrl = (url: string | null | undefined): string | undefined => {
+  if (!url) return undefined;
+  
+  let formattedUrl = url.trim();
+  
+  // Check if it's a valid URL
+  try {
+    // Add https:// if no protocol is specified
+    if (!formattedUrl.match(/^https?:\/\//i)) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+    
+    // Test if it's a valid URL
+    new URL(formattedUrl);
+    return formattedUrl;
+  } catch (e) {
+    console.error('Invalid URL:', url);
+    return undefined;
+  }
+};
+
 export const transformContractor = (dbContractor: DatabaseContractor): Contractor => {
   let google_reviews: GoogleReview[] | undefined;
   let google_photos: GooglePhoto[] | undefined;
@@ -71,12 +92,16 @@ export const transformContractor = (dbContractor: DatabaseContractor): Contracto
           : undefined)
     : undefined;
 
+  // Format website URL
+  const website_url = formatWebsiteUrl(dbContractor.website_url);
+
   return {
     ...dbContractor,
     google_reviews,
     google_photos,
     certifications,
     years_in_business,
+    website_url,
     rating: dbContractor.rating || 0,
     review_count: dbContractor.review_count || 0,
     images: dbContractor.images || []
