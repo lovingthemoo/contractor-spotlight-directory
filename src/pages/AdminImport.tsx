@@ -152,13 +152,13 @@ const AdminImport = () => {
       setPreviewData(validatedData);
       setShowPreview(true);
 
-      // Show header mapping results
+      // Show header mapping results with the correct variant
       const unmappedHeaders = headers.filter((_, i) => !findMatchingField(headers[i]));
       if (unmappedHeaders.length > 0) {
         toast({
           title: "Some headers couldn't be mapped",
           description: `Unmapped headers: ${unmappedHeaders.join(', ')}`,
-          variant: "warning"
+          variant: "default"  // Changed from "warning" to "default"
         });
       }
     } catch (error) {
