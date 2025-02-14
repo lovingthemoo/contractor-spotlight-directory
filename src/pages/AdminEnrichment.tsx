@@ -44,8 +44,14 @@ const AdminEnrichment = () => {
   const handleEnrichData = async (category: string) => {
     try {
       setIsLoading(category);
+      
+      console.log('Calling enrichment function with category:', category);
+      
       const { data, error } = await supabase.functions.invoke('enrich-google-data', {
-        body: { category }
+        body: { category },
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
       
       if (error) {

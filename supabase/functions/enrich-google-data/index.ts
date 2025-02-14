@@ -1,4 +1,3 @@
-
 import { corsHeaders } from '../_shared/cors.ts';
 import { GooglePlacesService } from '../_shared/google-places-service.ts';
 import { ContractorService } from '../_shared/contractor-service.ts';
@@ -94,17 +93,27 @@ const LOCATIONS = [
 ];
 
 Deno.serve(async (req) => {
-  // CORS preflight request
+  // Always add CORS headers
+  const headers = {
+    ...corsHeaders,
+    'Content-Type': 'application/json'
+  };
+
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { 
+      headers,
+      status: 200
+    });
   }
 
   try {
-    // Add required CORS headers to all responses
-    const headers = {
-      ...corsHeaders,
-      'Content-Type': 'application/json'
-    };
+    // Log incoming request details
+    console.log('Incoming request:', {
+      method: req.method,
+      url: req.url,
+      headers: Object.fromEntries(req.headers.entries())
+    });
 
     // Validate API key first
     const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
@@ -116,14 +125,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body
+    // Parse request body with error handling
     let body;
     try {
-      body = await req.json();
+      const text = await req.text();
+      console.log('Raw request body:', text);
+      body = JSON.parse(text);
     } catch (e) {
       console.error('Error parsing request body:', e);
       return new Response(
-        JSON.stringify({ error: 'Invalid request body' }), 
+        JSON.stringify({ 
+          error: 'Invalid request body',
+          details: e.message 
+        }), 
         { status: 400, headers }
       );
     }
@@ -133,7 +147,11 @@ Deno.serve(async (req) => {
     if (!category || !SEARCH_QUERIES[category as keyof typeof SEARCH_QUERIES]) {
       console.error('Invalid category:', category);
       return new Response(
-        JSON.stringify({ error: 'Invalid category specified' }), 
+        JSON.stringify({ 
+          error: 'Invalid category specified',
+          provided: category,
+          allowed: Object.keys(SEARCH_QUERIES)
+        }), 
         { status: 400, headers }
       );
     }
@@ -151,7 +169,10 @@ Deno.serve(async (req) => {
     } catch (error) {
       console.error('API connection test failed:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to connect to Google Places API' }), 
+        JSON.stringify({ 
+          error: 'Failed to connect to Google Places API',
+          details: error.message
+        }), 
         { status: 500, headers }
       );
     }
@@ -246,12 +267,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
+        type: error.name
       }), 
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
+      { headers, status: 500 }
     );
   }
 });
