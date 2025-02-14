@@ -37,22 +37,31 @@ interface Contractor {
 }
 
 const ContractorDetail = () => {
-  const { region, service, companyName } = useParams();
+  const { slug } = useParams();
   
   const { data: contractor, isLoading, error } = useQuery({
-    queryKey: ['contractor', companyName],
+    queryKey: ['contractor', slug],
     queryFn: async () => {
-      console.log('Fetching contractor:', { companyName, service });
+      console.log('Fetching contractor by slug:', slug);
       const { data, error } = await supabase
         .from('contractors')
         .select('*')
-        .eq('slug', companyName)
+        .eq('slug', slug)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching contractor:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('Contractor not found');
+      }
+      
+      console.log('Found contractor:', data);
       return data as Contractor;
     },
-    enabled: !!companyName
+    enabled: !!slug
   });
 
   if (isLoading) {

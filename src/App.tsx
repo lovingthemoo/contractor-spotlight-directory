@@ -31,8 +31,8 @@ const App = () => (
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/portal" element={<AdminPortal />} />
-          {/* New URL structure */}
-          <Route path="/:region/:service/:companyName" element={<ContractorDetail />} />
+          {/* Contractor detail route - note the :slug at the end */}
+          <Route path="/:region/:service/:slug" element={<ContractorDetail />} />
           {/* Redirect old URLs to new format */}
           <Route path="/contractor/:id" element={<ContractorDetail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
