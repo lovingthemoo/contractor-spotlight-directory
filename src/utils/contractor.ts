@@ -63,24 +63,13 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     }
   }
 
-  // Check if enrichment is needed
-  const needsEnrichment = !dbContractor.google_place_name || 
-                         !dbContractor.rating || 
-                         !dbContractor.years_in_business || 
-                         !dbContractor.description;
+  // Create a slug if one doesn't exist
+  const slug = dbContractor.slug || (dbContractor.business_name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') + 
+    '-' + dbContractor.id.substring(0, 6);
 
-  if (needsEnrichment) {
-    console.log(`Marking contractor ${dbContractor.id} for enrichment`);
-    await supabase
-      .from('contractors')
-      .update({
-        needs_google_enrichment: true,
-        last_enrichment_attempt: null
-      })
-      .eq('id', dbContractor.id);
-  }
-
-  // Only include fields that have actual values
   const contractor: Contractor = {
     ...dbContractor,
     rating: dbContractor.rating || undefined,
@@ -91,7 +80,8 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     google_reviews: google_reviews || undefined,
     google_photos: google_photos || undefined,
     certifications: Array.isArray(dbContractor.certifications) ? dbContractor.certifications : undefined,
-    website_url: formatWebsiteUrl(dbContractor.website_url)
+    website_url: formatWebsiteUrl(dbContractor.website_url),
+    slug
   };
 
   // Remove any undefined values to ensure clean data
