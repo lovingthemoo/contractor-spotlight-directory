@@ -33,7 +33,6 @@ const SpecialtyFilter = ({
               <RadioGroupItem 
                 value={specialty} 
                 id={`specialty-${specialty.toLowerCase()}`}
-                name="specialty"
               />
               <Label htmlFor={`specialty-${specialty.toLowerCase()}`}>{specialty}</Label>
             </div>
