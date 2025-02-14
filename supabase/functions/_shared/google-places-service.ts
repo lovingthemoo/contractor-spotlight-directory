@@ -1,3 +1,4 @@
+
 import { PlaceSearchResult } from './types.ts';
 
 export class GooglePlacesService {
@@ -41,8 +42,19 @@ export class GooglePlacesService {
     const searchBody = {
       textQuery: `${searchQuery} in ${location}`,
       maxResultCount: 20,
+      locationBias: {
+        circle: {
+          center: {
+            latitude: 51.5074,  // London's latitude
+            longitude: -0.1278  // London's longitude
+          },
+          radius: 30000.0  // 30km radius
+        }
+      },
       languageCode: "en"
     };
+
+    console.log('Search request:', searchBody);
 
     const response = await fetch(`${this.baseUrl}:searchText`, {
       method: 'POST',
@@ -57,6 +69,12 @@ export class GooglePlacesService {
     }
 
     const data = await response.json();
+    console.log('Search response:', {
+      query: searchQuery,
+      location: location,
+      placesFound: data.places?.length || 0
+    });
+    
     return data.places || [];
   }
 
