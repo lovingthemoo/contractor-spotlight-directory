@@ -84,6 +84,7 @@ const ContractorCard = ({ contractor, getDisplayImage }: ContractorCardProps) =>
                 <Star 
                   className="w-5 h-5 text-yellow-400" 
                   aria-hidden="true"
+                  fill="currentColor"
                 />
                 <span className="ml-1 text-lg font-semibold">
                   {contractor.rating.toFixed(1)}
@@ -107,3 +108,4 @@ const ContractorCard = ({ contractor, getDisplayImage }: ContractorCardProps) =>
 };
 
 export default ContractorCard;
+
