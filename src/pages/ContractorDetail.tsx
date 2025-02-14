@@ -1,40 +1,13 @@
 
 import { useParams, Link } from "react-router-dom";
-import { MapPin, Star, ArrowLeft, CheckCircle2, Ruler, PoundSterling, Phone, Globe, Mail } from "lucide-react";
+import { MapPin, Star, ArrowLeft, CheckCircle2, Ruler, PoundSterling, Phone, Globe, Mail, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import { transformContractor } from "@/utils/contractor";
 import { Card } from "@/components/ui/card";
-
-type ContractorSpecialty = Database["public"]["Enums"]["contractor_specialty"];
-
-interface Contractor {
-  id: string;
-  business_name: string;
-  images: string[];
-  rating: number;
-  review_count: number;
-  specialty: ContractorSpecialty;
-  location: string;
-  description: string;
-  slug: string;
-  certifications: string[];
-  insurance_details: any;
-  project_types: string[];
-  typical_project_size: string;
-  minimum_project_value: number;
-  maximum_project_value: number;
-  google_place_name?: string;
-  google_formatted_address?: string;
-  google_formatted_phone?: string;
-  google_reviews?: any[];
-  google_photos?: any[];
-  website_url?: string;
-  email?: string;
-  phone?: string;
-}
+import type { Contractor } from "@/types/contractor";
 
 const ContractorDetail = () => {
   const { slug } = useParams();
@@ -45,9 +18,16 @@ const ContractorDetail = () => {
       console.log('Fetching contractor by slug:', slug);
       const { data, error } = await supabase
         .from('contractors')
-        .select('*')
+        .select(`
+          *,
+          google_reviews,
+          google_photos,
+          project_types,
+          certifications,
+          insurance_details
+        `)
         .eq('slug', slug)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching contractor:', error);
@@ -59,7 +39,7 @@ const ContractorDetail = () => {
       }
       
       console.log('Found contractor:', data);
-      return data as Contractor;
+      return transformContractor(data);
     },
     enabled: !!slug
   });
@@ -86,7 +66,7 @@ const ContractorDetail = () => {
   }
 
   const businessName = contractor.google_place_name || contractor.business_name;
-  const address = contractor.google_formatted_address || contractor.location;
+  const address = contractor.google_formatted_address || contractor.location || 'London';
   const phone = contractor.google_formatted_phone || contractor.phone;
 
   return (
@@ -107,9 +87,15 @@ const ContractorDetail = () => {
                 alt={`Project by ${businessName}`}
                 className="object-cover w-full rounded-lg shadow-lg aspect-video"
               />
+            ) : contractor.images?.[0] ? (
+              <img
+                src={contractor.images[0]}
+                alt={`Project by ${businessName}`}
+                className="object-cover w-full rounded-lg shadow-lg aspect-video"
+              />
             ) : (
               <img
-                src={contractor.images?.[0] || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e'}
+                src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e"
                 alt={`Project by ${businessName}`}
                 className="object-cover w-full rounded-lg shadow-lg aspect-video"
               />
@@ -127,7 +113,7 @@ const ContractorDetail = () => {
                   <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
                   <span className="ml-1 font-medium">{contractor.rating}</span>
                   <span className="ml-1 text-gray-500">
-                    ({contractor.review_count} reviews)
+                    ({contractor.review_count || 0} reviews)
                   </span>
                 </div>
               </div>
@@ -173,12 +159,19 @@ const ContractorDetail = () => {
                   </a>
                 </div>
               )}
+
+              {contractor.years_in_business && contractor.years_in_business > 0 && (
+                <div className="flex items-center text-gray-600">
+                  <Clock className="w-4 h-4 mr-2" aria-label="Years in business" />
+                  <span>{contractor.years_in_business} years in business</span>
+                </div>
+              )}
             </Card>
             
             <div>
               <h2 className="text-xl font-semibold text-gray-900">About</h2>
               <p className="mt-4 text-gray-600 leading-relaxed">
-                {contractor.description}
+                {contractor.website_description || contractor.description}
               </p>
             </div>
 
@@ -235,7 +228,7 @@ const ContractorDetail = () => {
           <div className="mt-12">
             <h2 className="text-2xl font-bold mb-6">Reviews</h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {contractor.google_reviews.map((review: any, index: number) => (
+              {contractor.google_reviews.map((review, index) => (
                 <Card key={index} className="p-4">
                   <div className="flex items-center mb-4">
                     <div className="flex items-center" aria-label={`Rating: ${review.rating} out of 5 stars`}>
