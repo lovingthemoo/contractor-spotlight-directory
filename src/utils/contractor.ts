@@ -1,4 +1,3 @@
-
 import { Contractor, DatabaseContractor, GooglePhoto, GoogleReview } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -154,14 +153,10 @@ export const getDisplayImage = (contractor: Contractor): string => {
 
   // First priority: Company-specific Google photos
   if (contractor.google_photos?.length > 0) {
-    // Find the first photo that's either EXTERIOR or INTERIOR type, or just take the first photo
-    const priorityPhoto = contractor.google_photos.find(
-      photo => photo.type === 'EXTERIOR' || photo.type === 'INTERIOR'
-    ) || contractor.google_photos[0];
-    
-    if (priorityPhoto?.url) {
-      console.log('Using Google photo:', priorityPhoto.type, priorityPhoto.url);
-      return priorityPhoto.url;
+    const firstPhoto = contractor.google_photos[0];
+    if (firstPhoto?.url) {
+      console.log('Using Google photo:', firstPhoto.url);
+      return firstPhoto.url;
     }
   }
   

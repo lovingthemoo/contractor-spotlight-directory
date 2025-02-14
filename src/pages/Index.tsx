@@ -8,15 +8,18 @@ import ContractorCard from "@/components/contractors/ContractorCard";
 import SearchBar from "@/components/contractors/SearchBar";
 import SpecialtyFilter from "@/components/contractors/SpecialtyFilter";
 import { transformContractor, getDisplayImage, getDisplayAddress } from "@/utils/contractor";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import type { Contractor } from "@/types/contractor";
 
-// Get unique specialties from the database
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
+const ratingFilters = ["All", "4.5+", "4.0+", "3.5+", "3.0+"];
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
+  const [selectedRating, setSelectedRating] = useState("All");
   
   const { data: contractors = [], isLoading, error } = useQuery({
     queryKey: ['contractors'],
@@ -26,7 +29,7 @@ const Index = () => {
           .from('contractors')
           .select('*')
           .order('rating', { ascending: false })
-          .not('rating', 'is', null); // Only get contractors with ratings
+          .not('rating', 'is', null);
         
         if (response.error) {
           toast.error('Failed to fetch contractors');
@@ -40,23 +43,35 @@ const Index = () => {
 
         const transformedContractors = await Promise.all(response.data.map(transformContractor));
         
-        // Log the transformed contractors for debugging
-        console.log('Fetched contractors:', transformedContractors.length);
-        console.log('Sample contractor:', transformedContractors[0]);
-
-        return transformedContractors;
+        // Randomly shuffle the contractors
+        const shuffledContractors = [...transformedContractors].sort(() => Math.random() - 0.5);
+        
+        return shuffledContractors;
       } catch (e) {
         console.error('Error fetching contractors:', e);
         throw e;
       }
     },
-    staleTime: 1000 * 60 * 5, // Cache data for 5 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
   });
+
+  const getRatingThreshold = (filter: string): number => {
+    switch (filter) {
+      case "4.5+": return 4.5;
+      case "4.0+": return 4.0;
+      case "3.5+": return 3.5;
+      case "3.0+": return 3.0;
+      default: return 0;
+    }
+  };
 
   const filteredContractors = contractors
     .filter(contractor => 
       selectedSpecialty === "All" || contractor.specialty === selectedSpecialty
+    )
+    .filter(contractor => 
+      selectedRating === "All" || (contractor.rating && contractor.rating >= getRatingThreshold(selectedRating))
     )
     .filter(contractor => 
       contractor.business_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -99,6 +114,38 @@ const Index = () => {
           aria-label="Filter by specialty"
         />
 
+        {/* Rating Filter */}
+        <section className="px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div className="animate-in">
+            <h2 className="text-lg font-semibold text-gray-900" id="rating-filter-heading">
+              Filter by Rating
+            </h2>
+            <RadioGroup 
+              className="flex flex-wrap gap-4 mt-4"
+              defaultValue={selectedRating}
+              onValueChange={setSelectedRating}
+              aria-label="Rating filter"
+              aria-labelledby="rating-filter-heading"
+            >
+              {ratingFilters.map((rating) => (
+                <div key={rating} className="flex items-center space-x-2">
+                  <RadioGroupItem 
+                    value={rating} 
+                    id={`rating-${rating.toLowerCase().replace('+', '-plus')}`}
+                    title={`Select ${rating} rating filter`}
+                  />
+                  <Label 
+                    htmlFor={`rating-${rating.toLowerCase().replace('+', '-plus')}`}
+                    className="cursor-pointer"
+                  >
+                    {rating}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+        </section>
+
         {/* Featured Contractors */}
         <section 
           className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8"
@@ -132,7 +179,7 @@ const Index = () => {
 
             {!isLoading && !error && filteredContractors.length === 0 && (
               <div className="text-center py-12 text-gray-500" role="status">
-                {searchQuery || selectedSpecialty !== "All" 
+                {searchQuery || selectedSpecialty !== "All" || selectedRating !== "All"
                   ? "No contractors found matching your criteria."
                   : "No contractors available at the moment."}
               </div>
