@@ -29,19 +29,21 @@ const Index = () => {
         if (!response.data?.length) return [];
 
         // Debug log to check raw data
-        console.log('Raw contractors data:', response.data);
+        console.log('Raw contractors data with ratings:', response.data.map(c => ({
+          id: c.id,
+          name: c.business_name,
+          rating: c.rating,
+          review_count: c.review_count
+        })));
 
         const transformedContractors = await Promise.all(response.data.map(transformContractor));
         
         // Debug log to check transformed data
-        console.log('Transformed contractors:', transformedContractors.map(c => ({
+        console.log('Transformed contractors with ratings:', transformedContractors.map(c => ({
           id: c.id,
           name: c.business_name,
-          hasGooglePhotos: !!c.google_photos?.length,
-          hasImages: !!c.images?.length,
-          image: getDisplayImage(c),
           rating: c.rating,
-          specialty: c.specialty
+          review_count: c.review_count
         })));
 
         return transformedContractors;
@@ -166,3 +168,4 @@ const Index = () => {
 };
 
 export default Index;
+
