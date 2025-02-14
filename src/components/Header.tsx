@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Phone, Mail, Clock } from "lucide-react";
+import { Mail } from "lucide-react";
 import { Button } from "./ui/button";
 
 const Header = () => {
@@ -11,17 +11,7 @@ const Header = () => {
     <header className="w-full bg-white border-b">
       {/* Top Bar */}
       <div className="bg-primary py-2">
-        <div className="container mx-auto px-4 flex justify-between items-center text-white text-sm">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center">
-              <Phone className="w-4 h-4 mr-2" />
-              <span>Contact Us: 0800 123 4567</span>
-            </div>
-            <div className="hidden md:flex items-center">
-              <Clock className="w-4 h-4 mr-2" />
-              <span>24/7 Directory Access</span>
-            </div>
-          </div>
+        <div className="container mx-auto px-4 flex justify-center items-center text-white text-sm">
           <div className="flex items-center">
             <Mail className="w-4 h-4 mr-2" />
             <span>info@protradesdirectory.co.uk</span>

@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Facebook, Twitter, Instagram, Linkedin, MapPin, Phone, Mail } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, Mail } from "lucide-react";
 
 const Footer = () => {
   const location = useLocation();
@@ -76,20 +76,10 @@ const Footer = () => {
           {/* Contact Info */}
           <div>
             <h3 className="text-xl font-bold text-white mb-4">Contact Us</h3>
-            <ul className="space-y-4">
-              <li className="flex items-center">
-                <MapPin className="w-5 h-5 mr-2 text-primary" />
-                <span>123 Business Centre, London, UK</span>
-              </li>
-              <li className="flex items-center">
-                <Phone className="w-5 h-5 mr-2 text-primary" />
-                <span>0800 123 4567</span>
-              </li>
-              <li className="flex items-center">
-                <Mail className="w-5 h-5 mr-2 text-primary" />
-                <span>info@protradesdirectory.co.uk</span>
-              </li>
-            </ul>
+            <div className="flex items-center space-x-2">
+              <Mail className="w-5 h-5 text-primary" />
+              <span>info@protradesdirectory.co.uk</span>
+            </div>
           </div>
         </div>
 
