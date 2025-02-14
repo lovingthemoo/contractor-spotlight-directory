@@ -99,6 +99,8 @@ Deno.serve(async (req) => {
           google_business_scopes: placeDetails.types,
           needs_google_enrichment: false,
           last_enrichment_attempt: new Date().toISOString(),
+          description: placeDetails.editorialSummary?.text || '',
+          website_description: placeDetails.editorialSummary?.text || '',
           slug: placeDetails.displayName?.text
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')

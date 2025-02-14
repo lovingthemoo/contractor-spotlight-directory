@@ -65,7 +65,7 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Updated field mask to match the exact API field names
+      // Updated field mask to match the exact API field names and include all needed fields
       const fieldMask = [
         'id',
         'displayName',
@@ -78,7 +78,11 @@ export class GooglePlacesService {
         'regularOpeningHours',
         'photos',
         'reviews',
-        'types'
+        'types',
+        'primaryType',
+        'displayName.languageCode',
+        'editorialSummary.text',
+        'editorialSummary.languageCode'
       ].join(',');
 
       const response = await fetch(`${this.baseUrl}/${placeId}`, {
