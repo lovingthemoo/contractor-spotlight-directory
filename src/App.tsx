@@ -11,6 +11,8 @@ import Register from "./pages/Register";
 import GetQuotes from "./pages/GetQuotes";
 import ContractorDetail from "./pages/ContractorDetail";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/AdminLogin";
+import AdminPortal from "./pages/AdminPortal";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,9 @@ const App = () => (
           <Route path="/search" element={<FindTrader />} />
           <Route path="/register" element={<Register />} />
           <Route path="/get-quotes" element={<GetQuotes />} />
+          {/* Admin routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/portal" element={<AdminPortal />} />
           {/* New URL structure */}
           <Route path="/:region/:service/:companyName" element={<ContractorDetail />} />
           {/* Redirect old URLs to new format */}
