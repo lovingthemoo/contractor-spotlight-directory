@@ -1,36 +1,10 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, AlertCircle, CheckCircle, X, Trash2, Clock } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { format, formatDistanceToNow } from "date-fns";
-
-interface UploadLog {
-  id: string;
-  created_at: string;
-  filename: string;
-  success_count: number;
-  error_count: number;
-  errors: any;
-  status: string;
-  enrichment_start_time?: string;
-  enrichment_end_time?: string;
-}
+import ImportFileUpload from "@/components/admin/ImportFileUpload";
+import ImportPreview from "@/components/admin/ImportPreview";
+import ImportLogs from "@/components/admin/ImportLogs";
 
 interface PreviewData {
   business_name: string;
@@ -73,7 +47,7 @@ const AdminImport = () => {
         .limit(10);
       
       if (error) throw error;
-      return data as UploadLog[];
+      return data;
     }
   });
 
@@ -266,14 +240,6 @@ const AdminImport = () => {
     }
   };
 
-  const formatTimeframe = (start?: string, end?: string) => {
-    if (!start) return "Not started";
-    if (!end) return "In progress...";
-    
-    const duration = new Date(end).getTime() - new Date(start).getTime();
-    return `${Math.round(duration / 1000)}s`;
-  };
-
   const handleConfirmImport = async () => {
     if (!previewData.length) return;
 
@@ -323,163 +289,24 @@ const AdminImport = () => {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Import Contractors</h1>
         
-        <Card className="p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Upload CSV File</h2>
-          <div className="flex items-center gap-4">
-            <Input
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              disabled={isUploading || showPreview}
-              className="max-w-md"
-            />
-            {isUploading && (
-              <div className="animate-spin">
-                <Upload className="h-5 w-5" />
-              </div>
-            )}
-          </div>
-          <p className="mt-4 text-sm text-gray-500">
-            Expected CSV headers: Business Name (required), Trading Name, Specialty, Phone, Email, Website, Location, 
-            Postal Code, Description. Various formats accepted.
-          </p>
-        </Card>
+        <ImportFileUpload
+          isUploading={isUploading}
+          showPreview={showPreview}
+          onFileUpload={handleFileUpload}
+        />
 
         {showPreview && (
-          <Card className="p-6 mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Preview Data</h2>
-              <div className="flex gap-2">
-                <Button onClick={cancelPreview} variant="outline">
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleConfirmImport} 
-                  disabled={!previewData.some(d => d.isValid)}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Confirm Import
-                </Button>
-              </div>
-            </div>
-            <ScrollArea className="h-[400px] rounded-md border">
-              <div className="p-4">
-                {previewData.map((data, index) => (
-                  <div key={index} className={`p-4 mb-2 rounded-lg ${data.isValid ? 'bg-green-50' : 'bg-red-50'}`}>
-                    <div className="flex justify-between items-start">
-                      <div className="overflow-hidden">
-                        <p className="font-medium">{data.business_name || 'No Business Name'}</p>
-                        <p className="text-sm text-gray-600">
-                          {data.location} | {data.specialty}
-                        </p>
-                        {data.email && (
-                          <p className="text-sm text-gray-600">{data.email}</p>
-                        )}
-                        {data.phone && (
-                          <p className="text-sm text-gray-600">{data.phone}</p>
-                        )}
-                      </div>
-                      {data.isValid ? (
-                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      ) : (
-                        <div className="flex items-center text-red-500">
-                          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
-                          <span className="text-sm">{data.error}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-            <p className="mt-4 text-sm text-gray-500">
-              Valid records: {previewData.filter(d => d.isValid).length} / {previewData.length}
-            </p>
-          </Card>
+          <ImportPreview
+            previewData={previewData}
+            onCancel={cancelPreview}
+            onConfirm={handleConfirmImport}
+          />
         )}
 
-        <h2 className="text-xl font-semibold mb-4">Recent Imports</h2>
-        <div className="space-y-4">
-          {logs.map((log) => (
-            <Card key={log.id} className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{log.filename}</p>
-                    <span className="text-sm text-gray-500">
-                      {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 mt-1">
-                    <div className="flex items-center text-green-600">
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      {log.success_count}
-                    </div>
-                    {log.error_count > 0 && (
-                      <div className="flex items-center text-red-600">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {log.error_count}
-                      </div>
-                    )}
-                    {(log.enrichment_start_time || log.enrichment_end_time) && (
-                      <div className="flex items-center text-blue-600">
-                        <Clock className="w-4 h-4 mr-1" />
-                        {formatTimeframe(log.enrichment_start_time, log.enrichment_end_time)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {log.errors && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => console.log('Error details:', log.errors)}
-                    >
-                      View Errors
-                    </Button>
-                  )}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Import Log</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this import log? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeleteLog(log.id)}
-                          className="bg-red-500 hover:bg-red-600"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-              {log.errors && (
-                <div className="mt-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => console.log('Error details:', log.errors)}
-                  >
-                    View Errors
-                  </Button>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
+        <ImportLogs
+          logs={logs}
+          onDelete={handleDeleteLog}
+        />
       </div>
     </div>
   );
