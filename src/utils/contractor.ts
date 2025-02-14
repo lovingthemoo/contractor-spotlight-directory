@@ -151,18 +151,28 @@ export const getDisplayImage = (contractor: Contractor): string => {
     first_google_photo: contractor.google_photos?.[0]?.url,
     first_image: contractor.images?.[0]
   });
-  
-  // First try to get a Google photo
-  if (contractor.google_photos?.[0]?.url) {
-    return contractor.google_photos[0].url;
+
+  // First priority: Company-specific Google photos
+  if (contractor.google_photos?.length > 0) {
+    // Find the first photo that's either EXTERIOR or INTERIOR type, or just take the first photo
+    const priorityPhoto = contractor.google_photos.find(
+      photo => photo.type === 'EXTERIOR' || photo.type === 'INTERIOR'
+    ) || contractor.google_photos[0];
+    
+    if (priorityPhoto?.url) {
+      console.log('Using Google photo:', priorityPhoto.type, priorityPhoto.url);
+      return priorityPhoto.url;
+    }
   }
   
-  // Then try to get an uploaded image
+  // Second priority: Uploaded images
   if (Array.isArray(contractor.images) && contractor.images[0]) {
+    console.log('Using uploaded image:', contractor.images[0]);
     return contractor.images[0];
   }
   
-  // Return a default image if nothing else is available
+  // Fallback: Default construction image
+  console.log('Using fallback image for:', contractor.business_name);
   return 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f';
 };
 
