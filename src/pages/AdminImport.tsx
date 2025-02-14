@@ -80,13 +80,13 @@ const AdminImport = () => {
     const mappedRecord: Record<string, any> = {};
     
     // Try to map each field in the record to the correct database field
-    Object.entries(record).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(record)) {
       const normalizedKey = key.toLowerCase().trim();
       const mappedField = findMatchingField(normalizedKey);
       if (mappedField) {
         mappedRecord[mappedField] = value;
       }
-    });
+    }
 
     const data: PreviewData = {
       business_name: mappedRecord.business_name || '',
@@ -98,7 +98,7 @@ const AdminImport = () => {
       isValid: true
     };
 
-    if (!data.business_name) {
+    if (!data.business_name || data.business_name.trim() === '') {
       data.isValid = false;
       data.error = 'Business name is required';
     }
@@ -131,7 +131,7 @@ const AdminImport = () => {
 
     try {
       const text = await file.text();
-      const lines = text.split('\n');
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line);
       const headers = lines[0].split(',').map(h => h.trim());
       
       // Map headers to database fields
@@ -139,26 +139,31 @@ const AdminImport = () => {
       
       const rows = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim());
-        return mappedHeaders.reduce((obj, header, index) => {
-          obj[header] = values[index] || '';
-          return obj;
-        }, {} as Record<string, string>);
+        const record: Record<string, string> = {};
+        
+        mappedHeaders.forEach((header, index) => {
+          if (values[index]) {
+            record[header] = values[index];
+          }
+        });
+        
+        return record;
       });
 
       const validatedData = rows
-        .filter(row => Object.keys(row).length > 0 && Object.values(row).some(v => v))
+        .filter(row => Object.keys(row).length > 0)
         .map(validateRecord);
 
       setPreviewData(validatedData);
       setShowPreview(true);
 
-      // Show header mapping results with the correct variant
+      // Show header mapping results
       const unmappedHeaders = headers.filter((_, i) => !findMatchingField(headers[i]));
       if (unmappedHeaders.length > 0) {
         toast({
           title: "Some headers couldn't be mapped",
           description: `Unmapped headers: ${unmappedHeaders.join(', ')}`,
-          variant: "default"  // Changed from "warning" to "default"
+          variant: "default"
         });
       }
     } catch (error) {
@@ -216,7 +221,7 @@ const AdminImport = () => {
   };
 
   return (
-    <div className="p-8 overflow-x-hidden">
+    <div className="p-8 max-w-[100vw] overflow-x-hidden">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Import Contractors</h1>
         
@@ -265,17 +270,23 @@ const AdminImport = () => {
                 {previewData.map((data, index) => (
                   <div key={index} className={`p-4 mb-2 rounded-lg ${data.isValid ? 'bg-green-50' : 'bg-red-50'}`}>
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className="overflow-hidden">
                         <p className="font-medium">{data.business_name || 'No Business Name'}</p>
                         <p className="text-sm text-gray-600">
                           {data.location} | {data.specialty}
                         </p>
+                        {data.email && (
+                          <p className="text-sm text-gray-600">{data.email}</p>
+                        )}
+                        {data.phone && (
+                          <p className="text-sm text-gray-600">{data.phone}</p>
+                        )}
                       </div>
                       {data.isValid ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                       ) : (
                         <div className="flex items-center text-red-500">
-                          <AlertCircle className="h-5 w-5 mr-2" />
+                          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
                           <span className="text-sm">{data.error}</span>
                         </div>
                       )}
