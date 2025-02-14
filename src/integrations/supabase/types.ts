@@ -245,6 +245,9 @@ export type Database = {
       upload_logs: {
         Row: {
           created_at: string
+          enrichment_end_time: string | null
+          enrichment_scope: Json | null
+          enrichment_start_time: string | null
           error_count: number | null
           errors: Json | null
           filename: string
@@ -254,6 +257,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          enrichment_end_time?: string | null
+          enrichment_scope?: Json | null
+          enrichment_start_time?: string | null
           error_count?: number | null
           errors?: Json | null
           filename: string
@@ -263,6 +269,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          enrichment_end_time?: string | null
+          enrichment_scope?: Json | null
+          enrichment_start_time?: string | null
           error_count?: number | null
           errors?: Json | null
           filename?: string
