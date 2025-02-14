@@ -65,7 +65,7 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Request all photo-related fields
+      // Expanded field mask to get more photo details
       const fieldMask = [
         'id',
         'displayName',
@@ -78,7 +78,11 @@ export class GooglePlacesService {
         'googleMapsUri',
         'internationalPhoneNumber',
         'reviews',
-        'photos',  // Request all photo fields
+        'photos.name',
+        'photos.widthPx',
+        'photos.heightPx',
+        'photos.authorAttributions',
+        'photos.placePhotoMetadata',
         'regularOpeningHours'
       ].join(',');
 
@@ -104,22 +108,23 @@ export class GooglePlacesService {
         hasPhotosField: 'photos' in placeDetails,
         photosIsArray: Array.isArray(placeDetails.photos),
         photosLength: placeDetails.photos?.length,
-        firstPhoto: placeDetails.photos?.[0]
+        firstPhotoRaw: placeDetails.photos?.[0]
       });
 
       // Transform photos to use the format similar to the provided examples
       if (placeDetails.photos && Array.isArray(placeDetails.photos)) {
-        placeDetails.photos = placeDetails.photos.map((photo: any) => {
+        placeDetails.photos = placeDetails.photos.map((photo: any, index: number) => {
           if (!photo.name) {
-            console.log('Photo missing name:', photo);
+            console.log(`Photo ${index} missing name:`, photo);
             return null;
           }
           
-          console.log('Processing photo:', photo);
+          console.log(`Processing photo ${index}:`, photo);
           
+          // Extract the photo reference from the full name path
           const photoRef = photo.name.split('/').pop();
           if (!photoRef) {
-            console.log('Invalid photo reference:', photo.name);
+            console.log(`Invalid photo reference for photo ${index}:`, photo.name);
             return null;
           }
 
@@ -131,31 +136,41 @@ export class GooglePlacesService {
           const height = photo.heightPx || 600;
           const aspectRatio = width / height;
           
-          console.log('Photo dimensions:', {
+          console.log(`Photo ${index} dimensions:`, {
             width,
             height,
             aspectRatio,
-            photoId
+            photoId,
+            authorAttribution: photo.authorAttributions?.[0]
           });
           
-          let dimensions;
-          if (Math.abs(aspectRatio - 1) < 0.1) {
-            // Square-ish image
-            dimensions = 'w231-h231';
-          } else {
-            // Rectangular image
-            dimensions = 'w231-h165';
-          }
+          // Generate both preview and full-size URLs
+          const previewDimensions = Math.abs(aspectRatio - 1) < 0.1 ? 'w231-h231' : 'w231-h165';
+          const fullDimensions = 'w1024-h768';
           
-          const url = `https://lh5.googleusercontent.com/p/${photoId}=${dimensions}-n-k-no-nu`;
-          console.log('Generated photo URL:', url);
+          const previewUrl = `https://lh5.googleusercontent.com/p/${photoId}=${previewDimensions}-n-k-no-nu`;
+          const fullUrl = `https://lh5.googleusercontent.com/p/${photoId}=${fullDimensions}-n-k-no-nu`;
+          
+          console.log(`Generated URLs for photo ${index}:`, {
+            preview: previewUrl,
+            full: fullUrl
+          });
           
           return {
-            ...photo,
-            url
+            id: photoId,
+            name: photo.name,
+            width,
+            height,
+            previewUrl,
+            fullUrl,
+            attribution: photo.authorAttributions?.[0]?.displayName || null
           };
         }).filter(Boolean); // Remove any null entries
 
+        console.log('Successfully processed photos:', {
+          totalPhotos: placeDetails.photos.length,
+          samplePhoto: placeDetails.photos[0]
+        });
       } else {
         console.log('No photos array in place details:', placeDetails);
       }
