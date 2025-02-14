@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Search, MapPin, ChevronRight, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,10 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+// Constants
+const MIN_RATING = 4; // Minimum rating for featured contractors
+const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
 
 interface Contractor {
   id: string;
