@@ -106,18 +106,22 @@ export class GooglePlacesService {
 
         // Transform photos to use the format similar to the provided examples
         placeDetails.photos = placeDetails.photos.map((photo: any) => {
+          if (!photo.name) return null;
+          
           const photoRef = photo.name.split('/').pop();
-          // Extract the base64-like portion after places/ from the photo reference
+          // Get everything after 'places/' to create the unique photo ID
           const photoId = photoRef.replace('places/', '');
+          
           return {
             ...photo,
-            url: `https://lh5.googleusercontent.com/p/AF1QipP${photoId}=w800-h500-n-k-no`
+            url: `https://lh5.googleusercontent.com/p/${photoId}=w800-h500-n-k-no`
           };
-        });
+        }).filter(Boolean); // Remove any null entries
 
         console.log('Transformed photos:', {
           photoCount: placeDetails.photos.length,
-          sampleUrl: placeDetails.photos[0]?.url
+          sampleUrl: placeDetails.photos[0]?.url,
+          photoRefs: placeDetails.photos.map(p => p.url)
         });
       } else {
         console.log('No photos found in response');
