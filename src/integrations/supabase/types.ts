@@ -97,7 +97,7 @@ export type Database = {
           google_formatted_address: string | null
           google_formatted_phone: string | null
           google_photos: Json | null
-          google_place_id: string | null
+          google_place_id: string
           google_place_name: string | null
           google_reviews: Json | null
           id: string
@@ -123,6 +123,7 @@ export type Database = {
           project_types: string[] | null
           rating: number | null
           review_count: number | null
+          service_area: string[] | null
           service_radius: number | null
           services_offered: string[] | null
           slug: string
@@ -148,7 +149,7 @@ export type Database = {
           google_formatted_address?: string | null
           google_formatted_phone?: string | null
           google_photos?: Json | null
-          google_place_id?: string | null
+          google_place_id: string
           google_place_name?: string | null
           google_reviews?: Json | null
           id?: string
@@ -174,6 +175,7 @@ export type Database = {
           project_types?: string[] | null
           rating?: number | null
           review_count?: number | null
+          service_area?: string[] | null
           service_radius?: number | null
           services_offered?: string[] | null
           slug: string
@@ -199,7 +201,7 @@ export type Database = {
           google_formatted_address?: string | null
           google_formatted_phone?: string | null
           google_photos?: Json | null
-          google_place_id?: string | null
+          google_place_id?: string
           google_place_name?: string | null
           google_reviews?: Json | null
           id?: string
@@ -225,6 +227,7 @@ export type Database = {
           project_types?: string[] | null
           rating?: number | null
           review_count?: number | null
+          service_area?: string[] | null
           service_radius?: number | null
           services_offered?: string[] | null
           slug?: string
