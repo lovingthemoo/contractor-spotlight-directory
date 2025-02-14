@@ -102,7 +102,7 @@ const Index = () => {
         throw e;
       }
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     refetchOnWindowFocus: false,
   });
 

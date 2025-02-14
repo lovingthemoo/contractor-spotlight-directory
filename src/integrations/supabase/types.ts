@@ -96,13 +96,13 @@ export type Database = {
           google_business_scopes: string[] | null
           google_formatted_address: string | null
           google_formatted_phone: string | null
-          google_photos: Json | null
+          google_photos: Json
           google_place_id: string
           google_place_name: string | null
           google_reviews: Json | null
           id: string
           identity_verified: boolean | null
-          images: string[] | null
+          images: string[]
           insurance_details: Json | null
           insurance_verified: boolean | null
           is_admin: boolean | null
@@ -148,13 +148,13 @@ export type Database = {
           google_business_scopes?: string[] | null
           google_formatted_address?: string | null
           google_formatted_phone?: string | null
-          google_photos?: Json | null
+          google_photos?: Json
           google_place_id: string
           google_place_name?: string | null
           google_reviews?: Json | null
           id?: string
           identity_verified?: boolean | null
-          images?: string[] | null
+          images?: string[]
           insurance_details?: Json | null
           insurance_verified?: boolean | null
           is_admin?: boolean | null
@@ -200,13 +200,13 @@ export type Database = {
           google_business_scopes?: string[] | null
           google_formatted_address?: string | null
           google_formatted_phone?: string | null
-          google_photos?: Json | null
+          google_photos?: Json
           google_place_id?: string
           google_place_name?: string | null
           google_reviews?: Json | null
           id?: string
           identity_verified?: boolean | null
-          images?: string[] | null
+          images?: string[]
           insurance_details?: Json | null
           insurance_verified?: boolean | null
           is_admin?: boolean | null
