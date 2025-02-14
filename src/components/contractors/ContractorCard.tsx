@@ -82,9 +82,9 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
           )}
 
           <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center" aria-label={`Rating: ${contractor.rating} out of 5 stars`}>
+            <div className="flex items-center" aria-label={`Rating: ${contractor.rating.toFixed(1)} out of 5 stars`}>
               <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
-              <span className="ml-1 text-sm font-medium">{contractor.rating}</span>
+              <span className="ml-1 text-sm font-medium">{contractor.rating.toFixed(1)}</span>
               <span className="ml-1 text-sm text-gray-500">
                 ({contractor.review_count || 0} {contractor.review_count === 1 ? 'review' : 'reviews'})
               </span>
