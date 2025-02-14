@@ -26,7 +26,25 @@ serve(async (req) => {
     }
 
     const fileContent = await file.text()
-    const records = parse(fileContent, { skipFirstRow: true })
+    let records
+
+    try {
+      // First try parsing as regular CSV
+      records = parse(fileContent, { skipFirstRow: true })
+    } catch (parseError) {
+      console.error('Error parsing CSV:', parseError)
+      // If regular parsing fails, try parsing as JSON
+      try {
+        const jsonData = JSON.parse(fileContent)
+        records = Array.isArray(jsonData) ? jsonData : [jsonData]
+      } catch (jsonError) {
+        console.error('Error parsing JSON:', jsonError)
+        return new Response(
+          JSON.stringify({ error: 'Invalid file format. Please provide a valid CSV or JSON file.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        )
+      }
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -38,39 +56,41 @@ serve(async (req) => {
 
     for (const record of records) {
       try {
-        const [
-          business_name,
-          trading_name,
-          specialty,
-          phone,
-          email,
-          website_url,
-          location,
-          postal_code,
-          description,
-          slug
-        ] = record
+        // Try to map the record using common variations of field names
+        const contractorData = {
+          business_name: record.business_name || record.businessName || record.rgnuSb || record['Business Name'],
+          trading_name: record.trading_name || record.tradingName || record['Trading Name'] || null,
+          specialty: (record.specialty || record.speciality || record.hGz87c || record['Specialty'] || 'GENERAL')
+            .toString().toUpperCase(),
+          phone: record.phone || record.phoneNumber || record.hGz87c3 || record['Phone'] || null,
+          email: record.email || record['Email'] || null,
+          website_url: record.website_url || record.websiteUrl || record['Website URL'] || 
+            record['keychainify-checked href'] || null,
+          location: record.location || record.hGz87c2 || record['Location'] || 'London',
+          postal_code: record.postal_code || record.postalCode || record['Postal Code'] || null,
+          description: record.description || record['Description'] || null
+        }
+
+        // Validate required fields
+        if (!contractorData.business_name) {
+          throw new Error('Business name is required')
+        }
+
+        // Generate slug if not provided
+        contractorData.slug = record.slug || 
+          contractorData.business_name.toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '')
 
         const { error } = await supabase
           .from('contractors')
-          .insert({
-            business_name,
-            trading_name: trading_name || null,
-            specialty: specialty.toUpperCase(),
-            phone: phone || null,
-            email: email || null,
-            website_url: website_url || null,
-            location,
-            postal_code: postal_code || null,
-            description: description || null,
-            slug: slug || business_name.toLowerCase().replace(/\s+/g, '-')
-          })
+          .insert(contractorData)
 
         if (error) {
           console.error('Error importing record:', error)
-          failedImports.push({ record, error: error.message })
+          failedImports.push({ record: contractorData, error: error.message })
         } else {
-          successfulImports.push(record)
+          successfulImports.push(contractorData)
         }
       } catch (error) {
         console.error('Error processing record:', error)
@@ -106,7 +126,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to process CSV file', details: error.message }),
+      JSON.stringify({ error: 'Failed to process file', details: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
