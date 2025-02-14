@@ -54,93 +54,56 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  console.log('Starting function execution');
+
   try {
     const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
     if (!GOOGLE_PLACES_API_KEY) {
+      console.error('Missing GOOGLE_PLACES_API_KEY');
       throw new Error('Google Places API key not configured');
     }
 
-    console.log('Starting enrichment process...');
+    console.log('Initializing services...');
     const googlePlacesService = new GooglePlacesService(GOOGLE_PLACES_API_KEY);
     const contractorService = new ContractorService();
 
-    // Test API connection
-    await googlePlacesService.testApiConnection();
-    console.log('API connection test successful');
+    // Test API connection with better error handling
+    try {
+      console.log('Testing API connection...');
+      await googlePlacesService.testApiConnection();
+      console.log('API connection test successful');
+    } catch (error) {
+      console.error('API connection test failed:', error);
+      throw new Error(`Failed to connect to Google Places API: ${error.message}`);
+    }
 
     let allPlaces: PlaceSearchResult[] = [];
     let searchErrors = 0;
 
-    // Search across all combinations
-    for (const searchQuery of SEARCH_QUERIES) {
-      for (const location of LOCATIONS) {
-        try {
-          console.log(`Searching for: "${searchQuery}" in "${location}"`);
-          
-          const places = await googlePlacesService.searchPlaces(searchQuery, location);
-          console.log(`Found ${places.length} places for "${searchQuery}" in "${location}"`);
-          
-          // Filter out duplicates
-          const newPlaces = places.filter(
-            place => !allPlaces.some(existing => existing.id === place.id)
-          );
-          allPlaces = [...allPlaces, ...newPlaces];
-
-          console.log(`Added ${newPlaces.length} new unique places from ${location}`);
-          
-          // Rate limiting
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (error) {
-          console.error(`Search error for ${searchQuery} in ${location}:`, error);
-          searchErrors++;
-        }
-      }
+    // Start with a single test query first
+    const testQuery = SEARCH_QUERIES[0];
+    const testLocation = LOCATIONS[0];
+    
+    try {
+      console.log(`Testing search with: "${testQuery}" in "${testLocation}"`);
+      const places = await googlePlacesService.searchPlaces(testQuery, testLocation);
+      console.log(`Test search found ${places.length} places`);
+      allPlaces = places;
+    } catch (error) {
+      console.error('Test search failed:', error);
+      throw new Error(`Failed to perform test search: ${error.message}`);
     }
 
-    console.log(`Total unique places found: ${allPlaces.length}`);
-
-    if (allPlaces.length === 0) {
-      return new Response(JSON.stringify({
-        message: 'No places found in search response',
-        searchQueries: SEARCH_QUERIES,
-        locations: LOCATIONS,
-        searchErrors
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 404
-      });
-    }
-
-    // Process each place
+    // Process test results
     let processedCount = 0;
     let errorCount = 0;
 
-    for (const place of allPlaces) {
+    if (allPlaces.length > 0) {
+      const testPlace = allPlaces[0];
       try {
-        console.log(`Processing place: ${place.displayName?.text}`);
+        console.log(`Testing place details fetch for: ${testPlace.displayName?.text}`);
+        const placeDetails = await googlePlacesService.getPlaceDetails(testPlace.id);
         
-        const placeDetails = await googlePlacesService.getPlaceDetails(place.id);
-        console.log('Got place details:', {
-          name: placeDetails.displayName?.text,
-          photoCount: placeDetails.photos?.length || 0
-        });
-        
-        // Process photos - generate URLs for each photo
-        let photos = [];
-        if (placeDetails.photos && Array.isArray(placeDetails.photos)) {
-          photos = placeDetails.photos;
-          console.log(`Processing ${photos.length} photos for ${placeDetails.displayName?.text}`);
-        }
-
-        // Determine the specialty based on the search query that found this place
-        const specialty = getSpecialtyFromQuery(
-          SEARCH_QUERIES.find(query => 
-            placeDetails.types?.some(type => 
-              type.toLowerCase().includes(query.toLowerCase())
-            )
-          ) || 'building company'
-        );
-
         const contractorData: ContractorData = {
           business_name: placeDetails.displayName?.text || '',
           google_place_id: placeDetails.id,
@@ -150,9 +113,9 @@ Deno.serve(async (req) => {
           location: 'London',
           rating: placeDetails.rating,
           review_count: placeDetails.userRatingCount,
-          specialty,
+          specialty: getSpecialtyFromQuery(testQuery),
           google_reviews: placeDetails.reviews || [],
-          google_photos: photos,
+          google_photos: placeDetails.photos || [],
           website_url: placeDetails.websiteUri,
           google_business_scopes: placeDetails.types || [],
           needs_google_enrichment: false,
@@ -166,30 +129,20 @@ Deno.serve(async (req) => {
             '-' + placeDetails.id.substring(0, 6)
         };
 
-        console.log('Attempting to upsert contractor:', {
-          name: contractorData.business_name,
-          specialty: contractorData.specialty,
-          photoCount: contractorData.google_photos?.length || 0
-        });
-
+        console.log('Testing contractor upsert...');
         if (await contractorService.upsertContractor(contractorData)) {
           processedCount++;
-          console.log(`Successfully processed: ${contractorData.business_name}`);
-        } else {
-          errorCount++;
-          console.error(`Failed to process: ${contractorData.business_name}`);
+          console.log('Test upsert successful');
         }
-
-        // Rate limiting
-        await new Promise(resolve => setTimeout(resolve, 200));
       } catch (error) {
         errorCount++;
-        console.error('Error processing place:', error);
+        console.error('Test processing failed:', error);
+        throw new Error(`Failed to process test place: ${error.message}`);
       }
     }
 
     return new Response(JSON.stringify({
-      message: 'Processing completed',
+      message: 'Test processing completed',
       totalFound: allPlaces.length,
       processed: processedCount,
       errors: errorCount,
@@ -206,7 +159,8 @@ Deno.serve(async (req) => {
     console.error('Function error:', error);
     return new Response(JSON.stringify({
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      context: 'Function execution failed'
     }), {
       headers: { 
         ...corsHeaders, 
