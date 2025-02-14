@@ -18,68 +18,68 @@ interface Contractor {
 const contractors: Contractor[] = [
   {
     id: 1,
-    name: "Elite Electrical Solutions",
+    name: "Elite Electrical Solutions - Licensed Electrician Near Me",
     image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e",
     rating: 4.8,
     reviews: 127,
     specialty: "Electrical",
     location: "Central London",
-    description: "Expert electrical contractors specializing in residential and commercial installations, rewiring, and emergency repairs. Licensed and insured with 15+ years of experience.",
+    description: "24 hour electrician and emergency electrician services in Central London. Commercial electrician services available. Our licensed electricians provide professional electrical services with 15+ years of experience. Local electrician serving all areas of London.",
     slug: "elite-electrical-solutions"
   },
   {
     id: 2,
-    name: "Thames Valley Plumbing",
+    name: "Thames Valley Plumbing - Emergency Plumber Near Me",
     image: "https://images.unsplash.com/photo-1594322436404-5a0526db4d13",
     rating: 4.9,
     reviews: 89,
     specialty: "Plumbing",
     location: "South London",
-    description: "Professional plumbing services for all your needs. Specializing in emergency repairs, bathroom installations, and central heating systems. Available 24/7.",
+    description: "24 hour plumber and emergency plumber services. Best plumbers near me in South London. Local plumbers providing comprehensive plumbing services near me. Commercial plumber services available. Emergency repairs, bathroom installations, and central heating systems.",
     slug: "thames-valley-plumbing"
   },
   {
     id: 3,
-    name: "Roofing Masters London",
+    name: "Roofing Masters London - Local Roofers Near Me",
     image: "https://images.unsplash.com/photo-1632759145355-8b8f6d37d27c",
     rating: 4.7,
     reviews: 156,
     specialty: "Roofing",
     location: "North London",
-    description: "Expert roofing contractors providing comprehensive services including repairs, replacements, and maintenance. Fully insured with proven track record.",
+    description: "Roof repair near me and emergency roof repair services. One of the leading roofing companies near me in North London. Local roofers providing commercial roofing and comprehensive roofing services near me. Fully insured with proven track record.",
     slug: "roofing-masters-london"
   },
   {
     id: 4,
-    name: "Green Gardens & Landscapes",
+    name: "Green Gardens & Landscapes - Professional Gardener Near Me",
     image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b",
     rating: 4.8,
     reviews: 92,
     specialty: "Gardening",
     location: "West London",
-    description: "Professional garden design and maintenance services. Specializing in landscape design, lawn care, and garden maintenance for residential and commercial properties.",
+    description: "Expert landscaping services and gardener near me in West London. Professional lawn care near me and garden maintenance services. Tree trimming services available. Comprehensive gardening services for all your needs. Quality lawn care services for residential and commercial properties.",
     slug: "green-gardens-landscapes"
   },
   {
     id: 5,
-    name: "Homefix Repairs",
+    name: "Homefix Repairs - Handyman Services Near Me",
     image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952",
     rating: 4.6,
     reviews: 78,
     specialty: "Home Repair",
     location: "East London",
-    description: "Comprehensive home repair and maintenance services. From minor fixes to major renovations, we handle all aspects of home improvement.",
+    description: "Professional handyman near me and home repair services in East London. Trusted handyman services and home maintenance solutions. House repair near me and home renovation services available. General handyman for all your repair needs.",
     slug: "homefix-repairs"
   },
   {
     id: 6,
-    name: "London Build Pro",
+    name: "London Build Pro - Best Home Builders Near Me",
     image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e",
     rating: 4.9,
     reviews: 143,
     specialty: "Building",
     location: "Greater London",
-    description: "Premier building contractors specializing in new builds, extensions, and major renovations. Fully licensed and insured with outstanding project management.",
+    description: "Local builders near me specializing in new home builders and residential builders services. Trusted builders in my area and best home builders in Greater London. House builders near me providing commercial builders services. Premier building contractors for new builds and extensions.",
     slug: "london-build-pro"
   }
 ];
