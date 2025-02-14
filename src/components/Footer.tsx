@@ -1,8 +1,11 @@
 
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Facebook, Twitter, Instagram, Linkedin, MapPin, Phone, Mail } from "lucide-react";
 
 const Footer = () => {
+  const location = useLocation();
+  const isCurrentPath = (path: string) => location.pathname === path;
+
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="container mx-auto px-4 py-12">
@@ -10,7 +13,7 @@ const Footer = () => {
           {/* Company Info */}
           <div>
             <h3 className="text-xl font-bold text-white mb-4">Pro Trades Directory UK</h3>
-            <p className="mb-4">Connecting you with the UK's most trusted and qualified trade professionals. All professionals are verified and rated 4★ or above.</p>
+            <p className="mb-4">Your trusted platform for finding verified trade professionals across the UK. Easy connections between customers and qualified traders.</p>
             <div className="flex space-x-4">
               <Facebook className="w-5 h-5 hover:text-primary cursor-pointer" />
               <Twitter className="w-5 h-5 hover:text-primary cursor-pointer" />
@@ -21,25 +24,52 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-xl font-bold text-white mb-4">Quick Links</h3>
+            <h3 className="text-xl font-bold text-white mb-4">Directory</h3>
             <ul className="space-y-2">
-              <li><Link to="/about" className="hover:text-primary">About Us</Link></li>
-              <li><Link to="/services" className="hover:text-primary">Our Services</Link></li>
-              <li><Link to="/testimonials" className="hover:text-primary">Testimonials</Link></li>
-              <li><Link to="/contact" className="hover:text-primary">Contact Us</Link></li>
-              <li><Link to="/register" className="hover:text-primary">Become a Trader</Link></li>
+              <li>
+                <Link 
+                  to="/about" 
+                  className={`${isCurrentPath('/about') ? 'text-primary' : ''} hover:text-primary`}
+                >
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/search" 
+                  className={`${isCurrentPath('/search') ? 'text-primary' : ''} hover:text-primary`}
+                >
+                  Find a Trader
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/register" 
+                  className={`${isCurrentPath('/register') ? 'text-primary' : ''} hover:text-primary`}
+                >
+                  List Your Business
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/get-quotes" 
+                  className={`${isCurrentPath('/get-quotes') ? 'text-primary' : ''} hover:text-primary`}
+                >
+                  Get Quotes
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Services */}
+          {/* Trade Categories */}
           <div>
-            <h3 className="text-xl font-bold text-white mb-4">Our Services</h3>
+            <h3 className="text-xl font-bold text-white mb-4">Find Traders</h3>
             <ul className="space-y-2">
-              <li><Link to="/central-london/electrical/search" className="hover:text-primary">Find Electrical Services</Link></li>
-              <li><Link to="/central-london/plumbing/search" className="hover:text-primary">Find Plumbing Services</Link></li>
-              <li><Link to="/central-london/building/search" className="hover:text-primary">Find Building & Construction</Link></li>
-              <li><Link to="/central-london/roofing/search" className="hover:text-primary">Find Roofing Services</Link></li>
-              <li><Link to="/central-london/gardening/search" className="hover:text-primary">Find Gardening & Landscaping</Link></li>
+              <li><Link to="/search?category=electrical" className="hover:text-primary">Find Electricians</Link></li>
+              <li><Link to="/search?category=plumbing" className="hover:text-primary">Find Plumbers</Link></li>
+              <li><Link to="/search?category=building" className="hover:text-primary">Find Builders</Link></li>
+              <li><Link to="/search?category=roofing" className="hover:text-primary">Find Roofers</Link></li>
+              <li><Link to="/search?category=gardening" className="hover:text-primary">Find Gardeners</Link></li>
             </ul>
           </div>
 
