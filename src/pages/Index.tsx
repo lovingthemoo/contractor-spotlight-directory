@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Search, MapPin, ChevronRight, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 // Constants
-const MIN_RATING = 4; // Minimum rating for featured contractors
+const MIN_RATING = 0; // Changed from 4 to 0 to show all contractors while testing
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
 
 interface Contractor {
@@ -38,12 +37,17 @@ const Index = () => {
   const { data: contractors = [], isLoading, error } = useQuery({
     queryKey: ['contractors'],
     queryFn: async () => {
+      console.log('Fetching contractors...');
       const { data, error } = await supabase
         .from('contractors')
         .select('*')
         .gte('rating', MIN_RATING);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching contractors:', error);
+        throw error;
+      }
+      console.log('Fetched contractors:', data);
       return data as Contractor[];
     }
   });
@@ -57,6 +61,8 @@ const Index = () => {
       contractor.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contractor.location.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    
+  console.log('Filtered contractors:', filteredContractors);
 
   return (
     <>
