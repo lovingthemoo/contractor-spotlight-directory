@@ -24,71 +24,104 @@ Deno.serve(async (req) => {
       throw new Error('Google Places API key not configured');
     }
 
+    // Log first few characters of API key to verify it's loaded (never log full key)
+    console.log('API Key starts with:', GOOGLE_PLACES_API_KEY.substring(0, 4) + '...');
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Search for builders in London with more specific terms
+    // More generic search terms
     const searchQueries = [
-      "construction companies in London",
-      "building contractors London",
-      "home builders London",
-      "building companies London"
+      "builders",
+      "construction",
+      "building company"
     ];
 
-    let allHighRatedPlaces: PlaceSearchResult[] = [];
+    let allPlaces: PlaceSearchResult[] = [];
 
-    // Try multiple search queries to get more results
+    // Try each search query
     for (const searchQuery of searchQueries) {
       console.log('Searching for:', searchQuery);
       
       const findPlaceUrl = `https://places.googleapis.com/v1/places:searchText`;
-      const searchResponse = await fetch(findPlaceUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.types,places.primaryType'
-        },
-        body: JSON.stringify({
-          textQuery: searchQuery,
-          maxResultCount: 20,
-          languageCode: "en-GB",
-          regionCode: "GB",
-          locationBias: {
-            circle: {
-              center: {
-                latitude: 51.5074,  // London's approximate center
-                longitude: -0.1278
-              },
-              radius: 20000.0  // 20km radius
-            }
+      
+      const searchBody = {
+        textQuery: `${searchQuery} in London`,
+        maxResultCount: 20,
+        languageCode: "en-GB",
+        locationBias: {
+          circle: {
+            center: {
+              latitude: 51.5074,
+              longitude: -0.1278
+            },
+            radius: 20000.0
           }
-        })
-      });
+        }
+      };
+      
+      console.log('Search request body:', JSON.stringify(searchBody));
 
-      const searchData = await searchResponse.json();
-      console.log('Search response for query:', searchQuery, 'Response:', searchData);
+      try {
+        const searchResponse = await fetch(findPlaceUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.types'
+          },
+          body: JSON.stringify(searchBody)
+        });
 
-      if (searchData.places && Array.isArray(searchData.places)) {
-        // Filter for places with rating >= 4.0
-        const highRatedPlaces = searchData.places.filter((place: PlaceSearchResult) => 
-          place.rating && place.rating >= 4.0
-        );
-        allHighRatedPlaces = [...allHighRatedPlaces, ...highRatedPlaces];
+        if (!searchResponse.ok) {
+          const errorText = await searchResponse.text();
+          console.error('Search API error:', {
+            status: searchResponse.status,
+            statusText: searchResponse.statusText,
+            body: errorText
+          });
+          continue;
+        }
+
+        const searchData = await searchResponse.json();
+        console.log('Search response:', {
+          query: searchQuery,
+          totalPlaces: searchData.places?.length || 0
+        });
+
+        if (searchData.places && Array.isArray(searchData.places)) {
+          // Include all places, we'll filter by rating later
+          allPlaces = [...allPlaces, ...searchData.places];
+        }
+      } catch (searchError) {
+        console.error('Error during search:', searchError);
+        continue;
       }
     }
 
-    if (allHighRatedPlaces.length === 0) {
-      throw new Error('No high-rated places found in any search');
+    console.log(`Total places found: ${allPlaces.length}`);
+
+    // Now filter for rating, but with a lower threshold initially
+    const highRatedPlaces = allPlaces.filter((place: PlaceSearchResult) => 
+      place.rating && place.rating >= 3.5  // Lowered threshold from 4.0
+    );
+
+    console.log(`High-rated places (>=3.5 stars): ${highRatedPlaces.length}`);
+
+    if (highRatedPlaces.length === 0) {
+      // If no places found, log all places for debugging
+      console.log('All places found:', allPlaces);
+      throw new Error('No high-rated places found. Total places found: ' + allPlaces.length);
     }
 
-    console.log(`Found total of ${allHighRatedPlaces.length} high-rated places`);
-
     // Process each high-rated place
-    for (const place of allHighRatedPlaces) {
+    let successfullyProcessed = 0;
+    for (const place of highRatedPlaces) {
       try {
+        console.log('Processing place:', place.displayName.text);
+        
         // Get detailed place information
         const placeUrl = `https://places.googleapis.com/v1/places/${place.id}`;
         const placeResponse = await fetch(placeUrl, {
@@ -98,9 +131,17 @@ Deno.serve(async (req) => {
           }
         });
 
-        const placeDetails = await placeResponse.json();
-        console.log('Place details for:', place.displayName.text, 'Details:', placeDetails);
+        if (!placeResponse.ok) {
+          console.error('Error fetching place details:', {
+            placeId: place.id,
+            status: placeResponse.status,
+            statusText: placeResponse.statusText
+          });
+          continue;
+        }
 
+        const placeDetails = await placeResponse.json();
+        
         // Prepare contractor data
         const contractorData = {
           business_name: placeDetails.displayName?.text,
@@ -119,7 +160,6 @@ Deno.serve(async (req) => {
           google_business_scopes: placeDetails.types,
           needs_google_enrichment: false,
           last_enrichment_attempt: new Date().toISOString(),
-          // Generate a URL-friendly slug from the business name
           slug: placeDetails.displayName?.text
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
@@ -127,7 +167,6 @@ Deno.serve(async (req) => {
             '-' + placeDetails.id.substring(0, 6)
         };
 
-        // Insert or update contractor in database
         const { error: upsertError } = await supabase
           .from('contractors')
           .upsert(contractorData, {
@@ -140,16 +179,22 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        successfullyProcessed++;
         console.log(`Successfully processed: ${contractorData.business_name}`);
 
       } catch (placeError) {
-        console.error('Error processing place:', place.id, placeError);
+        console.error('Error processing place:', {
+          placeId: place.id,
+          error: placeError
+        });
       }
     }
 
     return new Response(JSON.stringify({
       message: 'Processing completed',
-      processed: allHighRatedPlaces.length
+      totalPlaces: allPlaces.length,
+      highRatedPlaces: highRatedPlaces.length,
+      successfullyProcessed
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
@@ -157,7 +202,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      stack: error.stack
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
     });
