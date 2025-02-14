@@ -96,29 +96,40 @@ const AdminImport = () => {
     
     console.log('Mapped record:', mappedRecord);
 
-    // Map common specialty terms to valid enum values
+    // Map common specialty terms to valid enum values with fuzzy matching
     const mapSpecialty = (specialty: string): string => {
-      const normalizedSpecialty = specialty.trim().toLowerCase();
-      const specialtyMap: Record<string, string> = {
-        'electrical': 'Electrical',
-        'electrician': 'Electrical',
-        'plumbing': 'Plumbing',
-        'plumber': 'Plumbing',
-        'roofing': 'Roofing',
-        'roofer': 'Roofing',
-        'building': 'Building',
-        'builder': 'Building',
-        'home repair': 'Home Repair',
-        'repairs': 'Home Repair',
-        'gardening': 'Gardening',
-        'gardener': 'Gardening',
-        'landscape': 'Gardening',
-        'construction': 'Construction',
-        'handyman': 'Handyman',
-        'general': 'Handyman'  // Map general to Handyman as default
-      };
+      const normalizedSpecialty = specialty?.trim().toLowerCase() || '';
+      
+      // Define fuzzy matching patterns
+      if (normalizedSpecialty.includes('electric')) return 'Electrical';
+      if (normalizedSpecialty.includes('plumb')) return 'Plumbing';
+      if (normalizedSpecialty.includes('roof')) return 'Roofing';
+      if (normalizedSpecialty.includes('build') || 
+          normalizedSpecialty.includes('construct') ||
+          normalizedSpecialty.includes('contractor')) return 'Building';
+      if (normalizedSpecialty.includes('repair') || 
+          normalizedSpecialty.includes('fix') ||
+          normalizedSpecialty.includes('maint')) return 'Home Repair';
+      if (normalizedSpecialty.includes('garden') || 
+          normalizedSpecialty.includes('landscape') ||
+          normalizedSpecialty.includes('lawn')) return 'Gardening';
+      if (normalizedSpecialty.includes('construct')) return 'Construction';
+      if (normalizedSpecialty.includes('handy') || 
+          normalizedSpecialty.includes('general') ||
+          normalizedSpecialty.includes('odd job')) return 'Handyman';
+      
+      // Extended building-related terms
+      const buildingTerms = [
+        'build', 'contractor', 'construct', 'renovation',
+        'remodel', 'carpenter', 'joiner', 'property',
+        'home build', 'house build', 'extension'
+      ];
+      
+      if (buildingTerms.some(term => normalizedSpecialty.includes(term))) {
+        return 'Building';
+      }
 
-      return specialtyMap[normalizedSpecialty] || 'Handyman';
+      return 'Handyman'; // Default fallback
     };
 
     const data: PreviewData = {
