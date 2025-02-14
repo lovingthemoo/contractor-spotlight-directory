@@ -15,6 +15,13 @@ import { supabase } from "@/integrations/supabase/client";
 const MIN_RATING = 0;
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
 
+interface GooglePhoto {
+  url: string;
+  width: number;
+  height: number;
+  type: string;
+}
+
 interface GoogleReview {
   rating: number;
   text: string;
@@ -43,23 +50,24 @@ interface Contractor {
   founded_year?: number;
   years_in_business?: number;
   google_reviews?: GoogleReview[];
+  google_photos?: GooglePhoto[];
 }
 
-interface DatabaseContractor extends Omit<Contractor, 'google_reviews'> {
+interface DatabaseContractor extends Omit<Contractor, 'google_reviews' | 'google_photos'> {
   google_reviews?: any;
+  google_photos?: any;
 }
 
 const transformContractor = (dbContractor: DatabaseContractor): Contractor => {
   let google_reviews: GoogleReview[] | undefined;
+  let google_photos: GooglePhoto[] | undefined;
   
   if (dbContractor.google_reviews) {
     try {
-      // If it's a string, parse it, if it's already an object, use it
       const reviewsData = typeof dbContractor.google_reviews === 'string' 
         ? JSON.parse(dbContractor.google_reviews) 
         : dbContractor.google_reviews;
         
-      // Ensure the reviews match our expected format
       google_reviews = Array.isArray(reviewsData) 
         ? reviewsData.map(review => ({
             rating: Number(review.rating) || 0,
@@ -74,14 +82,53 @@ const transformContractor = (dbContractor: DatabaseContractor): Contractor => {
     }
   }
 
+  if (dbContractor.google_photos) {
+    try {
+      const photosData = typeof dbContractor.google_photos === 'string'
+        ? JSON.parse(dbContractor.google_photos)
+        : dbContractor.google_photos;
+
+      google_photos = Array.isArray(photosData)
+        ? photosData.map(photo => ({
+            url: String(photo.url || ''),
+            width: Number(photo.width) || 0,
+            height: Number(photo.height) || 0,
+            type: String(photo.type || '')
+          }))
+        : undefined;
+    } catch (e) {
+      console.error('Error parsing google_photos:', e);
+      google_photos = undefined;
+    }
+  }
+
   return {
     ...dbContractor,
     google_reviews,
-    // Ensure other required fields have default values
+    google_photos,
     rating: dbContractor.rating || 0,
     review_count: dbContractor.review_count || 0,
     images: dbContractor.images || []
   };
+};
+
+const getDisplayImage = (contractor: Contractor): string => {
+  // First try to get an exterior photo from Google
+  const exteriorPhoto = contractor.google_photos?.find(photo => photo.type === 'exterior');
+  if (exteriorPhoto?.url) return exteriorPhoto.url;
+
+  // Then try to get any work sample from Google
+  const workPhoto = contractor.google_photos?.find(photo => photo.type === 'work_sample');
+  if (workPhoto?.url) return workPhoto.url;
+
+  // Then try the first Google photo
+  if (contractor.google_photos?.[0]?.url) return contractor.google_photos[0].url;
+
+  // Fall back to uploaded images
+  if (contractor.images?.[0]) return contractor.images[0];
+
+  // Finally, use default image
+  return 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e';
 };
 
 const Index = () => {
@@ -111,7 +158,6 @@ const Index = () => {
           return [];
         }
 
-        // Transform the data to match our Contractor interface
         const transformedData = data.map(transformContractor);
         console.log(`Found ${transformedData.length} contractors:`, transformedData);
         return transformedData;
@@ -227,7 +273,7 @@ const Index = () => {
                 >
                   <Card className="overflow-hidden transition-all hover:shadow-lg">
                     <img
-                      src={contractor.images?.[0] || 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e'}
+                      src={getDisplayImage(contractor)}
                       alt={`${contractor.business_name} project example`}
                       className="object-cover w-full h-48"
                       loading="lazy"

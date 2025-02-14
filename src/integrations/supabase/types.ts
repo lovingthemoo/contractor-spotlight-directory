@@ -95,6 +95,7 @@ export type Database = {
           founded_year: number | null
           google_formatted_address: string | null
           google_formatted_phone: string | null
+          google_photos: Json | null
           google_place_name: string | null
           google_reviews: Json | null
           id: string
@@ -113,6 +114,7 @@ export type Database = {
           needs_contact_enrichment: boolean | null
           needs_google_enrichment: boolean | null
           needs_image_enrichment: boolean | null
+          needs_photo_enrichment: boolean | null
           opening_hours: Json | null
           phone: string | null
           postal_code: string | null
@@ -142,6 +144,7 @@ export type Database = {
           founded_year?: number | null
           google_formatted_address?: string | null
           google_formatted_phone?: string | null
+          google_photos?: Json | null
           google_place_name?: string | null
           google_reviews?: Json | null
           id?: string
@@ -160,6 +163,7 @@ export type Database = {
           needs_contact_enrichment?: boolean | null
           needs_google_enrichment?: boolean | null
           needs_image_enrichment?: boolean | null
+          needs_photo_enrichment?: boolean | null
           opening_hours?: Json | null
           phone?: string | null
           postal_code?: string | null
@@ -189,6 +193,7 @@ export type Database = {
           founded_year?: number | null
           google_formatted_address?: string | null
           google_formatted_phone?: string | null
+          google_photos?: Json | null
           google_place_name?: string | null
           google_reviews?: Json | null
           id?: string
@@ -207,6 +212,7 @@ export type Database = {
           needs_contact_enrichment?: boolean | null
           needs_google_enrichment?: boolean | null
           needs_image_enrichment?: boolean | null
+          needs_photo_enrichment?: boolean | null
           opening_hours?: Json | null
           phone?: string | null
           postal_code?: string | null
