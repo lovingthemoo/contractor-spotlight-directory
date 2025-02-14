@@ -97,9 +97,13 @@ export type Database = {
           insurance_verified: boolean | null
           is_admin: boolean | null
           is_verified: boolean | null
+          last_enrichment_attempt: string | null
           location: string
           meta_description: string | null
           meta_title: string | null
+          needs_contact_enrichment: boolean | null
+          needs_google_enrichment: boolean | null
+          needs_image_enrichment: boolean | null
           opening_hours: Json | null
           phone: string | null
           postal_code: string | null
@@ -128,9 +132,13 @@ export type Database = {
           insurance_verified?: boolean | null
           is_admin?: boolean | null
           is_verified?: boolean | null
+          last_enrichment_attempt?: string | null
           location: string
           meta_description?: string | null
           meta_title?: string | null
+          needs_contact_enrichment?: boolean | null
+          needs_google_enrichment?: boolean | null
+          needs_image_enrichment?: boolean | null
           opening_hours?: Json | null
           phone?: string | null
           postal_code?: string | null
@@ -159,9 +167,13 @@ export type Database = {
           insurance_verified?: boolean | null
           is_admin?: boolean | null
           is_verified?: boolean | null
+          last_enrichment_attempt?: string | null
           location?: string
           meta_description?: string | null
           meta_title?: string | null
+          needs_contact_enrichment?: boolean | null
+          needs_google_enrichment?: boolean | null
+          needs_image_enrichment?: boolean | null
           opening_hours?: Json | null
           phone?: string | null
           postal_code?: string | null

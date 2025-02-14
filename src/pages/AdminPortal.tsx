@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Settings, LogOut, Home } from "lucide-react";
+import { Upload, Settings, LogOut, Home, Database } from "lucide-react";
 import AdminImport from "./AdminImport";
+import AdminEnrichment from "./AdminEnrichment";
 
 const AdminPortal = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -72,6 +73,7 @@ const AdminPortal = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid gap-6">
           <AdminImport />
+          <AdminEnrichment />
         </div>
       </main>
     </div>
