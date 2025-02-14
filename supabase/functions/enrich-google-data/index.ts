@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
           console.log(`Searching for: "${searchQuery}" in "${location}"`);
           
           const places = await googlePlacesService.searchPlaces(searchQuery, location);
+          console.log(`Found ${places.length} places for "${searchQuery}" in "${location}"`);
           
           // Filter out duplicates
           const newPlaces = places.filter(
@@ -57,7 +58,7 @@ Deno.serve(async (req) => {
           );
           allPlaces = [...allPlaces, ...newPlaces];
 
-          console.log(`Found ${newPlaces.length} new places in ${location}`);
+          console.log(`Added ${newPlaces.length} new unique places from ${location}`);
           
           // Rate limiting
           await new Promise(resolve => setTimeout(resolve, 200));
@@ -91,23 +92,16 @@ Deno.serve(async (req) => {
         console.log(`Processing place: ${place.displayName?.text}`);
         
         const placeDetails = await googlePlacesService.getPlaceDetails(place.id);
+        console.log('Got place details:', {
+          name: placeDetails.displayName?.text,
+          photoCount: placeDetails.photos?.length || 0
+        });
         
         // Process photos - generate URLs for each photo
         let photos = [];
         if (placeDetails.photos && Array.isArray(placeDetails.photos)) {
-          photos = placeDetails.photos.map(photo => ({
-            url: photo.name ? 
-              `https://places.googleapis.com/v1/${photo.name}/media?key=${GOOGLE_PLACES_API_KEY}&maxHeightPx=800` : 
-              undefined,
-            width: photo.widthPx || 0,
-            height: photo.heightPx || 0,
-            type: photo.authorAttributions?.[0]?.photoUri || ''
-          })).filter(photo => photo.url);
-
-          console.log('Processed photos:', {
-            totalPhotos: photos.length,
-            sampleUrl: photos[0]?.url
-          });
+          photos = placeDetails.photos;
+          console.log(`Processing ${photos.length} photos for ${placeDetails.displayName?.text}`);
         }
 
         const contractorData: ContractorData = {
@@ -135,14 +129,14 @@ Deno.serve(async (req) => {
             '-' + placeDetails.id.substring(0, 6)
         };
 
+        console.log('Attempting to upsert contractor:', {
+          name: contractorData.business_name,
+          photoCount: contractorData.google_photos?.length || 0
+        });
+
         if (await contractorService.upsertContractor(contractorData)) {
           processedCount++;
           console.log(`Successfully processed: ${contractorData.business_name}`);
-          console.log('Photo data:', {
-            businessName: contractorData.business_name,
-            photoCount: photos.length,
-            hasPhotos: photos.length > 0
-          });
         } else {
           errorCount++;
           console.error(`Failed to process: ${contractorData.business_name}`);
