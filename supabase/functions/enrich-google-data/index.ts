@@ -36,9 +36,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Try a single, simple search first to validate API connectivity
+    // Try a simple search first without includedType restriction
     const testSearchBody = {
-      textQuery: "builders in London",
+      textQuery: "construction company London",
       maxResultCount: 5,
       languageCode: "en"
     };
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.displayName'
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress'
       },
       body: JSON.stringify(testSearchBody)
     });
@@ -63,66 +63,88 @@ Deno.serve(async (req) => {
       throw new Error(`Google Places API test failed: ${testResponse.status} ${testData}`);
     }
 
-    // If test passed, proceed with full search
+    // If test passed, proceed with full search using broader search terms
     const searchQueries = [
-      "builders",
-      "building contractor",
-      "construction company"
+      "building company",
+      "construction company",
+      "home builder",
+      "property developer",
+      "building contractor"
+    ];
+
+    const locations = [
+      "London",
+      "Greater London",
+      "North London",
+      "South London",
+      "East London",
+      "West London"
     ];
 
     let allPlaces: PlaceSearchResult[] = [];
 
+    // Search across all combinations of queries and locations
     for (const searchQuery of searchQueries) {
-      console.log(`Searching for: "${searchQuery}"`);
-      
-      const searchBody = {
-        textQuery: `${searchQuery} in London`,
-        maxResultCount: 20,
-        languageCode: "en",
-        includedType: "builder"
-      };
+      for (const location of locations) {
+        console.log(`Searching for: "${searchQuery}" in "${location}"`);
+        
+        const searchBody = {
+          textQuery: `${searchQuery} in ${location}`,
+          maxResultCount: 20,
+          languageCode: "en",
+          // Removed includedType restriction to get more results
+        };
 
-      const searchResponse = await fetch('https://places.googleapis.com/v1/places:searchText', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.types'
-        },
-        body: JSON.stringify(searchBody)
-      });
-
-      if (!searchResponse.ok) {
-        const errorText = await searchResponse.text();
-        console.error('Search failed:', {
-          query: searchQuery,
-          status: searchResponse.status,
-          error: errorText
+        const searchResponse = await fetch('https://places.googleapis.com/v1/places:searchText', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.types'
+          },
+          body: JSON.stringify(searchBody)
         });
-        continue;
-      }
 
-      const searchData = await searchResponse.json();
-      
-      console.log('Search results:', {
-        query: searchQuery,
-        responseKeys: Object.keys(searchData),
-        placesFound: searchData.places?.length || 0
-      });
+        if (!searchResponse.ok) {
+          const errorText = await searchResponse.text();
+          console.error('Search failed:', {
+            query: searchQuery,
+            location: location,
+            status: searchResponse.status,
+            error: errorText
+          });
+          continue;
+        }
 
-      if (searchData.places && Array.isArray(searchData.places)) {
-        allPlaces = [...allPlaces, ...searchData.places];
+        const searchData = await searchResponse.json();
+        
+        console.log('Search results:', {
+          query: searchQuery,
+          location: location,
+          responseKeys: Object.keys(searchData),
+          placesFound: searchData.places?.length || 0
+        });
+
+        if (searchData.places && Array.isArray(searchData.places)) {
+          // Filter out duplicates based on place ID
+          const newPlaces = searchData.places.filter(
+            place => !allPlaces.some(existing => existing.id === place.id)
+          );
+          allPlaces = [...allPlaces, ...newPlaces];
+        }
+
+        // Add a small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
 
-    console.log(`Total places found before filtering: ${allPlaces.length}`);
+    console.log(`Total unique places found: ${allPlaces.length}`);
 
-    // Accept all places initially, we can filter by rating later
     if (allPlaces.length === 0) {
-      console.log('Places API is working but returned no results');
       return new Response(JSON.stringify({
         message: 'No places found in search response',
-        searchQueries
+        searchQueries,
+        locations
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 404
@@ -188,6 +210,9 @@ Deno.serve(async (req) => {
 
         processedCount++;
         console.log(`Successfully processed: ${contractorData.business_name}`);
+
+        // Add a small delay between processing each place
+        await new Promise(resolve => setTimeout(resolve, 200));
       } catch (error) {
         console.error('Error processing place:', error);
       }
