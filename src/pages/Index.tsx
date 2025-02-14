@@ -311,7 +311,7 @@ const Index = () => {
                           </div>
                         )}
                         
-                        {contractor.years_in_business && (
+                        {contractor.years_in_business && contractor.years_in_business > 0 && (
                           <div className="flex items-center text-sm text-gray-500">
                             <Clock className="w-4 h-4 mr-1" aria-hidden="true" />
                             {contractor.years_in_business} years in business
