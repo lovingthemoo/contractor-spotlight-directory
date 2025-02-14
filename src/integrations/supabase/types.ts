@@ -214,6 +214,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_non_null_fields: {
+        Args: {
+          contractor: unknown
+        }
+        Returns: number
+      }
       is_admin: {
         Args: {
           user_id: string
