@@ -18,9 +18,9 @@ export class ContractorService {
 
   async upsertContractor(contractorData: ContractorData): Promise<boolean> {
     try {
-      console.log('Attempting to upsert contractor:', contractorData.business_name);
+      console.log('Starting upsert for contractor:', contractorData.business_name);
       
-      // Ensure required fields are present
+      // Validate required fields
       if (!contractorData.business_name || !contractorData.google_place_id) {
         console.error('Missing required fields:', {
           hasBusinessName: !!contractorData.business_name,
@@ -29,7 +29,16 @@ export class ContractorService {
         return false;
       }
 
-      const { error } = await this.supabase
+      // Log the exact data being sent to Supabase
+      console.log('Upserting data:', {
+        business_name: contractorData.business_name,
+        google_place_id: contractorData.google_place_id,
+        google_place_name: contractorData.google_place_name,
+        google_formatted_address: contractorData.google_formatted_address,
+        slug: contractorData.slug
+      });
+
+      const { data, error } = await this.supabase
         .from('contractors')
         .upsert(
           {
@@ -37,17 +46,20 @@ export class ContractorService {
             updated_at: new Date().toISOString()
           },
           {
-            onConflict: 'google_place_id',
-            ignoreDuplicates: false
+            onConflict: 'google_place_id'
           }
-        );
+        )
+        .select('id');
 
       if (error) {
-        console.error('Upsert error:', error);
+        console.error('Supabase upsert error:', error);
         return false;
       }
 
-      console.log('Successfully upserted contractor:', contractorData.business_name);
+      console.log('Successfully upserted contractor:', {
+        business_name: contractorData.business_name,
+        id: data?.[0]?.id
+      });
       return true;
     } catch (error) {
       console.error('Error in upsertContractor:', error);

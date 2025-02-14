@@ -65,23 +65,10 @@ export class GooglePlacesService {
     try {
       console.log(`Fetching details for place: ${placeId}`);
       
-      // Simplified field mask to match exactly what Google Places API v1 accepts
-      const fieldMask = [
-        'id',
-        'displayName',
-        'formattedAddress',
-        'rating',
-        'userRatingCount',
-        'websiteUri',
-        'editorialSummary',
-        'types',
-        'reviews',
-        'photos'
-      ].join(',');
-
+      // Fixed field mask to include only the fields we need and that are valid
       const response = await fetch(`${this.baseUrl}/${placeId}`, {
         method: 'GET',
-        headers: this.getHeaders(fieldMask)
+        headers: this.getHeaders('id,displayName,formattedAddress,rating,userRatingCount,websiteUri,types,editorialSummary')
       });
 
       if (!response.ok) {
@@ -91,7 +78,11 @@ export class GooglePlacesService {
       }
 
       const placeDetails = await response.json();
-      console.log(`Successfully fetched details for place: ${placeId}`);
+      console.log('Successfully fetched place details:', {
+        id: placeDetails.id,
+        name: placeDetails.displayName?.text,
+        address: placeDetails.formattedAddress
+      });
       
       return placeDetails;
     } catch (error) {
