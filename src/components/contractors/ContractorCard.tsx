@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, Phone, ChevronRight } from "lucide-react";
+import { MapPin, Star, Phone, ChevronRight, Clock, Globe } from "lucide-react";
 import { Contractor } from "@/types/contractor";
 
 interface ContractorCardProps {
@@ -33,17 +33,6 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
             {businessName}
           </h3>
           
-          {/* Location */}
-          {displayAddress && (
-            <div className="flex items-center text-sm text-gray-500 mb-4">
-              <MapPin 
-                className="w-4 h-4 mr-1 shrink-0" 
-                aria-hidden="true"
-              />
-              <span className="truncate">{displayAddress}</span>
-            </div>
-          )}
-
           {/* Image */}
           {displayImage && (
             <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-lg">
@@ -56,14 +45,47 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
             </div>
           )}
 
+          {/* Specialty */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Badge variant="secondary">{contractor.specialty}</Badge>
+            {contractor.years_in_business && (
+              <Badge variant="outline">
+                <Clock className="w-3 h-3 mr-1" />
+                {contractor.years_in_business} years
+              </Badge>
+            )}
+          </div>
+
+          {/* Location */}
+          {displayAddress && (
+            <div className="flex items-center text-sm text-gray-500 mb-3">
+              <MapPin 
+                className="w-4 h-4 mr-1 shrink-0" 
+                aria-hidden="true"
+              />
+              <span className="truncate">{displayAddress}</span>
+            </div>
+          )}
+
           {/* Phone */}
           {formattedPhone && (
-            <div className="flex items-center text-sm text-gray-500 mb-4">
+            <div className="flex items-center text-sm text-gray-500 mb-3">
               <Phone 
                 className="w-4 h-4 mr-1 shrink-0" 
                 aria-hidden="true"
               />
               <span>{formattedPhone}</span>
+            </div>
+          )}
+
+          {/* Website */}
+          {contractor.website_url && (
+            <div className="flex items-center text-sm text-gray-500 mb-4">
+              <Globe 
+                className="w-4 h-4 mr-1 shrink-0" 
+                aria-hidden="true"
+              />
+              <span className="truncate">Visit Website</span>
             </div>
           )}
 
