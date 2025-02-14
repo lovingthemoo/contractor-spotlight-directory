@@ -8,8 +8,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const validSpecialties = ['Electrical', 'Plumbing', 'Roofing', 'Building', 'Home Repair', 'Gardening', 'Construction', 'Handyman'];
+
+// Map specialties to valid enum values
+const mapSpecialty = (specialty: string): string => {
+  const normalizedSpecialty = specialty?.toString().trim().toLowerCase() || '';
+
+  // Define mappings for various terms
+  if (normalizedSpecialty.includes('electric')) return 'Electrical';
+  if (normalizedSpecialty.includes('plumb')) return 'Plumbing';
+  if (normalizedSpecialty.includes('roof')) return 'Roofing';
+  
+  // Building and Construction related terms
+  const buildingTerms = ['build', 'contractor', 'construct', 'extension', 'renovation', 'remodel'];
+  if (buildingTerms.some(term => normalizedSpecialty.includes(term))) {
+    return 'Building';
+  }
+  
+  if (normalizedSpecialty.includes('repair') || normalizedSpecialty.includes('fix')) return 'Home Repair';
+  if (normalizedSpecialty.includes('garden') || normalizedSpecialty.includes('landscape')) return 'Gardening';
+  if (normalizedSpecialty.includes('construct')) return 'Construction';
+  if (normalizedSpecialty.includes('handy') || normalizedSpecialty.includes('general')) return 'Handyman';
+  
+  return 'Handyman'; // Default fallback
+};
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -60,8 +84,7 @@ serve(async (req) => {
         const contractorData = {
           business_name: record.business_name || record.businessName || record.rgnuSb || record['Business Name'],
           trading_name: record.trading_name || record.tradingName || record['Trading Name'] || null,
-          specialty: (record.specialty || record.speciality || record.hGz87c || record['Specialty'] || 'GENERAL')
-            .toString().toUpperCase(),
+          specialty: mapSpecialty((record.specialty || record.speciality || record.hGz87c || record['Specialty'] || 'Handyman').toString()),
           phone: record.phone || record.phoneNumber || record.hGz87c3 || record['Phone'] || null,
           email: record.email || record['Email'] || null,
           website_url: record.website_url || record.websiteUrl || record['Website URL'] || 
@@ -81,6 +104,8 @@ serve(async (req) => {
           contractorData.business_name.toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '')
+
+        console.log('Inserting contractor with data:', contractorData)
 
         const { error } = await supabase
           .from('contractors')
