@@ -27,38 +27,54 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
       aria-label={`View details for ${businessName}`}
     >
       <Card className="flex flex-col h-full overflow-hidden transition-all hover:shadow-lg">
-        <div className="p-4 flex flex-col h-full">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">{businessName}</h3>
+        <div className="p-6">
+          {/* Business Name */}
+          <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
+            {businessName}
+          </h3>
           
+          {/* Location */}
           {displayAddress && (
-            <div className="flex items-center text-sm text-gray-500 mb-3">
-              <MapPin className="w-4 h-4 mr-1 shrink-0" aria-label="Location" />
+            <div className="flex items-center text-sm text-gray-500 mb-4">
+              <MapPin 
+                className="w-4 h-4 mr-1 shrink-0" 
+                aria-hidden="true"
+              />
               <span className="truncate">{displayAddress}</span>
             </div>
           )}
 
+          {/* Image */}
           {displayImage && (
-            <div className="relative mb-3">
+            <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-lg">
               <img
                 src={displayImage}
-                alt={`Project example by ${businessName}`}
-                className="w-full h-48 object-cover rounded-md"
+                alt={`Business photo for ${businessName}`}
+                className="w-full h-full object-cover"
                 loading="lazy"
               />
             </div>
           )}
 
+          {/* Phone */}
           {formattedPhone && (
-            <div className="flex items-center text-sm text-gray-500 mb-3">
-              <Phone className="w-4 h-4 mr-1 shrink-0" aria-label="Phone number" />
+            <div className="flex items-center text-sm text-gray-500 mb-4">
+              <Phone 
+                className="w-4 h-4 mr-1 shrink-0" 
+                aria-hidden="true"
+              />
               <span>{formattedPhone}</span>
             </div>
           )}
 
+          {/* Rating and Reviews */}
           <div className="mt-auto flex items-center justify-between">
             {typeof contractor.rating === 'number' && contractor.rating > 0 && (
               <div className="flex items-center">
-                <Star className="w-5 h-5 text-yellow-400" aria-hidden="true" />
+                <Star 
+                  className="w-5 h-5 text-yellow-400" 
+                  aria-hidden="true"
+                />
                 <span className="ml-1 text-lg font-semibold">
                   {contractor.rating.toFixed(1)}
                 </span>
@@ -69,7 +85,10 @@ const ContractorCard = ({ contractor, getDisplayImage, getDisplayAddress }: Cont
                 )}
               </div>
             )}
-            <ChevronRight className="w-5 h-5 text-gray-400" aria-label="View details" />
+            <ChevronRight 
+              className="w-5 h-5 text-gray-400" 
+              aria-hidden="true"
+            />
           </div>
         </div>
       </Card>
