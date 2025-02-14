@@ -25,12 +25,12 @@ const Index = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       try {
+        // First, get contractors with images
         const response = await supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          // First sort by whether they have images (either uploaded or from Google)
-          .or('images.neq.{}', 'google_photos.neq.[]')
+          .not('images', 'eq', '{}')
           .order('rating', { ascending: false });
         
         if (response.error) {
@@ -38,13 +38,28 @@ const Index = () => {
           throw response.error;
         }
 
-        if (!response.data?.length) {
-          console.log('No contractors found in database');
-          return [];
+        let contractorsData = response.data || [];
+
+        // If we don't have enough contractors with uploaded images, get ones with Google photos
+        if (contractorsData.length < 10) {
+          const googlePhotosResponse = await supabase
+            .from('contractors')
+            .select('*')
+            .not('rating', 'is', null)
+            .not('google_photos', 'eq', '[]')
+            .order('rating', { ascending: false });
+
+          if (!googlePhotosResponse.error && googlePhotosResponse.data) {
+            // Filter out duplicates
+            const newContractors = googlePhotosResponse.data.filter(
+              gc => !contractorsData.some(c => c.id === gc.id)
+            );
+            contractorsData = [...contractorsData, ...newContractors];
+          }
         }
 
-        // Get contractors without images as a fallback
-        if (response.data.length < 10) {
+        // If we still need more contractors, get the rest
+        if (contractorsData.length < 10) {
           const fallbackResponse = await supabase
             .from('contractors')
             .select('*')
@@ -54,13 +69,13 @@ const Index = () => {
           if (!fallbackResponse.error && fallbackResponse.data) {
             // Filter out contractors we already have
             const newContractors = fallbackResponse.data.filter(
-              fb => !response.data.some(c => c.id === fb.id)
+              fb => !contractorsData.some(c => c.id === fb.id)
             );
-            response.data = [...response.data, ...newContractors];
+            contractorsData = [...contractorsData, ...newContractors];
           }
         }
 
-        const transformedContractors = await Promise.all(response.data.map(transformContractor));
+        const transformedContractors = await Promise.all(contractorsData.map(transformContractor));
         
         // Sort contractors: those with images first, then by rating
         const sortedContractors = transformedContractors.sort((a, b) => {
