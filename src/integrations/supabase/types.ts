@@ -529,8 +529,6 @@ export type Database = {
         | "Building"
         | "Home Repair"
         | "Gardening"
-        | "Construction"
-        | "Handyman"
         | "Gas Engineer"
     }
     CompositeTypes: {
