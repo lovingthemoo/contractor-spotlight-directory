@@ -26,11 +26,11 @@ export const useSpecialtyImages = () => {
           acc[curr.specialty] = curr;
         }
         return acc;
-      }, {} as Record<ContractorSpecialty, typeof data[0]>);
+      }, {} as Partial<Record<ContractorSpecialty, typeof data[0]>>);
     }
   });
 
-  const fetchSpecialtyImagesForType = async (specialty: ContractorSpecialty) => {
+  const fetchSpecialtyImagesForType = async (specialty: ContractorSpecialty): Promise<void> => {
     try {
       const { error: historyError } = await supabase
         .from('specialty_image_fetch_history')
@@ -61,7 +61,6 @@ export const useSpecialtyImages = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ['specialtyImageFetchHistory'] });
-      return true;
     } catch (error) {
       console.error('Error fetching specialty images:', error);
       
@@ -80,7 +79,6 @@ export const useSpecialtyImages = () => {
         description: `Failed to fetch images for ${specialty}`,
         variant: "destructive",
       });
-      return false;
     }
   };
 

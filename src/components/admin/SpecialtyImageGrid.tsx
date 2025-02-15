@@ -18,7 +18,7 @@ export const specialties: ContractorSpecialty[] = [
 ];
 
 interface SpecialtyImageGridProps {
-  fetchHistory: Record<ContractorSpecialty, any>;
+  fetchHistory: Partial<Record<ContractorSpecialty, any>>;
   onFetchImages: (specialty: ContractorSpecialty) => Promise<void>;
 }
 
