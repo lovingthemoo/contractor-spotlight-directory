@@ -531,6 +531,7 @@ export type Database = {
         | "Gardening"
         | "Construction"
         | "Handyman"
+        | "Gas Engineer"
     }
     CompositeTypes: {
       [_ in never]: never

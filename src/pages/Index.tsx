@@ -8,7 +8,7 @@ import HeroSection from "@/components/home/HeroSection";
 import FiltersSection from "@/components/home/FiltersSection";
 import AdvertSection from "@/components/home/AdvertSection";
 
-const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
+const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Gas Engineer"];
 const ratingFilters = ["All", "4.5+", "4.0+", "3.5+", "3.0+"];
 
 const Index = () => {
