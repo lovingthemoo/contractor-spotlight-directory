@@ -1,7 +1,7 @@
 
 import { Contractor } from "@/types/contractor";
 
-const getFallbackImage = (specialty?: string): string => {
+const getFallbackImage = (contractor: Contractor): string => {
   const baseUrl = "https://images.unsplash.com/photo-";
   const unsplashParams = "?auto=format&fit=crop&w=800&q=80";
   
@@ -58,18 +58,24 @@ const getFallbackImage = (specialty?: string): string => {
 
   let availableImages = defaultImages;
   
-  if (specialty) {
-    const normalizedSpecialty = specialty.toLowerCase();
+  if (contractor.specialty) {
+    const normalizedSpecialty = contractor.specialty.toLowerCase();
     availableImages = specialtyImages[normalizedSpecialty] || defaultImages;
   }
 
-  // Use the contractor's ID or timestamp to consistently select the same image
-  // This ensures the same contractor always gets the same fallback image
-  const index = Math.floor(Date.now() % availableImages.length);
+  // Use the contractor's ID to consistently select the same image
+  // This ensures each contractor gets a unique but consistent image
+  const idSum = contractor.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const index = idSum % availableImages.length;
   const photoId = availableImages[index];
 
   const fallbackUrl = `${baseUrl}${photoId}${unsplashParams}`;
-  console.log('Generated fallback URL:', { specialty, photoId, fallbackUrl });
+  console.log('Generated fallback URL:', { 
+    business: contractor.business_name,
+    specialty: contractor.specialty, 
+    photoId, 
+    fallbackUrl 
+  });
   return fallbackUrl;
 };
 
@@ -132,6 +138,5 @@ export const getDisplayImage = (contractor: Contractor): string => {
     specialty: contractor.specialty
   });
   
-  const fallbackImage = getFallbackImage(contractor.specialty);
-  return fallbackImage;
+  return getFallbackImage(contractor);
 };
