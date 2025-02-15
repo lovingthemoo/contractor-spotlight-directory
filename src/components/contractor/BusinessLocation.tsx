@@ -73,22 +73,15 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         console.log('Setting Mapbox access token');
         mapboxgl.accessToken = mapboxToken;
 
-        console.log('Configuring Mapbox settings');
-        // Force disable WebGL to avoid worker issues
-        console.log('Current Mapbox worker count:', (mapboxgl as any).workerCount);
-        console.log('Current Mapbox API URL:', (mapboxgl as any).baseApiUrl);
-        
+        // Configure Mapbox to use basic tiles without WebGL
+        (mapboxgl as any).prewarm = false;
+        (mapboxgl as any).clearStorage = true;
         (mapboxgl as any).baseApiUrl = 'https://api.mapbox.com';
         (mapboxgl as any).workerCount = 0;
-        
-        console.log('Updated Mapbox settings:', {
-          workerCount: (mapboxgl as any).workerCount,
-          baseApiUrl: (mapboxgl as any).baseApiUrl
-        });
 
-        // Try to create map with basic configuration and fallbacks
+        // Try to create map with minimal configuration
         try {
-          console.log('Attempting to create map instance');
+          console.log('Creating map with minimal config');
           
           if (!mapContainer.current) {
             throw new Error('Map container reference is not available');
@@ -96,134 +89,108 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
 
           const mapOptions = {
             container: mapContainer.current,
-            style: 'mapbox://styles/mapbox/basic-v9',
+            style: 'mapbox://styles/mapbox/streets-v11',
             center: defaultCoords,
             zoom: 15,
-            minZoom: 9,
-            maxZoom: 17,
             interactive: false,
+            fadeDuration: 0,
+            crossSourceCollisions: false,
+            locale: { 'NavigationControl.ZoomIn': 'Zoom in', 'NavigationControl.ZoomOut': 'Zoom out' },
+            optimizeForTerrain: false,
             preserveDrawingBuffer: false,
-            antialias: false,
+            refreshExpiredTiles: false,
             trackResize: false,
-            attributionControl: true
+            boxZoom: false,
+            dragRotate: false,
+            dragPan: false,
+            keyboard: false,
+            doubleClickZoom: false,
+            touchZoomRotate: false,
+            maxBounds: null,
+            renderWorldCopies: false,
+            antialias: false
           };
 
           console.log('Map initialization options:', mapOptions);
 
+          // Create map instance
           map.current = new mapboxgl.Map(mapOptions);
-          console.log('Map instance created successfully');
+          console.log('Map instance created');
 
-          // Set up loading handlers
+          // Once map is loaded
           map.current.once('load', () => {
-            console.log('Map load event triggered');
+            console.log('Map loaded event fired');
             setShowMap(true);
             
-            // Try geocoding after map is loaded
+            // Handle geocoding
             const geocodeAddress = async () => {
-              console.log('Starting geocoding process');
               try {
                 const cleanAddress = address.trim();
-                console.log('Geocoding address:', cleanAddress);
+                console.log('Geocoding:', cleanAddress);
                 
                 const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${
                   encodeURIComponent(cleanAddress)
                 }.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`;
-                
-                console.log('Geocoding URL:', geocodingUrl.replace(mapboxToken, '[REDACTED]'));
 
                 const response = await fetch(geocodingUrl);
-                console.log('Geocoding response status:', response.status);
-
+                
                 if (!response.ok) {
-                  throw new Error(`Geocoding failed: ${response.statusText}`);
+                  throw new Error(`Geocoding failed: ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log('Geocoding response data:', data);
                 
                 if (!data.features?.[0]?.center) {
-                  throw new Error('No location found in geocoding response');
+                  throw new Error('No location found');
                 }
 
-                const coords: LngLatLike = data.features[0].center as [number, number];
+                const coords = data.features[0].center as LngLatLike;
                 console.log('Found coordinates:', coords);
 
-                if (!map.current) {
-                  throw new Error('Map instance lost during geocoding');
+                if (map.current) {
+                  map.current.setCenter(coords);
+                  
+                  // Add a simple marker
+                  new mapboxgl.Marker()
+                    .setLngLat(coords)
+                    .addTo(map.current);
                 }
 
-                // Update map center
-                console.log('Updating map center');
-                map.current.setCenter(coords);
-
-                // Add marker
-                console.log('Adding marker to map');
-                new mapboxgl.Marker({ color: '#7c3aed' })
-                  .setLngLat(coords)
-                  .setPopup(
-                    new mapboxgl.Popup({ offset: 25 })
-                      .setHTML(`<div class="p-2"><strong>${address}</strong></div>`)
-                  )
-                  .addTo(map.current);
-
-                console.log('Marker added successfully');
                 setError(null);
               } catch (geocodeError) {
-                console.error('Detailed geocoding error:', {
-                  error: geocodeError,
-                  message: geocodeError.message,
-                  stack: geocodeError.stack
-                });
-                setError('Could not find exact location, showing London center');
+                console.error('Geocoding failed:', geocodeError);
+                setError('Could not find exact location');
               }
             };
 
             geocodeAddress();
           });
 
-          // Error handling
+          // Handle errors
           map.current.on('error', (e) => {
-            console.error('Detailed Mapbox error:', {
-              error: e,
-              message: e.error?.message || 'Unknown error',
-              stack: e.error?.stack,
-              target: e.target,
-              type: e.type
-            });
-            setError('Map loading error. Please try again later.');
+            console.error('Map error:', e.error);
+            setError('Map loading error');
           });
 
-        } catch (mapInitError) {
-          console.error('Detailed map initialization error:', {
-            error: mapInitError,
-            message: mapInitError.message,
-            stack: mapInitError.stack,
-            type: mapInitError.constructor.name
-          });
-          throw new Error('Failed to initialize map');
+        } catch (mapError) {
+          console.error('Map creation failed:', mapError);
+          throw mapError;
         }
 
-      } catch (error) {
-        console.error('Final detailed error:', {
-          error,
-          message: error.message,
-          stack: error.stack,
-          type: error.constructor.name
-        });
-        setError('Could not load map. Please try again later.');
+      } catch (finalError) {
+        console.error('Final error:', finalError);
+        setError('Could not load map');
         setShowMap(false);
       }
     };
 
-    // Initialize map with a small delay to ensure container is ready
-    console.log('Setting timeout for map initialization');
+    // Start initialization
     const timeoutId = setTimeout(initializeMap, 100);
 
+    // Cleanup
     return () => {
-      console.log('Cleaning up map component');
       clearTimeout(timeoutId);
       if (map.current) {
-        console.log('Removing map instance');
         map.current.remove();
         map.current = null;
       }
