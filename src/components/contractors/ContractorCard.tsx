@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Star, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Contractor } from "@/types/contractor";
-import { selectImage, brokenImageUrls } from "@/utils/image-selection";
+import { selectImage, markImageAsBroken } from "@/utils/image-selection";
 import { useState, useEffect } from "react";
 
 interface ContractorCardProps {
@@ -39,14 +39,18 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
           setIsImageLoading(false);
         };
         
-        img.onerror = () => {
+        img.onerror = async () => {
           console.error('Image failed to load:', {
             business: displayName,
             url
           });
-          // Mark this URL as broken in our utility
-          brokenImageUrls.add(url);
-          setImageUrl('/placeholder.svg');
+          
+          // Mark this URL as broken in the database
+          await markImageAsBroken(url, contractor.specialty);
+          
+          // Try to get a new image
+          const newUrl = await selectImage(contractor);
+          setImageUrl(newUrl);
           setIsImageLoading(false);
         };
         

@@ -1,3 +1,4 @@
+
 import { Contractor } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -8,9 +9,6 @@ type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
 // Cache to track recently used images per specialty
 const recentlyUsedImages: Record<string, Set<string>> = {};
 
-// Cache to track known broken image URLs
-export const brokenImageUrls = new Set<string>();
-
 const getStorageUrl = (path: string): string => {
   // If path is empty or null, return placeholder
   if (!path) {
@@ -20,20 +18,6 @@ const getStorageUrl = (path: string): string => {
 
   // If it's already a full URL (e.g. https://...), return as is
   if (path.startsWith('http')) {
-    // Check if this URL is known to be broken
-    if (brokenImageUrls.has(path)) {
-      console.debug('Using cached knowledge of broken URL:', path);
-      return '/placeholder.svg';
-    }
-    
-    // Handle known problematic Unsplash URLs
-    if (path.includes('unsplash.com/photo-') && 
-       (path.includes('1581094794329-c8112a89df44') || 
-        path.includes('1632245889029-e406c804da87'))) {
-      console.debug('Detected known broken Unsplash URL:', path);
-      brokenImageUrls.add(path);
-      return '/placeholder.svg';
-    }
     return path;
   }
   
@@ -61,38 +45,57 @@ const getStorageUrl = (path: string): string => {
   return storageUrl;
 };
 
-const getUnusedImage = (images: { storage_path: string }[], specialty: string): { storage_path: string } | null => {
-  if (!images || images.length === 0) return null;
-  
-  // Initialize set for this specialty if it doesn't exist
-  if (!recentlyUsedImages[specialty]) {
-    recentlyUsedImages[specialty] = new Set();
-  }
-  
-  // If all images have been used, clear the set and start over
-  if (recentlyUsedImages[specialty].size >= images.length) {
-    recentlyUsedImages[specialty].clear();
-  }
-  
-  // Find an image that hasn't been used recently and isn't known to be broken
-  for (const image of images) {
-    const url = getStorageUrl(image.storage_path);
-    if (!recentlyUsedImages[specialty].has(image.storage_path) && !brokenImageUrls.has(url)) {
-      recentlyUsedImages[specialty].add(image.storage_path);
-      return image;
+const getFallbackImage = async (specialty: ContractorSpecialty): Promise<string> => {
+  try {
+    // Get a random active specialty image that isn't marked as broken
+    const { data: specialtyImages, error } = await supabase
+      .from('contractor_images')
+      .select('storage_path')
+      .eq('image_type', 'specialty')
+      .eq('is_active', true)
+      .is('contractor_id', null)
+      .not('storage_path', 'in', (
+        supabase
+          .from('broken_image_urls')
+          .select('url')
+      ))
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error || !specialtyImages?.length) {
+      console.debug('No fallback images found, using placeholder');
+      return '/placeholder.svg';
     }
+
+    // Select a random image from the results
+    const randomIndex = Math.floor(Math.random() * specialtyImages.length);
+    const fallbackImage = specialtyImages[randomIndex];
+    
+    return getStorageUrl(fallbackImage.storage_path);
+  } catch (error) {
+    console.error('Error getting fallback image:', error);
+    return '/placeholder.svg';
   }
-  
-  // If all images are used or broken, try to find any non-broken image
-  for (const image of images) {
-    const url = getStorageUrl(image.storage_path);
-    if (!brokenImageUrls.has(url)) {
-      recentlyUsedImages[specialty].add(image.storage_path);
-      return image;
+};
+
+const markImageAsBroken = async (url: string, specialty?: string) => {
+  try {
+    const { error } = await supabase
+      .from('broken_image_urls')
+      .insert({
+        url,
+        specialty,
+        reported_by: 'system',
+        error_message: 'Image failed to load'
+      })
+      .single();
+
+    if (error) {
+      console.error('Error marking image as broken:', error);
     }
+  } catch (error) {
+    console.error('Error in markImageAsBroken:', error);
   }
-  
-  return null;
 };
 
 export const selectImage = async (contractor: Contractor): Promise<string> => {
@@ -105,19 +108,36 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     // First check for Google Photos
     if (contractor.google_photos && contractor.google_photos.length > 0) {
       const photo = contractor.google_photos[0];
-      if (photo.url && !brokenImageUrls.has(photo.url)) {
-        console.debug('Using Google photo:', {
-          contractor: contractor.business_name,
-          url: photo.url
-        });
-        return photo.url;
+      if (photo.url) {
+        // Check if the URL is known to be broken
+        const { data: brokenCheck } = await supabase
+          .from('broken_image_urls')
+          .select('url')
+          .eq('url', photo.url)
+          .maybeSingle();
+
+        if (!brokenCheck) {
+          console.debug('Using Google photo:', {
+            contractor: contractor.business_name,
+            url: photo.url
+          });
+          return photo.url;
+        }
       }
     }
 
     // Then check for default specialty image
     if (contractor.default_specialty_image) {
       const imageUrl = getStorageUrl(contractor.default_specialty_image);
-      if (!brokenImageUrls.has(imageUrl)) {
+      
+      // Check if the URL is known to be broken
+      const { data: brokenCheck } = await supabase
+        .from('broken_image_urls')
+        .select('url')
+        .eq('url', imageUrl)
+        .maybeSingle();
+
+      if (!brokenCheck) {
         console.debug('Using default specialty image:', {
           contractor: contractor.business_name,
           image: contractor.default_specialty_image,
@@ -139,7 +159,15 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
 
       if (!contractorImagesError && contractorImages && contractorImages.length > 0) {
         const imageUrl = getStorageUrl(contractorImages[0].storage_path);
-        if (!brokenImageUrls.has(imageUrl)) {
+        
+        // Check if the URL is known to be broken
+        const { data: brokenCheck } = await supabase
+          .from('broken_image_urls')
+          .select('url')
+          .eq('url', imageUrl)
+          .maybeSingle();
+
+        if (!brokenCheck) {
           console.debug('Found contractor-specific image:', {
             contractor: contractor.business_name,
             path: contractorImages[0].storage_path,
@@ -157,44 +185,12 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
       }
     }
 
-    // Finally try specialty images, getting recently downloaded ones first
-    const { data: specialtyImages, error: specialtyError } = await supabase
-      .from('contractor_images')
-      .select('storage_path')
-      .is('contractor_id', null)
-      .eq('image_type', 'specialty')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false }) // Get most recently added first
-      .order('priority', { ascending: true });
-
-    if (specialtyError) {
-      console.error('Error fetching specialty images:', specialtyError);
-      return '/placeholder.svg';
-    }
-
-    if (!specialtyImages || specialtyImages.length === 0) {
-      console.debug('No specialty images found, using placeholder');
-      return '/placeholder.svg';
-    }
-
-    // Get an unused image for this specialty
-    const selectedImage = getUnusedImage(specialtyImages, contractor.specialty);
-    if (!selectedImage) {
-      console.debug('No valid images found, using placeholder');
-      return '/placeholder.svg';
-    }
-
-    const imageUrl = getStorageUrl(selectedImage.storage_path);
-    console.debug('Selected specialty image:', {
-      contractor: contractor.business_name,
-      totalImages: specialtyImages.length,
-      path: selectedImage.storage_path,
-      url: imageUrl
-    });
-
-    return imageUrl;
+    // If no working images found, get a random fallback image
+    return await getFallbackImage(contractor.specialty);
   } catch (error) {
     console.error('Error selecting image:', error);
     return '/placeholder.svg';
   }
 };
+
+export { markImageAsBroken };
