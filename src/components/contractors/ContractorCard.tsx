@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import { Star, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Contractor } from "@/types/contractor";
+import type { Database } from "@/integrations/supabase/types";
 import { selectImage, markImageAsBroken } from "@/utils/image-selection";
 import { useState, useEffect } from "react";
+
+type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
 
 interface ContractorCardProps {
   contractor: Contractor;
@@ -46,7 +49,9 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
           });
           
           // Mark this URL as broken in the database
-          await markImageAsBroken(url, contractor.specialty);
+          if (contractor.specialty) {
+            await markImageAsBroken(url, contractor.specialty);
+          }
           
           // Try to get a new image
           const newUrl = await selectImage(contractor);

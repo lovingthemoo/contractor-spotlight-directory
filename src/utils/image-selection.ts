@@ -6,6 +6,15 @@ import type { Database } from "@/integrations/supabase/types";
 // Get the specialty type from the database types
 type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
 
+// Helper to validate specialty
+const isValidSpecialty = (specialty: string): specialty is ContractorSpecialty => {
+  const validSpecialties: ContractorSpecialty[] = [
+    "Electrical", "Plumbing", "Roofing", "Building", 
+    "Home Repair", "Gardening", "Construction", "Handyman"
+  ];
+  return validSpecialties.includes(specialty as ContractorSpecialty);
+};
+
 const getStorageUrl = (path: string): string => {
   // If path is empty or null, return placeholder
   if (!path) {
@@ -46,11 +55,6 @@ const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty): Promis
   try {
     console.debug('Getting fallback image for specialty:', specialty);
     
-    // Get a random active specialty image that:
-    // 1. Matches the specialty
-    // 2. Is marked as active
-    // 3. Isn't marked as broken
-    // 4. Preferably hasn't been used recently
     const { data: specialtyImages, error } = await supabase
       .from('contractor_images')
       .select('storage_path')
@@ -62,7 +66,7 @@ const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty): Promis
           .select('url')
           .eq('specialty', specialty)
       ))
-      .limit(1);  // Remove the ORDER BY RANDOM() here as it's handled by the function
+      .limit(1);
 
     if (error) {
       console.error('Error fetching specialty fallback image:', error);
@@ -87,13 +91,16 @@ const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty): Promis
   }
 };
 
-const markImageAsBroken = async (url: string, specialty?: ContractorSpecialty) => {
+const markImageAsBroken = async (url: string, specialty?: string) => {
   try {
+    // Only include specialty if it's valid
+    const validatedSpecialty = specialty && isValidSpecialty(specialty) ? specialty : null;
+    
     const { error } = await supabase
       .from('broken_image_urls')
       .insert({
         url,
-        specialty,
+        specialty: validatedSpecialty,
         reported_by: 'system',
         error_message: 'Image failed to load'
       })
@@ -108,10 +115,13 @@ const markImageAsBroken = async (url: string, specialty?: ContractorSpecialty) =
 };
 
 export const selectImage = async (contractor: Contractor): Promise<string> => {
-  if (!contractor?.specialty) {
-    console.debug('No specialty provided for contractor:', contractor?.business_name);
+  // Validate specialty before proceeding
+  if (!contractor?.specialty || !isValidSpecialty(contractor.specialty)) {
+    console.debug('Invalid or no specialty provided for contractor:', contractor?.business_name);
     return '/placeholder.svg';
   }
+
+  const specialty = contractor.specialty;
 
   try {
     // First check for Google Photos
@@ -123,7 +133,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
           .from('broken_image_urls')
           .select('url')
           .eq('url', photo.url)
-          .eq('specialty', contractor.specialty)
+          .eq('specialty', specialty)
           .maybeSingle();
 
         if (!brokenCheck) {
@@ -145,7 +155,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
         .from('broken_image_urls')
         .select('url')
         .eq('url', imageUrl)
-        .eq('specialty', contractor.specialty)
+        .eq('specialty', specialty)
         .maybeSingle();
 
       if (!brokenCheck) {
@@ -176,7 +186,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
           .from('broken_image_urls')
           .select('url')
           .eq('url', imageUrl)
-          .eq('specialty', contractor.specialty)
+          .eq('specialty', specialty)
           .maybeSingle();
 
         if (!brokenCheck) {
@@ -198,7 +208,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     }
 
     // If no working images found, get a specialty-specific fallback image
-    return await getSpecialtyFallbackImage(contractor.specialty);
+    return await getSpecialtyFallbackImage(specialty);
   } catch (error) {
     console.error('Error selecting image:', error);
     return '/placeholder.svg';
@@ -206,4 +216,3 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
 };
 
 export { markImageAsBroken };
-
