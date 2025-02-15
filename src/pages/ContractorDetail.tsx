@@ -1,13 +1,18 @@
 
 import { useParams, Link } from "react-router-dom";
-import { MapPin, Star, ArrowLeft, CheckCircle2, Ruler, PoundSterling, Phone, Globe, Mail, Clock } from "lucide-react";
+import { 
+  MapPin, Star, ArrowLeft, CheckCircle2, Ruler, PoundSterling, 
+  Phone, Globe, Mail, Clock, Building2, Briefcase, Award, Calendar
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { transformContractor } from "@/utils/contractor";
 import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import type { Contractor } from "@/types/contractor";
+import { toast } from "sonner";
 
 const ContractorDetail = () => {
   const { slug } = useParams();
@@ -31,6 +36,7 @@ const ContractorDetail = () => {
       
       if (error) {
         console.error('Error fetching contractor:', error);
+        toast.error('Failed to load contractor details');
         throw error;
       }
       
@@ -70,7 +76,7 @@ const ContractorDetail = () => {
   const phone = contractor.google_formatted_phone || contractor.phone;
 
   return (
-    <div className="min-h-screen py-12 bg-gray-50">
+    <div className="min-h-screen py-12 bg-gradient-to-b from-gray-50 to-white">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <Link to="/">
           <Button variant="ghost" className="mb-6" aria-label="Back to listings">
@@ -79,178 +85,264 @@ const ContractorDetail = () => {
           </Button>
         </Link>
         
-        <div className="grid gap-8 md:grid-cols-2">
-          <div>
-            {contractor.google_photos && contractor.google_photos[0] ? (
-              <img
-                src={contractor.google_photos[0].url}
-                alt={`Project by ${businessName}`}
-                className="object-cover w-full rounded-lg shadow-lg aspect-video"
-              />
-            ) : contractor.images?.[0] ? (
-              <img
-                src={contractor.images[0]}
-                alt={`Project by ${businessName}`}
-                className="object-cover w-full rounded-lg shadow-lg aspect-video"
-              />
-            ) : (
-              <img
-                src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e"
-                alt={`Project by ${businessName}`}
-                className="object-cover w-full rounded-lg shadow-lg aspect-video"
-              />
-            )}
-          </div>
-          
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                {businessName}
-              </h1>
-              <div className="flex items-center mt-2 space-x-4">
-                <Badge>{contractor.specialty}</Badge>
-                <div className="flex items-center" aria-label={`Rating: ${contractor.rating} out of 5 stars`}>
-                  <Star className="w-4 h-4 text-yellow-400" aria-hidden="true" />
-                  <span className="ml-1 font-medium">{contractor.rating}</span>
-                  <span className="ml-1 text-gray-500">
-                    ({contractor.review_count || 0} reviews)
-                  </span>
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Main Content - Left 2 Columns */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Hero Section */}
+            <div className="relative rounded-xl overflow-hidden shadow-lg">
+              {contractor.google_photos && contractor.google_photos[0] ? (
+                <img
+                  src={contractor.google_photos[0].url}
+                  alt={`Project by ${businessName}`}
+                  className="w-full object-cover aspect-video"
+                />
+              ) : contractor.images?.[0] ? (
+                <img
+                  src={contractor.images[0]}
+                  alt={`Project by ${businessName}`}
+                  className="w-full object-cover aspect-video"
+                />
+              ) : (
+                <img
+                  src={contractor.default_specialty_image || "/placeholder.svg"}
+                  alt={`Project by ${businessName}`}
+                  className="w-full object-cover aspect-video"
+                />
+              )}
+              
+              {/* Overlay Rating Badge */}
+              {contractor.rating && (
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg flex items-center space-x-2">
+                  <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                  <span className="font-semibold">{contractor.rating}</span>
+                  <span className="text-gray-600">({contractor.review_count || 0})</span>
                 </div>
-              </div>
+              )}
             </div>
 
-            <Card className="p-4 space-y-3">
-              <div className="flex items-center text-gray-600">
-                <MapPin className="w-4 h-4 mr-2" aria-label="Address" />
-                <span>{address}</span>
+            {/* Company Overview */}
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                  {businessName}
+                </h1>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="text-sm">
+                    {contractor.specialty}
+                  </Badge>
+                  {contractor.years_in_business && (
+                    <Badge variant="outline" className="text-sm">
+                      {contractor.years_in_business} Years in Business
+                    </Badge>
+                  )}
+                </div>
               </div>
-              
-              {phone && (
-                <div className="flex items-center text-gray-600">
-                  <Phone className="w-4 h-4 mr-2" aria-label="Phone number" />
-                  <span>{phone}</span>
-                </div>
-              )}
-              
-              {contractor.website_url && (
-                <div className="flex items-center text-gray-600">
-                  <Globe className="w-4 h-4 mr-2" aria-label="Website" />
-                  <a 
-                    href={contractor.website_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-primary hover:underline"
-                    aria-label={`Visit ${businessName}'s website`}
-                  >
-                    Visit Website
-                  </a>
-                </div>
-              )}
-              
-              {contractor.email && (
-                <div className="flex items-center text-gray-600">
-                  <Mail className="w-4 h-4 mr-2" aria-label="Email" />
-                  <a 
-                    href={`mailto:${contractor.email}`} 
-                    className="text-primary hover:underline"
-                    aria-label={`Email ${businessName}`}
-                  >
-                    {contractor.email}
-                  </a>
+
+              {/* Description */}
+              {(contractor.website_description || contractor.description) && (
+                <div className="prose max-w-none">
+                  <h2 className="text-xl font-semibold mb-4">About</h2>
+                  <p className="text-gray-600 leading-relaxed">
+                    {contractor.website_description || contractor.description}
+                  </p>
                 </div>
               )}
 
-              {contractor.years_in_business && contractor.years_in_business > 0 && (
-                <div className="flex items-center text-gray-600">
-                  <Clock className="w-4 h-4 mr-2" aria-label="Years in business" />
-                  <span>{contractor.years_in_business} years in business</span>
-                </div>
-              )}
-            </Card>
-            
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">About</h2>
-              <p className="mt-4 text-gray-600 leading-relaxed">
-                {contractor.website_description || contractor.description}
-              </p>
-            </div>
-
-            {contractor.project_types && contractor.project_types.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Project Types</h3>
-                <div className="flex flex-wrap gap-2">
-                  {contractor.project_types.map((type) => (
-                    <Badge key={type} variant="secondary">{type}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {contractor.certifications && contractor.certifications.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Certifications</h3>
-                <div className="space-y-2">
-                  {contractor.certifications.map((cert) => (
-                    <div key={cert} className="flex items-center">
-                      <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
-                      <span>{cert}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {contractor.typical_project_size && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Typical Project Size</h3>
-                <div className="flex items-center text-gray-600">
-                  <Ruler className="w-4 h-4 mr-2" />
-                  {contractor.typical_project_size}
-                </div>
-              </div>
-            )}
-
-            {(contractor.minimum_project_value || contractor.maximum_project_value) && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Project Value Range</h3>
-                <div className="flex items-center text-gray-600">
-                  <PoundSterling className="w-4 h-4 mr-2" />
-                  {contractor.minimum_project_value && `From £${contractor.minimum_project_value.toLocaleString()}`}
-                  {contractor.minimum_project_value && contractor.maximum_project_value && ' - '}
-                  {contractor.maximum_project_value && `Up to £${contractor.maximum_project_value.toLocaleString()}`}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {contractor.google_reviews && contractor.google_reviews.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-6">Reviews</h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {contractor.google_reviews.map((review, index) => (
-                <Card key={index} className="p-4">
-                  <div className="flex items-center mb-4">
-                    <div className="flex items-center" aria-label={`Rating: ${review.rating} out of 5 stars`}>
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < review.rating ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                          fill={i < review.rating ? 'currentColor' : 'none'}
-                          aria-hidden="true"
-                        />
+              {/* Services & Expertise */}
+              <div className="grid gap-6 sm:grid-cols-2">
+                {/* Project Types */}
+                {contractor.project_types && contractor.project_types.length > 0 && (
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Briefcase className="w-5 h-5 mr-2 text-purple-500" />
+                      Project Types
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {contractor.project_types.map((type) => (
+                        <Badge key={type} variant="secondary">
+                          {type}
+                        </Badge>
                       ))}
                     </div>
+                  </Card>
+                )}
+
+                {/* Certifications */}
+                {contractor.certifications && contractor.certifications.length > 0 && (
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Award className="w-5 h-5 mr-2 text-purple-500" />
+                      Certifications
+                    </h3>
+                    <div className="space-y-2">
+                      {contractor.certifications.map((cert) => (
+                        <div key={cert} className="flex items-center text-gray-600">
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                          <span>{cert}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+              </div>
+
+              {/* Project Details */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2 text-purple-500" />
+                  Project Information
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {contractor.typical_project_size && (
+                    <div>
+                      <h4 className="font-medium text-gray-700">Typical Size</h4>
+                      <div className="flex items-center mt-1 text-gray-600">
+                        <Ruler className="w-4 h-4 mr-2" />
+                        {contractor.typical_project_size}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(contractor.minimum_project_value || contractor.maximum_project_value) && (
+                    <div>
+                      <h4 className="font-medium text-gray-700">Project Value Range</h4>
+                      <div className="flex items-center mt-1 text-gray-600">
+                        <PoundSterling className="w-4 h-4 mr-2" />
+                        <span>
+                          {contractor.minimum_project_value && `From £${contractor.minimum_project_value.toLocaleString()}`}
+                          {contractor.minimum_project_value && contractor.maximum_project_value && ' - '}
+                          {contractor.maximum_project_value && `Up to £${contractor.maximum_project_value.toLocaleString()}`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            {/* Reviews Section */}
+            {contractor.google_reviews && contractor.google_reviews.length > 0 && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">Client Reviews</h2>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {contractor.google_reviews.map((review, index) => (
+                    <Card key={index} className="p-6">
+                      <div className="flex items-center mb-4">
+                        <div className="flex items-center" aria-label={`Rating: ${review.rating} out of 5 stars`}>
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                              }`}
+                              aria-hidden="true"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-gray-600 mb-4">{review.text}</p>
+                      <div className="flex justify-between items-center text-sm text-gray-500">
+                        <span>{review.author_name}</span>
+                        <time dateTime={review.time}>
+                          {new Date(review.time).toLocaleDateString()}
+                        </time>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Contact Sidebar - Right Column */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8 space-y-6">
+              <Card className="p-6 shadow-lg">
+                <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center text-gray-600">
+                    <MapPin className="w-5 h-5 mr-3 text-purple-500" />
+                    <span>{address}</span>
                   </div>
-                  <p className="text-gray-600">{review.text}</p>
-                  <p className="mt-2 text-sm text-gray-500">- {review.author_name}</p>
+                  
+                  {phone && (
+                    <div className="flex items-center text-gray-600">
+                      <Phone className="w-5 h-5 mr-3 text-purple-500" />
+                      <a href={`tel:${phone}`} className="hover:text-purple-600 transition-colors">
+                        {phone}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {contractor.email && (
+                    <div className="flex items-center text-gray-600">
+                      <Mail className="w-5 h-5 mr-3 text-purple-500" />
+                      <a 
+                        href={`mailto:${contractor.email}`}
+                        className="hover:text-purple-600 transition-colors"
+                      >
+                        {contractor.email}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {contractor.website_url && (
+                    <div className="flex items-center text-gray-600">
+                      <Globe className="w-5 h-5 mr-3 text-purple-500" />
+                      <a 
+                        href={contractor.website_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-purple-600 transition-colors"
+                      >
+                        Visit Website
+                      </a>
+                    </div>
+                  )}
+
+                  {contractor.founded_year && (
+                    <div className="flex items-center text-gray-600">
+                      <Calendar className="w-5 h-5 mr-3 text-purple-500" />
+                      <span>Founded in {contractor.founded_year}</span>
+                    </div>
+                  )}
+                </div>
+
+                <Separator className="my-6" />
+
+                <Button 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                  onClick={() => {
+                    if (phone) {
+                      window.location.href = `tel:${phone}`;
+                    } else if (contractor.email) {
+                      window.location.href = `mailto:${contractor.email}`;
+                    }
+                  }}
+                >
+                  Contact Now
+                </Button>
+              </Card>
+
+              {/* Additional Photos */}
+              {contractor.google_photos && contractor.google_photos.length > 1 && (
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Gallery</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {contractor.google_photos.slice(1, 5).map((photo, index) => (
+                      <img
+                        key={index}
+                        src={photo.url}
+                        alt={`Project by ${businessName}`}
+                        className="w-full h-24 object-cover rounded-lg"
+                      />
+                    ))}
+                  </div>
                 </Card>
-              ))}
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
