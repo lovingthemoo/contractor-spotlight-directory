@@ -20,6 +20,16 @@ const isValidGooglePhoto = (photo: any): boolean => {
          isValidUrl(photo.url);
 };
 
+// Helper to format Unsplash URLs
+const formatUnsplashUrl = (url: string): string => {
+  if (url.includes('images.unsplash.com')) {
+    // Add required Unsplash parameters
+    const baseUrl = url.split('?')[0];
+    return `${baseUrl}?auto=format&fit=crop&w=800&q=80`;
+  }
+  return url;
+};
+
 export const getDisplayImage = (contractor: Contractor): string => {
   console.log('Starting image selection process for:', contractor.business_name);
 
@@ -36,15 +46,6 @@ export const getDisplayImage = (contractor: Contractor): string => {
     "default_specialty_image"
   ];
 
-  console.log('Image selection process:', {
-    business: contractor.business_name,
-    specialty: contractor.specialty,
-    hasGooglePhotos: Array.isArray(contractor.google_photos) && contractor.google_photos.length > 0,
-    hasUploadedImages: Array.isArray(contractor.images) && contractor.images.length > 0,
-    hasDefaultImage: Boolean(contractor.default_specialty_image),
-    priorityOrder: imagePriority
-  });
-
   // Try each image source according to priority
   for (const source of imagePriority) {
     switch (source) {
@@ -52,10 +53,6 @@ export const getDisplayImage = (contractor: Contractor): string => {
         if (Array.isArray(contractor.google_photos)) {
           const validPhoto = contractor.google_photos.find(isValidGooglePhoto);
           if (validPhoto) {
-            console.log('Selected Google photo:', {
-              business: contractor.business_name,
-              photo: validPhoto.url
-            });
             return validPhoto.url;
           }
         }
@@ -67,10 +64,6 @@ export const getDisplayImage = (contractor: Contractor): string => {
             typeof img === 'string' && isValidUrl(img)
           );
           if (validImage) {
-            console.log('Selected uploaded image:', {
-              business: contractor.business_name,
-              image: validImage
-            });
             return validImage;
           }
         }
@@ -78,21 +71,11 @@ export const getDisplayImage = (contractor: Contractor): string => {
 
       case "default_specialty_image":
         if (contractor.default_specialty_image && isValidUrl(contractor.default_specialty_image)) {
-          console.log('Selected default specialty image:', {
-            business: contractor.business_name,
-            image: contractor.default_specialty_image
-          });
-          return contractor.default_specialty_image;
+          return formatUnsplashUrl(contractor.default_specialty_image);
         }
         break;
     }
   }
-
-  // Fallback: Use a specialty-specific placeholder if available
-  console.warn('No valid images found for:', {
-    business: contractor.business_name,
-    specialty: contractor.specialty
-  });
 
   // Return the default placeholder
   return '/placeholder.svg';
