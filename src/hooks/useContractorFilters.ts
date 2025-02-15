@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import type { Contractor } from "@/types/contractor";
+import { normalizeSpecialty } from "@/types/image-types";
 
 export const useContractorFilters = (contractors: Contractor[]) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,13 +22,18 @@ export const useContractorFilters = (contractors: Contractor[]) => {
     .filter(contractor => {
       if (selectedSpecialty === "All") return true;
       
-      // Simple exact match on the specialty enum value
-      const matches = contractor.specialty === selectedSpecialty;
+      // Normalize both the selected specialty and the contractor's specialty
+      const normalizedSelected = normalizeSpecialty(selectedSpecialty);
+      const normalizedContractor = contractor.specialty ? normalizeSpecialty(contractor.specialty) : null;
+      
+      const matches = normalizedSelected === normalizedContractor;
       
       console.log('Comparing specialties:', {
-        contractor: contractor.specialty,
-        selected: selectedSpecialty,
-        matches
+        contractor: normalizedContractor,
+        selected: normalizedSelected,
+        matches,
+        originalContractor: contractor.specialty,
+        originalSelected: selectedSpecialty
       });
       
       return matches;
