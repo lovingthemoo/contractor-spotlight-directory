@@ -62,37 +62,56 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
 
         // Clean and encode the address
         const cleanAddress = address.trim();
-        console.log('Geocoding address:', cleanAddress);
-        
-        // Construct geocoding URL with proper parameters
-        const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(cleanAddress)}.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`;
+        console.log('Attempting to geocode address:', cleanAddress);
+
+        // Try initializing map with a default location first
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/streets-v12',
+          center: [-0.1276, 51.5072], // London center as default
+          zoom: 15,
+          minZoom: 9,
+          maxZoom: 17
+        });
+
+        // Add navigation controls
+        map.current.addControl(new mapboxgl.NavigationControl({
+          showCompass: false
+        }), 'top-right');
 
         try {
+          // Perform geocoding after map is initialized
+          const baseUrl = 'https://api.mapbox.com/geocoding/v5/mapbox.places';
+          const encodedAddress = encodeURIComponent(cleanAddress);
+          const params = new URLSearchParams({
+            access_token: mapboxToken,
+            country: 'GB',
+            limit: '1',
+            types: 'address'
+          });
+          
+          const geocodingUrl = `${baseUrl}/${encodedAddress}.json?${params}`;
+          console.log('Geocoding URL:', geocodingUrl);
+
           const response = await fetch(geocodingUrl);
+          console.log('Geocoding response status:', response.status);
           
           if (!response.ok) {
             throw new Error(`Geocoding failed with status: ${response.status}`);
           }
 
           const data = await response.json();
-          console.log('Geocoding response:', data);
+          console.log('Geocoding response data:', data);
 
           if (!data.features || data.features.length === 0) {
             throw new Error('No location found for the provided address');
           }
 
           const [lng, lat] = data.features[0].center;
-          console.log('Coordinates:', { lng, lat });
+          console.log('Found coordinates:', { lng, lat });
 
-          // Create new map instance
-          map.current = new mapboxgl.Map({
-            container: mapContainer.current,
-            style: 'mapbox://styles/mapbox/streets-v12',
-            center: [lng, lat],
-            zoom: 15,
-            minZoom: 9,
-            maxZoom: 17
-          });
+          // Update map center
+          map.current.setCenter([lng, lat]);
 
           // Add marker with popup
           new mapboxgl.Marker({ color: '#7c3aed' })
@@ -101,22 +120,18 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
               .setHTML(`<div class="p-2"><strong>${address}</strong></div>`))
             .addTo(map.current);
 
-          // Add navigation controls
-          map.current.addControl(new mapboxgl.NavigationControl({
-            showCompass: false
-          }), 'top-right');
-
           // Clear any previous errors
           setError(null);
 
-        } catch (fetchError) {
-          console.error('Error fetching geocoding data:', fetchError);
-          throw new Error(`Geocoding request failed: ${fetchError.message}`);
+        } catch (geocodingError) {
+          console.error('Geocoding error:', geocodingError);
+          setError(`Could not find location: ${geocodingError.message}`);
+          // Map is still visible with default London center
         }
 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to load map';
-        console.error('Error initializing map:', error);
+        console.error('Map initialization error:', error);
         setError(errorMessage);
       }
     };
