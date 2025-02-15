@@ -1,6 +1,5 @@
 
 import { Contractor } from "@/types/contractor";
-import { selectImage } from "./image-selection";
 
 export const getDisplayImage = (contractor: Contractor): string => {
   console.log('Processing images for:', {
@@ -8,7 +7,8 @@ export const getDisplayImage = (contractor: Contractor): string => {
     uploadedImages: contractor.images,
     googlePhotos: contractor.google_photos,
     specialty: contractor.specialty,
-    defaultImage: contractor.default_specialty_image
+    defaultImage: contractor.default_specialty_image,
+    imagePriority: contractor.image_priority
   });
 
   // Follow the priority order defined in contractor.image_priority
@@ -21,7 +21,8 @@ export const getDisplayImage = (contractor: Contractor): string => {
           const validPhoto = contractor.google_photos.find(photo => 
             photo && 
             photo.url && 
-            typeof photo.url === 'string'
+            typeof photo.url === 'string' &&
+            photo.url.trim().length > 0
           );
 
           if (validPhoto) {
@@ -52,13 +53,16 @@ export const getDisplayImage = (contractor: Contractor): string => {
         break;
 
       case "default_specialty_image":
-        if (contractor.default_specialty_image && typeof contractor.default_specialty_image === 'string') {
-          console.log('Using default specialty image:', {
-            business: contractor.business_name,
-            specialty: contractor.specialty,
-            image: contractor.default_specialty_image
-          });
-          return contractor.default_specialty_image;
+        if (contractor.default_specialty_image) {
+          const defaultImage = contractor.default_specialty_image.trim();
+          if (defaultImage.length > 0) {
+            console.log('Using default specialty image:', {
+              business: contractor.business_name,
+              specialty: contractor.specialty,
+              image: defaultImage
+            });
+            return defaultImage;
+          }
         }
         break;
     }
@@ -66,7 +70,9 @@ export const getDisplayImage = (contractor: Contractor): string => {
   
   // If no valid image is found, return placeholder
   console.log('No valid image found, using placeholder:', {
-    business: contractor.business_name
+    business: contractor.business_name,
+    priorityOrder,
+    defaultImage: contractor.default_specialty_image
   });
   return '/placeholder.svg';
 };

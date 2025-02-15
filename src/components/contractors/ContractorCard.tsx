@@ -32,13 +32,23 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
   const handleImageError = () => {
     console.error('Image failed to load:', {
       business: businessName,
-      imageUrl: imageUrl
+      imageUrl: imageUrl,
+      contractor: {
+        specialty: contractor.specialty,
+        defaultImage: contractor.default_specialty_image,
+        images: contractor.images,
+        googlePhotos: contractor.google_photos
+      }
     });
     setImageError(true);
     setIsImageLoading(false);
   };
 
   const handleImageLoad = () => {
+    console.log('Image loaded successfully:', {
+      business: businessName,
+      imageUrl: imageUrl
+    });
     setIsImageLoading(false);
   };
 
