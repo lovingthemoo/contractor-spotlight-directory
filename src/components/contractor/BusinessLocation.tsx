@@ -56,8 +56,8 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         const cleanAddress = address.trim();
         console.log('Geocoding:', cleanAddress);
         
-        // Get coordinates from Mapbox Geocoding API
-        const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${
+        // Use HTTPS and the tiles subdomain
+        const geocodingUrl = `https://api.tiles.mapbox.com/geocoding/v5/mapbox.places/${
           encodeURIComponent(cleanAddress)
         }.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`;
 
@@ -65,13 +65,17 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
-            'Origin': window.location.origin
+            'Origin': window.location.origin,
+            'Referer': window.location.origin
           },
           mode: 'cors',
-          credentials: 'omit'
+          credentials: 'omit',
+          cache: 'no-cache'
         });
         
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Geocoding API error:', errorText);
           throw new Error(`Geocoding failed: ${response.status}`);
         }
 
@@ -85,8 +89,8 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         const [longitude, latitude] = data.features[0].center;
         console.log('Found coordinates:', { longitude, latitude });
 
-        // Create static map URL
-        const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/` +
+        // Use tiles subdomain for static map as well
+        const staticMapUrl = `https://api.tiles.mapbox.com/styles/v1/mapbox/streets-v11/static/` +
           `pin-s+7c3aed(${longitude},${latitude})/` + // Purple pin
           `${longitude},${latitude},` + // Center
           `15/` + // Zoom level
