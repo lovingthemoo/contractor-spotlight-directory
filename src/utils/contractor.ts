@@ -1,3 +1,4 @@
+
 import { Contractor, DatabaseContractor, GooglePhoto, GoogleReview } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -173,6 +174,7 @@ export const getDisplayImage = (contractor: Contractor): string => {
   
   // Priority 2: Google photos
   if (contractor.google_photos && Array.isArray(contractor.google_photos)) {
+    // Filter out invalid photos first
     const validGooglePhotos = contractor.google_photos.filter(photo => 
       photo && 
       typeof photo === 'object' &&
@@ -186,11 +188,36 @@ export const getDisplayImage = (contractor: Contractor): string => {
       const photoUrl = validGooglePhotos[0].url;
       console.log('Using Google photo:', photoUrl);
       return photoUrl;
+    } else {
+      // Additional logging for debugging invalid photos
+      console.warn('Google photos validation failed for:', contractor.business_name, {
+        totalPhotos: contractor.google_photos.length,
+        invalidPhotos: contractor.google_photos
+          .filter(photo => !photo || typeof photo !== 'object' || !('url' in photo))
+          .length,
+        samplePhoto: contractor.google_photos[0],
+        photoTypes: contractor.google_photos.map(p => ({
+          isObject: typeof p === 'object',
+          hasUrl: p && typeof p === 'object' && 'url' in p,
+          urlType: p && typeof p === 'object' && 'url' in p ? typeof p.url : 'undefined'
+        }))
+      });
     }
+  } else {
+    console.warn('No Google photos array found for:', contractor.business_name);
   }
   
-  // If no valid images found, return a fallback based on specialty
-  console.log('No valid images found for:', contractor.business_name);
+  // If no image is available, log detailed debugging information
+  console.log('No valid images found for:', contractor.business_name, {
+    hasImages: !!contractor.images?.length,
+    imagesValid: contractor.images && Array.isArray(contractor.images),
+    hasGooglePhotos: !!contractor.google_photos?.length,
+    googlePhotosValid: contractor.google_photos && Array.isArray(contractor.google_photos),
+    imageTypes: contractor.images?.map(img => typeof img),
+    googlePhotoSample: contractor.google_photos?.[0]
+  });
+  
+  // Return fallback image if no valid images found
   return getFallbackImage(contractor.specialty);
 };
 
