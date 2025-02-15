@@ -73,6 +73,7 @@ export type Database = {
         Row: {
           contractor_id: string | null
           created_at: string
+          default_image_url: string | null
           id: string
           image_type: string
           is_active: boolean | null
@@ -84,6 +85,7 @@ export type Database = {
         Insert: {
           contractor_id?: string | null
           created_at?: string
+          default_image_url?: string | null
           id?: string
           image_type?: string
           is_active?: boolean | null
@@ -95,6 +97,7 @@ export type Database = {
         Update: {
           contractor_id?: string | null
           created_at?: string
+          default_image_url?: string | null
           id?: string
           image_type?: string
           is_active?: boolean | null
