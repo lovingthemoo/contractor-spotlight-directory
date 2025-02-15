@@ -4,12 +4,15 @@ import { Star, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Contractor } from "@/types/contractor";
 import { getDisplayImage } from "@/utils/image-utils";
+import { useState } from "react";
 
 interface ContractorCardProps {
   contractor: Contractor;
 }
 
 const ContractorCard = ({ contractor }: ContractorCardProps) => {
+  const [imageError, setImageError] = useState(false);
+  
   // Get business name
   const businessName = contractor.google_place_name || contractor.business_name;
   
@@ -25,17 +28,27 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
     return contractor.google_formatted_address || contractor.location || 'London';
   };
 
+  const handleImageError = () => {
+    console.error('Image failed to load:', {
+      business: businessName,
+      imageUrl: imageUrl
+    });
+    setImageError(true);
+  };
+
   return (
     <Card className="group overflow-hidden transition-all hover:shadow-lg">
       <Link 
         to={`/london/${contractor.specialty?.toLowerCase()}/${contractor.slug}`}
         className="block h-full"
       >
-        <div className="relative aspect-video overflow-hidden">
+        <div className="relative aspect-video overflow-hidden bg-gray-100">
           <img
-            src={imageUrl}
+            src={imageError ? '/placeholder.svg' : imageUrl}
             alt={`${businessName} - ${contractor.specialty} contractor in London`}
             className="object-cover w-full h-full transform transition-transform duration-300 group-hover:scale-105"
+            onError={handleImageError}
+            crossOrigin="anonymous"
           />
         </div>
         
