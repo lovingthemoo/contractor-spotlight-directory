@@ -11,14 +11,13 @@ export const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty):
     // Get list of broken URLs
     const brokenUrlList = await getBrokenUrls(specialty);
     
-    // Get a random specialty image that isn't in the broken URLs list
+    // Get specialty images that aren't in the broken URLs list
     const { data: specialtyImages, error } = await supabase
       .from('contractor_images')
       .select('storage_path')
       .eq('image_type', 'specialty')
       .eq('is_active', true)
-      .not('storage_path', 'in', `(${brokenUrlList.map(url => `'${url}'`).join(',')})`)
-      .order('random()'); // Add random ordering
+      .not('storage_path', 'in', `(${brokenUrlList.map(url => `'${url}'`).join(',')})`);
     
     if (error) {
       console.error('Error fetching specialty fallback image:', error);
