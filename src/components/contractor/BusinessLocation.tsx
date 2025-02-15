@@ -66,27 +66,25 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
 
         console.log('Initializing map with token:', mapboxToken);
 
+        // Force disable WebGL to avoid worker issues
+        (mapboxgl as any).baseApiUrl = 'https://api.mapbox.com';
+        (mapboxgl as any).workerCount = 0;
+
         // Try to create map with basic configuration and fallbacks
         try {
           map.current = new mapboxgl.Map({
             container: mapContainer.current!,
-            style: 'mapbox://styles/mapbox/basic-v9', // Simpler style that might work better with CSP
+            style: 'mapbox://styles/mapbox/basic-v9', // Simpler style
             center: defaultCoords,
             zoom: 15,
             minZoom: 9,
             maxZoom: 17,
-            antialias: false, // Disable antialiasing
-            dragRotate: false, // Disable 3D rotation
-            attributionControl: false // We'll add this manually
+            interactive: false, // Disable interaction to avoid worker requirements
+            preserveDrawingBuffer: false,
+            antialias: false,
+            trackResize: false,
+            attributionControl: true
           });
-
-          // Add attribution control separately
-          map.current.addControl(new mapboxgl.AttributionControl(), 'bottom-right');
-
-          // Basic navigation controls
-          map.current.addControl(new mapboxgl.NavigationControl({
-            showCompass: false
-          }), 'top-right');
 
           // Set up loading handlers
           map.current.once('load', () => {
