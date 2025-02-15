@@ -3,24 +3,36 @@ import { Contractor } from "@/types/contractor";
 
 const getFallbackImage = (specialty?: string): string => {
   const baseUrl = "https://images.unsplash.com/photo-";
+  const unsplashParams = "?auto=format&fit=crop&w=800&q=80";
+  
+  let photoId: string;
+  
   switch (specialty?.toLowerCase()) {
     case "roofing":
-      return `${baseUrl}1632863677807-846708d2e7f4`; // Roofing image
+      photoId = "1632863677807-846708d2e7f4"; // Roofing image
+      break;
     case "building":
     case "construction":
-      return `${baseUrl}1503387762-592deb58ef4e`; // Construction site
+      photoId = "1503387762-592deb58ef4e"; // Construction site
+      break;
     case "electrical":
-      return `${baseUrl}1565193492-05bd3fa5cf4c`; // Electrical work
+      photoId = "1565193492-05bd3fa5cf4c"; // Electrical work
+      break;
     case "plumbing":
-      return `${baseUrl}1504328345606-16dec41d99b7`; // Plumbing
+      photoId = "1504328345606-16dec41d99b7"; // Plumbing
+      break;
     case "home repair":
     case "handyman":
-      return `${baseUrl}1581578731048-c40b7c3dbf30`; // Tools
+      photoId = "1581578731048-c40b7c3dbf30"; // Tools
+      break;
     case "gardening":
-      return `${baseUrl}1466692476868-9ee5a3a3e93b`; // Garden
+      photoId = "1466692476868-9ee5a3a3e93b"; // Garden
+      break;
     default:
-      return `${baseUrl}1503387762-592deb58ef4e`; // Generic construction
+      photoId = "1503387762-592deb58ef4e"; // Generic construction
   }
+
+  return `${baseUrl}${photoId}${unsplashParams}`;
 };
 
 export const getDisplayImage = (contractor: Contractor): string => {
