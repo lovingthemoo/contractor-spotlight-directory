@@ -17,6 +17,10 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
   // Get display name, defaulting to business name
   const displayName = contractor.google_place_name || contractor.business_name;
 
+  // Format rating and review count for display
+  const rating = contractor.rating || 0;
+  const reviewCount = contractor.review_count || 0;
+
   useEffect(() => {
     if (!contractor) return;
 
@@ -88,7 +92,7 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
           <div className="flex items-center mb-2">
             <div className="flex items-center text-yellow-400 mr-2">
               <Star className="fill-current w-4 h-4" />
-              <span className="ml-1 text-sm font-medium">{rating?.toFixed(1)}</span>
+              <span className="ml-1 text-sm font-medium">{rating.toFixed(1)}</span>
             </div>
             <span className="text-sm text-gray-500">
               ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
