@@ -38,7 +38,7 @@ export interface Contractor {
   phone?: string;
   email?: string;
   website_url?: string;
-  certifications?: string[];  // Added this field
+  certifications?: string[];
 }
 
 export interface DatabaseContractor extends Omit<Contractor, 'google_reviews' | 'google_photos'> {
