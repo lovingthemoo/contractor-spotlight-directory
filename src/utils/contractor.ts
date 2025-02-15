@@ -1,4 +1,3 @@
-
 import { Contractor, DatabaseContractor, GooglePhoto, GoogleReview } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -128,7 +127,30 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   return contractor;
 };
 
-export const getDisplayImage = (contractor: Contractor): string | undefined => {
+export const getDisplayImage = (contractor: Contractor): string => {
+  // Default fallback image based on specialty
+  const getFallbackImage = (specialty?: string): string => {
+    const baseUrl = "https://images.unsplash.com/photo-";
+    switch (specialty?.toLowerCase()) {
+      case "roofing":
+        return `${baseUrl}1632863677807-846708d2e7f4`; // Roofing image
+      case "building":
+      case "construction":
+        return `${baseUrl}1503387762-592deb58ef4e`; // Construction site
+      case "electrical":
+        return `${baseUrl}1565193492-05bd3fa5cf4c`; // Electrical work
+      case "plumbing":
+        return `${baseUrl}1504328345606-16dec41d99b7`; // Plumbing
+      case "home repair":
+      case "handyman":
+        return `${baseUrl}1581578731048-c40b7c3dbf30`; // Tools
+      case "gardening":
+        return `${baseUrl}1466692476868-9ee5a3a3e93b`; // Garden
+      default:
+        return `${baseUrl}1503387762-592deb58ef4e`; // Generic construction
+    }
+  };
+
   // Log available images for debugging
   console.log('Image sources for', contractor.business_name, {
     uploadedImages: contractor.images?.length || 0,
@@ -151,7 +173,6 @@ export const getDisplayImage = (contractor: Contractor): string | undefined => {
   
   // Priority 2: Google photos
   if (contractor.google_photos && Array.isArray(contractor.google_photos)) {
-    // Filter out invalid photos first
     const validGooglePhotos = contractor.google_photos.filter(photo => 
       photo && 
       typeof photo === 'object' &&
@@ -162,40 +183,15 @@ export const getDisplayImage = (contractor: Contractor): string | undefined => {
     );
 
     if (validGooglePhotos.length > 0) {
-      // Get the first valid photo URL
       const photoUrl = validGooglePhotos[0].url;
       console.log('Using Google photo:', photoUrl);
       return photoUrl;
-    } else {
-      // Additional logging for debugging invalid photos
-      console.warn('Google photos validation failed for:', contractor.business_name, {
-        totalPhotos: contractor.google_photos.length,
-        invalidPhotos: contractor.google_photos
-          .filter(photo => !photo || typeof photo !== 'object' || !('url' in photo))
-          .length,
-        samplePhoto: contractor.google_photos[0],
-        photoTypes: contractor.google_photos.map(p => ({
-          isObject: typeof p === 'object',
-          hasUrl: p && typeof p === 'object' && 'url' in p,
-          urlType: p && typeof p === 'object' && 'url' in p ? typeof p.url : 'undefined'
-        }))
-      });
     }
-  } else {
-    console.warn('No Google photos array found for:', contractor.business_name);
   }
   
-  // If no image is available, log detailed debugging information
-  console.log('No valid images found for:', contractor.business_name, {
-    hasImages: !!contractor.images?.length,
-    imagesValid: contractor.images && Array.isArray(contractor.images),
-    hasGooglePhotos: !!contractor.google_photos?.length,
-    googlePhotosValid: contractor.google_photos && Array.isArray(contractor.google_photos),
-    imageTypes: contractor.images?.map(img => typeof img),
-    googlePhotoSample: contractor.google_photos?.[0]
-  });
-  
-  return undefined;
+  // If no valid images found, return a fallback based on specialty
+  console.log('No valid images found for:', contractor.business_name);
+  return getFallbackImage(contractor.specialty);
 };
 
 export const getDisplayAddress = (contractor: Contractor): string => {
