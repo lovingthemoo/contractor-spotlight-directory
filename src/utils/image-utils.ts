@@ -32,10 +32,19 @@ const getFallbackImage = (specialty?: string): string => {
       photoId = "1503387762-592deb58ef4e"; // Generic construction
   }
 
-  return `${baseUrl}${photoId}${unsplashParams}`;
+  const fallbackUrl = `${baseUrl}${photoId}${unsplashParams}`;
+  console.log('Generated fallback URL:', { specialty, photoId, fallbackUrl });
+  return fallbackUrl;
 };
 
 export const getDisplayImage = (contractor: Contractor): string => {
+  console.log('Processing images for:', {
+    business: contractor.business_name,
+    uploadedImages: contractor.images,
+    googlePhotos: contractor.google_photos,
+    specialty: contractor.specialty
+  });
+
   // First try uploaded images
   if (contractor.images && contractor.images.length > 0) {
     const validImage = contractor.images.find(img => 
@@ -45,8 +54,16 @@ export const getDisplayImage = (contractor: Contractor): string => {
     );
     
     if (validImage) {
-      console.log('Using uploaded image for', contractor.business_name, validImage);
+      console.log('Using uploaded image:', {
+        business: contractor.business_name,
+        image: validImage
+      });
       return validImage;
+    } else {
+      console.log('No valid uploaded images found:', {
+        business: contractor.business_name,
+        images: contractor.images
+      });
     }
   }
   
@@ -60,13 +77,25 @@ export const getDisplayImage = (contractor: Contractor): string => {
     );
 
     if (validPhoto) {
-      console.log('Using Google photo for', contractor.business_name, validPhoto.url);
+      console.log('Using Google photo:', {
+        business: contractor.business_name,
+        photo: validPhoto
+      });
       return validPhoto.url;
+    } else {
+      console.log('No valid Google photos found:', {
+        business: contractor.business_name,
+        photos: contractor.google_photos
+      });
     }
   }
   
   // Fallback to default image
+  console.log('No valid images found, using fallback for:', {
+    business: contractor.business_name,
+    specialty: contractor.specialty
+  });
+  
   const fallbackImage = getFallbackImage(contractor.specialty);
-  console.log('Using fallback image for', contractor.business_name);
   return fallbackImage;
 };
