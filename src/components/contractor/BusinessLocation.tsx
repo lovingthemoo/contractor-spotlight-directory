@@ -51,18 +51,19 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       return;
     }
 
-    const showMap = async () => {
+    const showMap = () => {
       try {
         const cleanAddress = address.trim();
         console.log('Preparing map for address:', cleanAddress);
         
-        // Create a static map centered on London with the address as text overlay
-        const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/` +
-          `geojson({%22type%22:%22Point%22,%22coordinates%22:[-0.1276,51.5072]})/` + // Center on London
-          `-0.1276,51.5072,` + // London coordinates
-          `12/` + // Zoom level
-          `600x300` + // Size
-          `?access_token=${mapboxToken}`;
+        // Basic static map of London with high resolution
+        const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/` +
+          `[-0.1276,51.5072]` + // London center coordinates
+          `,11` + // Zoom level
+          `/800x400` + // Higher resolution
+          `@2x` + // Retina display support
+          `?padding=50` +
+          `&access_token=${mapboxToken}`;
 
         console.log('Generated static map URL');
         setMapUrl(staticMapUrl);
@@ -89,6 +90,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
               src={mapUrl}
               alt={`Map showing location of ${address}`}
               className="w-full h-full object-cover"
+              loading="lazy"
               onError={(e) => {
                 console.error('Map image failed to load');
                 setError('Could not load map image');
