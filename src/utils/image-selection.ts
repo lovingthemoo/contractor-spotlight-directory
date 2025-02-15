@@ -1,10 +1,12 @@
-
 import { Contractor } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 // Get the specialty type from the database types
 type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
+
+// Cache to track recently used images per specialty
+const recentlyUsedImages: Record<string, Set<string>> = {};
 
 const getStorageUrl = (path: string): string => {
   // If path is empty or null, return placeholder
@@ -45,6 +47,32 @@ const getStorageUrl = (path: string): string => {
     supabaseUrl: import.meta.env.VITE_SUPABASE_URL
   });
   return storageUrl;
+};
+
+const getUnusedImage = (images: { storage_path: string }[], specialty: string): { storage_path: string } | null => {
+  if (!images || images.length === 0) return null;
+  
+  // Initialize set for this specialty if it doesn't exist
+  if (!recentlyUsedImages[specialty]) {
+    recentlyUsedImages[specialty] = new Set();
+  }
+  
+  // If all images have been used, clear the set and start over
+  if (recentlyUsedImages[specialty].size >= images.length) {
+    recentlyUsedImages[specialty].clear();
+  }
+  
+  // Find an image that hasn't been used recently
+  for (const image of images) {
+    if (!recentlyUsedImages[specialty].has(image.storage_path)) {
+      recentlyUsedImages[specialty].add(image.storage_path);
+      return image;
+    }
+  }
+  
+  // If all images are used (shouldn't happen due to clear above), use first one
+  recentlyUsedImages[specialty].add(images[0].storage_path);
+  return images[0];
 };
 
 export const selectImage = async (contractor: Contractor): Promise<string> => {
@@ -105,13 +133,14 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
       }
     }
 
-    // Finally try specialty images
+    // Finally try specialty images, getting recently downloaded ones first
     const { data: specialtyImages, error: specialtyError } = await supabase
       .from('contractor_images')
       .select('storage_path')
       .is('contractor_id', null)
       .eq('image_type', 'specialty')
       .eq('is_active', true)
+      .order('created_at', { ascending: false }) // Get most recently added first
       .order('priority', { ascending: true });
 
     if (specialtyError) {
@@ -124,16 +153,18 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
       return '/placeholder.svg';
     }
 
-    // Select a specialty image based on contractor properties
-    const uniqueString = `${contractor.id}-${contractor.business_name}-${contractor.specialty}`;
-    const selectedIndex = Math.abs(createImageHash(uniqueString)) % specialtyImages.length;
-    const imageUrl = getStorageUrl(specialtyImages[selectedIndex].storage_path);
-    
+    // Get an unused image for this specialty
+    const selectedImage = getUnusedImage(specialtyImages, contractor.specialty);
+    if (!selectedImage) {
+      console.debug('No unused images found, using placeholder');
+      return '/placeholder.svg';
+    }
+
+    const imageUrl = getStorageUrl(selectedImage.storage_path);
     console.debug('Selected specialty image:', {
       contractor: contractor.business_name,
       totalImages: specialtyImages.length,
-      selectedIndex,
-      path: specialtyImages[selectedIndex].storage_path,
+      path: selectedImage.storage_path,
       url: imageUrl
     });
 
