@@ -14,15 +14,25 @@ const isValidUrl = (url: string): boolean => {
 
 // Helper to validate photo object
 const isValidGooglePhoto = (photo: any): boolean => {
-  return photo && 
-         typeof photo === 'object' && 
-         typeof photo.url === 'string' && 
-         isValidUrl(photo.url);
+  if (!photo || typeof photo !== 'object') {
+    console.debug('Invalid photo object:', photo);
+    return false;
+  }
+  
+  if (typeof photo.url !== 'string' || !isValidUrl(photo.url)) {
+    console.debug('Invalid photo URL:', photo.url);
+    return false;
+  }
+  
+  return true;
 };
 
 // Helper to format Unsplash URLs with proper parameters
 const formatUnsplashUrl = (url: string): string => {
-  if (!url) return '';
+  if (!url) {
+    console.debug('Empty URL provided to formatUnsplashUrl');
+    return '';
+  }
   
   // Check if it's an Unsplash URL
   if (!url.includes('images.unsplash.com')) {
@@ -39,16 +49,21 @@ const formatUnsplashUrl = (url: string): string => {
     urlObj.searchParams.set('w', '800');
     urlObj.searchParams.set('q', '80');
     
-    return urlObj.toString();
+    const formattedUrl = urlObj.toString();
+    console.debug('Formatted Unsplash URL:', formattedUrl);
+    return formattedUrl;
   } catch (error) {
-    console.error('Error formatting Unsplash URL:', error);
+    console.error('Error formatting Unsplash URL:', {
+      originalUrl: url,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     return url;
   }
 };
 
 export const getDisplayImage = (contractor: Contractor): string => {
-  // Default to placeholder if no contractor or specialty
   if (!contractor?.specialty) {
+    console.debug('No contractor or specialty provided');
     return '/placeholder.svg';
   }
 
@@ -59,6 +74,12 @@ export const getDisplayImage = (contractor: Contractor): string => {
     "default_specialty_image"
   ];
 
+  console.debug('Processing images for:', {
+    business: contractor.business_name,
+    specialty: contractor.specialty,
+    priorityOrder
+  });
+
   // Try each image source in priority order
   for (const source of priorityOrder) {
     try {
@@ -68,6 +89,7 @@ export const getDisplayImage = (contractor: Contractor): string => {
           if (Array.isArray(photos) && photos.length > 0) {
             const validPhoto = photos.find(isValidGooglePhoto);
             if (validPhoto?.url) {
+              console.debug('Using Google photo:', validPhoto.url);
               return validPhoto.url;
             }
           }
@@ -79,6 +101,7 @@ export const getDisplayImage = (contractor: Contractor): string => {
           if (Array.isArray(images) && images.length > 0) {
             const validImage = images.find(img => typeof img === 'string' && isValidUrl(img));
             if (validImage) {
+              console.debug('Using uploaded image:', validImage);
               return validImage;
             }
           }
@@ -88,7 +111,9 @@ export const getDisplayImage = (contractor: Contractor): string => {
         case "default_specialty_image": {
           const defaultImage = contractor.default_specialty_image;
           if (defaultImage && isValidUrl(defaultImage)) {
-            return formatUnsplashUrl(defaultImage);
+            const formattedUrl = formatUnsplashUrl(defaultImage);
+            console.debug('Using default specialty image:', formattedUrl);
+            return formattedUrl;
           }
           break;
         }
@@ -97,11 +122,11 @@ export const getDisplayImage = (contractor: Contractor): string => {
       console.error('Error processing image source:', {
         source,
         business: contractor.business_name,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 
-  // Fallback to placeholder if no valid images found
+  console.debug('No valid images found, using placeholder');
   return '/placeholder.svg';
 };
