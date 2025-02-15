@@ -1,6 +1,6 @@
 
 import { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
+import mapboxgl, { LngLatLike } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,7 +59,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         }
 
         // Initialize with default London coordinates
-        const defaultCoords = [-0.1276, 51.5072];
+        const defaultCoords: LngLatLike = [-0.1276, 51.5072];
         
         // Initialize Mapbox with access token
         mapboxgl.accessToken = mapboxToken;
@@ -106,14 +106,14 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
                 throw new Error('No location found');
               }
 
-              const [lng, lat] = data.features[0].center;
+              const coords: LngLatLike = data.features[0].center as [number, number];
 
               // Update map center
-              map.current?.setCenter([lng, lat]);
+              map.current?.setCenter(coords);
 
               // Add marker
               new mapboxgl.Marker({ color: '#7c3aed' })
-                .setLngLat([lng, lat])
+                .setLngLat(coords)
                 .setPopup(
                   new mapboxgl.Popup({ offset: 25 })
                     .setHTML(`<div class="p-2"><strong>${address}</strong></div>`)
