@@ -9,12 +9,12 @@ export const useContractorsQuery = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       try {
-        // Get contractors with images using simplified OR conditions
+        // Get contractors with images using proper PostgreSQL array syntax
         const query = supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .or('google_photos.neq.[],default_specialty_image.neq.null,images.neq.[]')
+          .or('google_photos.neq.{}::jsonb,default_specialty_image.neq.null,images.neq.{}')
           .order('rating', { ascending: false });
 
         const { data: contractorsData, error } = await query;
