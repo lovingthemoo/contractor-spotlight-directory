@@ -7,9 +7,9 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   console.log('Processing contractor:', dbContractor.business_name, {
     hasGooglePhotos: !!dbContractor.google_photos,
     googlePhotosType: typeof dbContractor.google_photos,
-    rawGooglePhotos: dbContractor.google_photos, // Log the raw data
+    rawGooglePhotos: dbContractor.google_photos,
     hasImages: Array.isArray(dbContractor.images) && dbContractor.images.length > 0,
-    rawImages: dbContractor.images // Log the raw images array
+    rawImages: dbContractor.images
   });
   
   let google_reviews: GoogleReview[] | undefined;
