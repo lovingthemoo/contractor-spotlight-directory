@@ -11,8 +11,7 @@ export const VALID_SPECIALTIES: ContractorSpecialty[] = [
   "Building",
   "Home Repair",
   "Gardening",
-  "Construction",
-  "Handyman"
+  "Gas Engineer"
 ];
 
 // Helper function to ensure specialty string matches valid types

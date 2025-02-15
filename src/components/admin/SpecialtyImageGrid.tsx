@@ -13,8 +13,7 @@ export const specialties: ContractorSpecialty[] = [
   "Building",
   "Home Repair",
   "Gardening",
-  "Construction",
-  "Handyman"
+  "Gas Engineer"
 ];
 
 interface SpecialtyImageGridProps {
