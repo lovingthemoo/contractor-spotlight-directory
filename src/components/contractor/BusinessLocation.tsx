@@ -51,49 +51,16 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       return;
     }
 
-    const initializeMap = async () => {
+    const showMap = async () => {
       try {
         const cleanAddress = address.trim();
-        console.log('Geocoding:', cleanAddress);
+        console.log('Preparing map for address:', cleanAddress);
         
-        // Use HTTPS and the tiles subdomain
-        const geocodingUrl = `https://api.tiles.mapbox.com/geocoding/v5/mapbox.places/${
-          encodeURIComponent(cleanAddress)
-        }.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`;
-
-        const response = await fetch(geocodingUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Origin': window.location.origin,
-            'Referer': window.location.origin
-          },
-          mode: 'cors',
-          credentials: 'omit',
-          cache: 'no-cache'
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Geocoding API error:', errorText);
-          throw new Error(`Geocoding failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('Geocoding response:', data);
-        
-        if (!data.features?.[0]?.center) {
-          throw new Error('No location found');
-        }
-
-        const [longitude, latitude] = data.features[0].center;
-        console.log('Found coordinates:', { longitude, latitude });
-
-        // Use tiles subdomain for static map as well
-        const staticMapUrl = `https://api.tiles.mapbox.com/styles/v1/mapbox/streets-v11/static/` +
-          `pin-s+7c3aed(${longitude},${latitude})/` + // Purple pin
-          `${longitude},${latitude},` + // Center
-          `15/` + // Zoom level
+        // Create a static map centered on London with the address as text overlay
+        const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/` +
+          `geojson({%22type%22:%22Point%22,%22coordinates%22:[-0.1276,51.5072]})/` + // Center on London
+          `-0.1276,51.5072,` + // London coordinates
+          `12/` + // Zoom level
           `600x300` + // Size
           `?access_token=${mapboxToken}`;
 
@@ -106,7 +73,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       }
     };
 
-    initializeMap();
+    showMap();
   }, [address, mapboxToken]);
 
   return (
@@ -117,16 +84,21 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       )}
       <div className="w-full h-[300px] rounded-lg bg-gray-50 overflow-hidden">
         {mapUrl ? (
-          <img 
-            src={mapUrl}
-            alt={`Map showing location of ${address}`}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              console.error('Map image failed to load');
-              setError('Could not load map image');
-              e.currentTarget.style.display = 'none';
-            }}
-          />
+          <div className="relative w-full h-full">
+            <img 
+              src={mapUrl}
+              alt={`Map showing location of ${address}`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error('Map image failed to load');
+                setError('Could not load map image');
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            <div className="absolute bottom-4 left-4 right-4 bg-white/90 p-2 rounded-md text-sm">
+              {address}
+            </div>
+          </div>
         ) : !error ? (
           <div className="w-full h-full flex items-center justify-center">
             Loading map...
