@@ -40,7 +40,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
   });
 
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+    if (!mapboxToken) return;
 
     // Validate address
     if (!address || typeof address !== 'string' || address.trim().length < 3) {
@@ -57,6 +57,12 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
           map.current = null;
         }
 
+        // Wait for container to be properly sized
+        if (!mapContainer.current?.offsetWidth || !mapContainer.current?.offsetHeight) {
+          console.log('Container not ready, waiting...');
+          return;
+        }
+
         // Initialize Mapbox with access token
         mapboxgl.accessToken = mapboxToken;
 
@@ -64,23 +70,8 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         const cleanAddress = address.trim();
         console.log('Attempting to geocode address:', cleanAddress);
 
-        // Try initializing map with a default location first
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/streets-v12',
-          center: [-0.1276, 51.5072], // London center as default
-          zoom: 15,
-          minZoom: 9,
-          maxZoom: 17
-        });
-
-        // Add navigation controls
-        map.current.addControl(new mapboxgl.NavigationControl({
-          showCompass: false
-        }), 'top-right');
-
         try {
-          // Perform geocoding after map is initialized
+          // Perform geocoding first
           const baseUrl = 'https://api.mapbox.com/geocoding/v5/mapbox.places';
           const encodedAddress = encodeURIComponent(cleanAddress);
           const params = new URLSearchParams({
@@ -110,15 +101,31 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
           const [lng, lat] = data.features[0].center;
           console.log('Found coordinates:', { lng, lat });
 
-          // Update map center
-          map.current.setCenter([lng, lat]);
+          // Initialize map only after we have coordinates
+          map.current = new mapboxgl.Map({
+            container: mapContainer.current,
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [lng, lat],
+            zoom: 15,
+            minZoom: 9,
+            maxZoom: 17,
+            fadeDuration: 0 // Disable fade animations
+          });
 
-          // Add marker with popup
-          new mapboxgl.Marker({ color: '#7c3aed' })
-            .setLngLat([lng, lat])
-            .setPopup(new mapboxgl.Popup({ offset: 25 })
-              .setHTML(`<div class="p-2"><strong>${address}</strong></div>`))
-            .addTo(map.current);
+          // Wait for map to load before adding controls and markers
+          map.current.on('load', () => {
+            // Add navigation controls
+            map.current?.addControl(new mapboxgl.NavigationControl({
+              showCompass: false
+            }), 'top-right');
+
+            // Add marker with popup
+            new mapboxgl.Marker({ color: '#7c3aed' })
+              .setLngLat([lng, lat])
+              .setPopup(new mapboxgl.Popup({ offset: 25 })
+                .setHTML(`<div class="p-2"><strong>${address}</strong></div>`))
+              .addTo(map.current!);
+          });
 
           // Clear any previous errors
           setError(null);
@@ -126,7 +133,23 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         } catch (geocodingError) {
           console.error('Geocoding error:', geocodingError);
           setError(`Could not find location: ${geocodingError.message}`);
-          // Map is still visible with default London center
+          
+          // Initialize map with default London center if geocoding fails
+          map.current = new mapboxgl.Map({
+            container: mapContainer.current,
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [-0.1276, 51.5072],
+            zoom: 15,
+            minZoom: 9,
+            maxZoom: 17,
+            fadeDuration: 0
+          });
+
+          map.current.on('load', () => {
+            map.current?.addControl(new mapboxgl.NavigationControl({
+              showCompass: false
+            }), 'top-right');
+          });
         }
 
       } catch (error) {
@@ -136,10 +159,8 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       }
     };
 
-    // Initialize map with small delay to ensure container is ready
-    const timeoutId = setTimeout(() => {
-      initializeMap();
-    }, 100);
+    // Add a brief delay to ensure container is mounted and sized
+    const timeoutId = setTimeout(initializeMap, 100);
 
     // Cleanup function
     return () => {
@@ -151,22 +172,17 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
     };
   }, [address, mapboxToken]);
 
-  if (!mapboxToken) {
-    return (
-      <Card className="p-4 mt-6">
-        <h3 className="text-lg font-semibold mb-4">Location</h3>
-        <div>Loading map...</div>
-      </Card>
-    );
-  }
-
   return (
     <Card className="p-4 mt-6">
       <h3 className="text-lg font-semibold mb-4">Location</h3>
       {error ? (
         <div className="text-red-500 mb-4">{error}</div>
       ) : null}
-      <div ref={mapContainer} className="w-full h-[300px] rounded-lg" />
+      <div 
+        ref={mapContainer} 
+        className="w-full h-[300px] rounded-lg"
+        style={{ visibility: mapboxToken ? 'visible' : 'hidden' }}
+      />
     </Card>
   );
 };
