@@ -66,94 +66,96 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
 
         console.log('Initializing map with token:', mapboxToken);
 
-        // Create map with basic configuration
-        const mapInstance = new mapboxgl.Map({
-          container: mapContainer.current!,
-          style: 'mapbox://styles/mapbox/light-v11', // Using a simpler style
-          center: defaultCoords,
-          zoom: 15,
-          minZoom: 9,
-          maxZoom: 17
-        });
+        // Try to create map with basic configuration and fallbacks
+        try {
+          map.current = new mapboxgl.Map({
+            container: mapContainer.current!,
+            style: 'mapbox://styles/mapbox/basic-v9', // Simpler style that might work better with CSP
+            center: defaultCoords,
+            zoom: 15,
+            minZoom: 9,
+            maxZoom: 17,
+            antialias: false, // Disable antialiasing
+            dragRotate: false, // Disable 3D rotation
+            attributionControl: false // We'll add this manually
+          });
 
-        // Set up error handling
-        mapInstance.on('error', (e) => {
-          console.error('Mapbox error:', e);
-          setError('Map loading error. Please try again later.');
-        });
+          // Add attribution control separately
+          map.current.addControl(new mapboxgl.AttributionControl(), 'bottom-right');
 
-        // Handle style loading errors
-        mapInstance.on('style.load', () => {
-          console.log('Map style loaded successfully');
-          setShowMap(true);
-        });
+          // Basic navigation controls
+          map.current.addControl(new mapboxgl.NavigationControl({
+            showCompass: false
+          }), 'top-right');
 
-        mapInstance.on('style.error', () => {
-          console.error('Error loading map style');
-          setError('Could not load map style');
-        });
+          // Set up loading handlers
+          map.current.once('load', () => {
+            console.log('Map base loaded successfully');
+            setShowMap(true);
+            
+            // Try geocoding after map is loaded
+            const geocodeAddress = async () => {
+              try {
+                const cleanAddress = address.trim();
+                console.log('Geocoding address:', cleanAddress);
+                
+                const response = await fetch(
+                  `https://api.mapbox.com/geocoding/v5/mapbox.places/${
+                    encodeURIComponent(cleanAddress)
+                  }.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`
+                );
 
-        map.current = mapInstance;
+                if (!response.ok) {
+                  throw new Error(`Geocoding failed: ${response.statusText}`);
+                }
 
-        // Add navigation control after map is initialized
-        map.current.addControl(new mapboxgl.NavigationControl({
-          showCompass: false
-        }), 'top-right');
+                const data = await response.json();
+                console.log('Geocoding response:', data);
+                
+                if (!data.features?.[0]?.center) {
+                  throw new Error('No location found');
+                }
 
-        // Geocode address once map is ready
-        map.current.on('load', () => {
-          console.log('Map loaded, attempting to geocode address');
-          
-          const geocodeAddress = async () => {
-            try {
-              const cleanAddress = address.trim();
-              console.log('Geocoding address:', cleanAddress);
-              
-              const response = await fetch(
-                `https://api.mapbox.com/geocoding/v5/mapbox.places/${
-                  encodeURIComponent(cleanAddress)
-                }.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`
-              );
+                const coords: LngLatLike = data.features[0].center as [number, number];
+                console.log('Found coordinates:', coords);
 
-              if (!response.ok) {
-                throw new Error(`Geocoding failed: ${response.statusText}`);
+                // Update map center
+                map.current?.setCenter(coords);
+
+                // Add marker
+                new mapboxgl.Marker({ color: '#7c3aed' })
+                  .setLngLat(coords)
+                  .setPopup(
+                    new mapboxgl.Popup({ offset: 25 })
+                      .setHTML(`<div class="p-2"><strong>${address}</strong></div>`)
+                  )
+                  .addTo(map.current);
+
+                setError(null);
+              } catch (geocodeError) {
+                console.error('Geocoding error:', geocodeError);
+                setError('Could not find exact location, showing London center');
               }
+            };
 
-              const data = await response.json();
-              console.log('Geocoding response:', data);
-              
-              if (!data.features?.[0]?.center) {
-                throw new Error('No location found');
-              }
+            geocodeAddress();
+          });
 
-              const coords: LngLatLike = data.features[0].center as [number, number];
-              console.log('Found coordinates:', coords);
+          // Error handling
+          map.current.on('error', (e) => {
+            console.error('Mapbox error:', e);
+            setError('Map loading error. Please try again later.');
+          });
 
-              // Update map center
-              map.current?.setCenter(coords);
+        } catch (mapInitError) {
+          console.error('Map initialization error:', mapInitError);
+          throw new Error('Failed to initialize map');
+        }
 
-              // Add marker
-              new mapboxgl.Marker({ color: '#7c3aed' })
-                .setLngLat(coords)
-                .setPopup(
-                  new mapboxgl.Popup({ offset: 25 })
-                    .setHTML(`<div class="p-2"><strong>${address}</strong></div>`)
-                )
-                .addTo(map.current);
-
-              setError(null);
-            } catch (geocodeError) {
-              console.error('Geocoding error:', geocodeError);
-              setError('Could not find exact location, showing London center');
-            }
-          };
-
-          geocodeAddress();
-        });
-
-      } catch (mapError) {
-        console.error('Map initialization error:', mapError);
+      } catch (error) {
+        console.error('Final error:', error);
         setError('Could not load map. Please try again later.');
+        setShowMap(false);
       }
     };
 
