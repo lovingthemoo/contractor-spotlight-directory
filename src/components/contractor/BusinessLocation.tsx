@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface BusinessLocationProps {
   address: string;
@@ -13,8 +15,23 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch Mapbox token from app_settings
+  const { data: mapboxToken } = useQuery({
+    queryKey: ['mapbox-token'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'mapbox_public_token')
+        .single();
+      
+      if (error) throw error;
+      return data.value;
+    }
+  });
+
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || !mapboxToken) return;
 
     // Validate address
     if (!address || typeof address !== 'string' || address.trim().length < 3) {
@@ -32,9 +49,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         }
 
         // Initialize Mapbox with access token
-        if (!mapboxgl.accessToken) {
-          mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHU1Z3M5cDUwMGo1MmtvNmZyYnF3dXg0In0.jkxpNrQzIBMPqx_zO2TBVA';
-        }
+        mapboxgl.accessToken = mapboxToken;
 
         // Clean and encode the address
         const cleanAddress = address.trim();
@@ -42,7 +57,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         
         // Construct geocoding URL with proper parameters
         const geocodingUrl = new URL('https://api.mapbox.com/geocoding/v5/mapbox.places/' + encodeURIComponent(cleanAddress) + '.json');
-        geocodingUrl.searchParams.append('access_token', mapboxgl.accessToken);
+        geocodingUrl.searchParams.append('access_token', mapboxToken);
         geocodingUrl.searchParams.append('country', 'GB');
         geocodingUrl.searchParams.append('limit', '1');
         geocodingUrl.searchParams.append('types', 'address');
@@ -108,7 +123,16 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         map.current = null;
       }
     };
-  }, [address]);
+  }, [address, mapboxToken]);
+
+  if (!mapboxToken) {
+    return (
+      <Card className="p-4 mt-6">
+        <h3 className="text-lg font-semibold mb-4">Location</h3>
+        <div>Loading map...</div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-4 mt-6">
