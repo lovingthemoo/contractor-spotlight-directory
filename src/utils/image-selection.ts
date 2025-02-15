@@ -1,3 +1,4 @@
+
 import { Contractor } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -27,6 +28,11 @@ const getStorageUrl = (path: string): string => {
     return path;
   }
   
+  // For google photos URLs, return as is
+  if (path.startsWith('photos/')) {
+    return path;
+  }
+  
   // Ensure the path doesn't start with a slash
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   
@@ -35,7 +41,8 @@ const getStorageUrl = (path: string): string => {
   console.debug('Constructed storage URL:', {
     originalPath: path,
     cleanPath,
-    storageUrl
+    storageUrl,
+    supabaseUrl: import.meta.env.VITE_SUPABASE_URL
   });
   return storageUrl;
 };
@@ -47,13 +54,21 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
   }
 
   try {
-    // First, if the contractor has a default_specialty_image, use it directly
+    // First check for Google Photos
+    if (contractor.google_photos && contractor.google_photos.length > 0) {
+      const photo = contractor.google_photos[0];
+      if (photo.url) {
+        console.debug('Using Google photo:', {
+          contractor: contractor.business_name,
+          url: photo.url
+        });
+        return photo.url;
+      }
+    }
+
+    // Then check for default specialty image
     if (contractor.default_specialty_image) {
-      // Don't process the URL if it's already a full URL
-      const imageUrl = contractor.default_specialty_image.startsWith('http') 
-        ? contractor.default_specialty_image 
-        : getStorageUrl(contractor.default_specialty_image);
-        
+      const imageUrl = getStorageUrl(contractor.default_specialty_image);
       console.debug('Using default specialty image:', {
         contractor: contractor.business_name,
         image: contractor.default_specialty_image,
@@ -90,7 +105,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
       }
     }
 
-    // Fallback to specialty images
+    // Finally try specialty images
     const { data: specialtyImages, error: specialtyError } = await supabase
       .from('contractor_images')
       .select('storage_path')
