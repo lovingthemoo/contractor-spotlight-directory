@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,7 @@ import Footer from "@/components/Footer";
 import ContractorCard from "@/components/contractors/ContractorCard";
 import SearchBar from "@/components/contractors/SearchBar";
 import SpecialtyFilter from "@/components/contractors/SpecialtyFilter";
-import { transformContractor, getDisplayImage, getDisplayAddress } from "@/utils/contractor";
+import { transformContractor } from "@/utils/contractor";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -29,7 +30,7 @@ const Index = () => {
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .gt('images', '{}') // Filter for non-empty arrays using greater than empty array
+          .gt('images', '{}') // Filter for non-empty arrays
           .order('rating', { ascending: false });
         
         const response = await withImagesQuery;
@@ -55,7 +56,7 @@ const Index = () => {
             .from('contractors')
             .select('*')
             .not('rating', 'is', null)
-            .neq('google_photos', '[]') // Filter for non-empty JSONB array
+            .neq('google_photos', '[]')
             .order('rating', { ascending: false });
 
           const googlePhotosResponse = await withGooglePhotosQuery;
@@ -277,8 +278,6 @@ const Index = () => {
                 <ContractorCard
                   key={contractor.id}
                   contractor={contractor}
-                  getDisplayImage={getDisplayImage}
-                  getDisplayAddress={getDisplayAddress}
                 />
               ))}
             </div>
