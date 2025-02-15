@@ -16,16 +16,33 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
   const specialty = contractor.specialty as ContractorSpecialty;
 
   try {
-    // Query the database for specialty images
-    const { data: specialtyImages, error } = await supabase
-      .from('specialty_default_images')
-      .select('image_url')
-      .eq('specialty', specialty)
+    // First try to get contractor-specific images
+    if (contractor.id) {
+      const { data: contractorImages, error: contractorImagesError } = await supabase
+        .from('contractor_images')
+        .select('storage_path')
+        .eq('contractor_id', contractor.id)
+        .eq('is_active', true)
+        .order('priority');
+
+      if (!contractorImagesError && contractorImages && contractorImages.length > 0) {
+        const selectedImage = contractorImages[0];
+        console.debug('Using contractor-specific image:', selectedImage.storage_path);
+        return selectedImage.storage_path;
+      }
+    }
+
+    // Fallback to specialty images
+    const { data: specialtyImages, error: specialtyError } = await supabase
+      .from('contractor_images')
+      .select('storage_path')
+      .is('contractor_id', null)
+      .eq('image_type', 'specialty')
       .eq('is_active', true)
       .order('priority');
 
-    if (error) {
-      console.error('Error fetching specialty images:', error);
+    if (specialtyError) {
+      console.error('Error fetching specialty images:', specialtyError);
       return '/placeholder.svg';
     }
 
@@ -43,10 +60,10 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
       specialty,
       totalImages: specialtyImages.length,
       selectedIndex: index,
-      imageUrl: specialtyImages[index].image_url
+      imageUrl: specialtyImages[index].storage_path
     });
 
-    return specialtyImages[index].image_url;
+    return specialtyImages[index].storage_path;
   } catch (error) {
     console.error('Error in selectImage:', error);
     return '/placeholder.svg';

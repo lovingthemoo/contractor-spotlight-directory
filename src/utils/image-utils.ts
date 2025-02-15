@@ -27,40 +27,6 @@ const isValidGooglePhoto = (photo: any): boolean => {
   return true;
 };
 
-// Helper to format Unsplash URLs with proper parameters
-const formatUnsplashUrl = (url: string): string => {
-  if (!url) {
-    console.debug('Empty URL provided to formatUnsplashUrl');
-    return '';
-  }
-  
-  // Check if it's an Unsplash URL
-  if (!url.includes('images.unsplash.com')) {
-    return url;
-  }
-
-  try {
-    // Parse the URL to handle existing query parameters
-    const urlObj = new URL(url);
-    
-    // Add or update required parameters
-    urlObj.searchParams.set('auto', 'format');
-    urlObj.searchParams.set('fit', 'crop');
-    urlObj.searchParams.set('w', '800');
-    urlObj.searchParams.set('q', '80');
-    
-    const formattedUrl = urlObj.toString();
-    console.debug('Formatted Unsplash URL:', formattedUrl);
-    return formattedUrl;
-  } catch (error) {
-    console.error('Error formatting Unsplash URL:', {
-      originalUrl: url,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-    return url;
-  }
-};
-
 export const getDisplayImage = (contractor: Contractor): string => {
   if (!contractor?.specialty) {
     console.debug('No contractor or specialty provided');
@@ -111,9 +77,8 @@ export const getDisplayImage = (contractor: Contractor): string => {
         case "default_specialty_image": {
           const defaultImage = contractor.default_specialty_image;
           if (defaultImage && isValidUrl(defaultImage)) {
-            const formattedUrl = formatUnsplashUrl(defaultImage);
-            console.debug('Using default specialty image:', formattedUrl);
-            return formattedUrl;
+            console.debug('Using default specialty image:', defaultImage);
+            return defaultImage;
           }
           break;
         }
