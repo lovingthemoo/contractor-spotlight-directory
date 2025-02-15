@@ -10,6 +10,8 @@ import ContractorsList from "@/components/contractors/ContractorsList";
 import { useContractorFilters } from "@/hooks/useContractorFilters";
 import { transformContractor } from "@/utils/contractor-transformer";
 import { toast } from "sonner";
+import { migrateSpecialtyImages } from "@/utils/migration-utils";
+import { Button } from "@/components/ui/button";
 
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
 const ratingFilters = ["All", "4.5+", "4.0+", "3.5+", "3.0+"];
@@ -114,6 +116,17 @@ const Index = () => {
     filteredContractors
   } = useContractorFilters(contractors);
 
+  const handleMigration = async () => {
+    try {
+      toast.loading('Starting image migration...');
+      await migrateSpecialtyImages();
+      toast.success('Migration completed successfully');
+    } catch (error) {
+      console.error('Migration failed:', error);
+      toast.error('Failed to migrate images');
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -138,6 +151,16 @@ const Index = () => {
                 setSearchQuery={setSearchQuery}
                 aria-label="Search contractors"
               />
+              
+              {/* Admin only migration button */}
+              <div className="mt-4">
+                <Button 
+                  onClick={handleMigration}
+                  variant="outline"
+                >
+                  Migrate Specialty Images
+                </Button>
+              </div>
             </div>
           </div>
         </section>

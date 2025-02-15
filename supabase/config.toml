@@ -1,3 +1,4 @@
 
 [functions.migrate-specialty-images]
 verify_jwt = false
+
