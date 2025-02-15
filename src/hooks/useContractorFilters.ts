@@ -21,17 +21,16 @@ export const useContractorFilters = (contractors: Contractor[]) => {
     .filter(contractor => {
       if (selectedSpecialty === "All") return true;
       
-      // Normalize both strings by trimming whitespace and converting to lowercase
-      const normalizedContractorSpecialty = contractor.specialty?.trim().toLowerCase();
-      const normalizedSelectedSpecialty = selectedSpecialty.trim().toLowerCase();
+      // Simple exact match on the specialty enum value
+      const matches = contractor.specialty === selectedSpecialty;
       
       console.log('Comparing specialties:', {
-        contractor: normalizedContractorSpecialty,
-        selected: normalizedSelectedSpecialty,
-        matches: normalizedContractorSpecialty === normalizedSelectedSpecialty
+        contractor: contractor.specialty,
+        selected: selectedSpecialty,
+        matches
       });
       
-      return normalizedContractorSpecialty === normalizedSelectedSpecialty;
+      return matches;
     })
     .filter(contractor => 
       selectedRating === "All" || (contractor.rating && contractor.rating >= getRatingThreshold(selectedRating))
