@@ -8,83 +8,83 @@ const getFallbackImage = (contractor: Contractor): string => {
   // Expanded collection of specialty-specific images with 40+ unique, relevant images
   const specialtyImages: Record<string, string[]> = {
     roofing: [
-      "1632863677807-846708d2e7f4", // Roofing workers
+      "1632863677807-846708d2e7f4", // Roofing workers on residential project
       "1635424709852-0458e8d0f47f", // Modern roof architecture
-      "1600585152220-90363fe7e115", // Residential roofing
-      "1622003184639-ddbb3a35422c", // Roof tiles
+      "1600585152220-90363fe7e115", // Residential roofing installation
+      "1622003184639-ddbb3a35422c", // Roof tiles closeup
       "1589939705384-5185137a7f0f", // Solar roof installation
-      "1597694491841-16c3320db9ce"  // Professional roofing
+      "1597694491841-16c3320db9ce"  // Professional roofing team
     ],
     building: [
-      "1503387762-592deb58ef4e", // Construction site
-      "1621568584120-2f9896611d25", // Building exterior
-      "1590725140366-fe96f2cf05c6", // Building process
-      "1541971875051-aec1c2f00405", // Modern building
+      "1504307651254-35b1a71c4706", // Modern building construction
+      "1621568584120-2f9896611d25", // Building exterior work
+      "1590725121839-892b458a74b1", // Building process
+      "1541971875051-aec1c2f00405", // Modern architecture
       "1628744876479-bcd37bf5ed4c", // Building renovation
       "1517581177684-8777137abd91"  // Heavy machinery
     ],
     electrical: [
-      "1565193492-05bd3fa5cf4c", // Electrical work
-      "1555963966-b7fad8930b03", // Circuit board
+      "1565193492-05bd3fa5cf4c", // Professional electrical work
+      "1555963966-b7fad8930b03", // Circuit installation
       "1531986627196-72d4714264f4", // Electrician at work
-      "1558449907-8b82b0264682", // Electrical panel
-      "1597694491841-16c3320db9ce", // Industrial electrical
-      "1558449907-8b82b0264682"  // Smart electrical
+      "1416939692227-3eb34e91b381", // Electrical wiring
+      "1580893297897-b09c1df87a49", // Industrial electrical
+      "1484807352052-23338990c6c6"  // Smart home electrical
     ],
     plumbing: [
-      "1504328345606-16dec41d99b7", // Plumbing tools
-      "1581244927444-6967703db066", // Modern bathroom
-      "1575517111028-9a6f38112bb8", // Plumbing work
+      "1504328345606-16dec41d99b7", // Professional plumbing tools
+      "1585944285623-d31c27069c1e", // Modern bathroom installation
+      "1575517111028-9a6f38112bb8", // Active plumbing work
       "1584622650111-93e69d876a0c", // Bathroom renovation
-      "1599493758267-c6c884c7071f", // Plumbing repair
-      "1556908893-f30975b14b9f"  // Pipe work
+      "1599493758267-c6c884c7071f", // Plumbing repair in progress
+      "1556908893-f30975b14b9f"  // Professional pipe work
     ],
     "home repair": [
-      "1581578731048-c40b7c3dbf30", // Tools
-      "1584622650111-93e69d876a0c", // Home maintenance
-      "1556909211-a1522699c2c3", // Interior repair
-      "1581244927444-6967703db066", // Home renovation
-      "1556908893-f30975b14b9f", // Home improvement
-      "1564182842519-8a3b2af3e228"  // General repairs
+      "1581578731048-c40b7c3dbf30", // Professional tool set
+      "1617104461687-7637c6d5c145", // Home maintenance
+      "1556909211-a1522699c2c3", // Interior renovation
+      "1573505825448-61b76fef4fd6", // Home improvement
+      "1584663737865-4c402a662837", // General repairs
+      "1530124566582-a618bc2615dc"  // Professional repair work
     ],
     handyman: [
-      "1581578731048-c40b7c3dbf30", // Tools arrangement
-      "1621905251189-68b6095f3a6d", // Workshop
-      "1540496905036-5937c10647cc", // Handyman working
-      "1564182842519-8a3b2af3e228", // Tool collection
-      "1599686101142-c6b5b81e1d9d", // Professional work
-      "1622003184639-ddbb3a35422c"  // Maintenance
+      "1580901368919-7892f7c339db", // Professional handyman
+      "1621905251189-68b6095f3a6d", // Workshop environment
+      "1540496905036-5937c10647cc", // Active maintenance work
+      "1564182842519-8a3b2af3e228", // Professional tools
+      "1599686101142-c6b5b81e1d9d", // Handyman at work
+      "1590004953683-5c1177c5c2c8"  // Home maintenance
     ],
     gardening: [
-      "1466692476868-9ee5a3a3e93b", // Garden view
-      "1591857177580-dc82b9ac4e1e", // Gardening tools
-      "1523348837708-15d4a09cfac2", // Landscaping
-      "1599686101142-c6b5b81e1d9d", // Professional gardening
-      "1558449907-8b82b0264682", // Garden design
-      "1590725140366-fe96f2cf05c6"  // Garden maintenance
+      "1466692476868-9ee5a3a3e93b", // Professional landscaping
+      "1591857177580-dc82b9ac4e1e", // Garden maintenance
+      "1523348837708-15d4a09cfac2", // Landscaping design
+      "1558904541-c19784525cf4", // Professional gardening
+      "1416879595882-3373a0480b5b", // Garden design work
+      "1523712999610-f77fbcfc3843"  // Landscaping project
     ],
     construction: [
-      "1503387762-592deb58ef4e", // Construction site
-      "1624633505074-90526c6a5811", // Construction work
-      "1517581177684-8777137abd91", // Heavy machinery
-      "1541971875051-aec1c2f00405", // Modern construction
-      "1628744876479-bcd37bf5ed4c", // Building site
-      "1590725140366-fe96f2cf05c6"  // Construction project
+      "1503387762-592deb58ef4e", // Active construction site
+      "1624633505074-90526c6a5811", // Professional construction work
+      "1521791586668-83c8cf25a6c2", // Construction planning
+      "1590644776933-e05027243a9d", // Building process
+      "1533077162588-6c3f2e67b273", // Construction team
+      "1572715376701-98568319fd0b"  // Site development
     ]
   };
   
-  // Default images for unknown specialties (more diverse options)
+  // Default images for unknown specialties (diverse professional work)
   const defaultImages = [
-    "1503387762-592deb58ef4e", // Construction site
-    "1584622650111-93e69d876a0c", // Maintenance work
-    "1621905251189-68b6095f3a6d", // Workshop
-    "1556909211-a1522699c2c3", // Interior work
-    "1581244927444-6967703db066", // Renovation
-    "1564182842519-8a3b2af3e228", // Tools
-    "1599686101142-c6b5b81e1d9d", // Professional work
-    "1558449907-8b82b0264682", // Technical work
-    "1590725140366-fe96f2cf05c6", // Project work
-    "1622003184639-ddbb3a35422c"  // General maintenance
+    "1512314889357-e157c22f938d", // Professional services
+    "1517292987719-0369a794ec0f", // Skilled labor
+    "1556911261-6bd341186b2f", // General maintenance
+    "1530124566582-a618bc2615dc", // Professional work environment
+    "1584663737865-4c402a662837", // Quality workmanship
+    "1581578731048-c40b7c3dbf30", // Professional tools
+    "1573505825448-61b76fef4fd6", // Home services
+    "1599686101142-c6b5b81e1d9d", // Expert at work
+    "1590004953683-5c1177c5c2c8", // Service provider
+    "1523712999610-f77fbcfc3843"  // Professional project
   ];
 
   let availableImages = defaultImages;
