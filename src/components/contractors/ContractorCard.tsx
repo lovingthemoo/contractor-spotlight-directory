@@ -12,6 +12,7 @@ interface ContractorCardProps {
 
 const ContractorCard = ({ contractor }: ContractorCardProps) => {
   const [imageError, setImageError] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
   
   // Get business name
   const businessName = contractor.google_place_name || contractor.business_name;
@@ -34,6 +35,11 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
       imageUrl: imageUrl
     });
     setImageError(true);
+    setIsImageLoading(false);
+  };
+
+  const handleImageLoad = () => {
+    setIsImageLoading(false);
   };
 
   return (
@@ -43,12 +49,20 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
         className="block h-full"
       >
         <div className="relative aspect-video overflow-hidden bg-gray-100">
+          {isImageLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
           <img
             src={imageError ? '/placeholder.svg' : imageUrl}
             alt={`${businessName} - ${contractor.specialty} contractor in London`}
-            className="object-cover w-full h-full transform transition-transform duration-300 group-hover:scale-105"
+            className={`object-cover w-full h-full transform transition-transform duration-300 group-hover:scale-105 ${
+              isImageLoading ? 'opacity-0' : 'opacity-100'
+            }`}
             onError={handleImageError}
-            crossOrigin="anonymous"
+            onLoad={handleImageLoad}
+            loading="lazy"
           />
         </div>
         
