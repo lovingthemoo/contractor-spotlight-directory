@@ -24,48 +24,37 @@ const getFallbackImage = (specialty?: string): string => {
 };
 
 export const getDisplayImage = (contractor: Contractor): string => {
-  // Log available images for debugging
-  console.log('Image sources for', contractor.business_name, {
-    uploadedImages: contractor.images?.length || 0,
-    googlePhotos: contractor.google_photos?.length || 0,
-    specialty: contractor.specialty
-  });
-
-  // Priority 1: Company-specific uploaded images
-  if (contractor.images && Array.isArray(contractor.images) && contractor.images.length > 0) {
-    const validUploadedImages = contractor.images.filter(img => 
+  // First try uploaded images
+  if (contractor.images && contractor.images.length > 0) {
+    const validImage = contractor.images.find(img => 
       typeof img === 'string' && 
       img.trim().length > 0 && 
       img.startsWith('http')
     );
-
-    if (validUploadedImages.length > 0) {
-      console.log('Using uploaded image:', validUploadedImages[0]);
-      return validUploadedImages[0];
+    
+    if (validImage) {
+      console.log('Using uploaded image for', contractor.business_name, validImage);
+      return validImage;
     }
   }
   
-  // Priority 2: Google photos
-  if (contractor.google_photos && Array.isArray(contractor.google_photos)) {
-    const validGooglePhotos = contractor.google_photos.filter(photo => 
+  // Then try Google photos
+  if (contractor.google_photos && contractor.google_photos.length > 0) {
+    const validPhoto = contractor.google_photos.find(photo => 
       photo && 
-      typeof photo === 'object' &&
-      'url' in photo &&
-      photo.url &&
-      typeof photo.url === 'string' &&
-      photo.url.trim().length > 0 &&
+      photo.url && 
+      typeof photo.url === 'string' && 
       photo.url.startsWith('http')
     );
 
-    if (validGooglePhotos.length > 0) {
-      const photoUrl = validGooglePhotos[0].url;
-      console.log('Using Google photo:', photoUrl);
-      return photoUrl;
+    if (validPhoto) {
+      console.log('Using Google photo for', contractor.business_name, validPhoto.url);
+      return validPhoto.url;
     }
   }
   
-  // Return fallback image if no valid images found
+  // Fallback to default image
   const fallbackImage = getFallbackImage(contractor.specialty);
-  console.log('Using fallback image for', contractor.business_name, fallbackImage);
+  console.log('Using fallback image for', contractor.business_name);
   return fallbackImage;
 };
