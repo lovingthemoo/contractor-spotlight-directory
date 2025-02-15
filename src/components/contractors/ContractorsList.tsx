@@ -9,6 +9,7 @@ interface ContractorsListProps {
   searchQuery: string;
   selectedSpecialty: string;
   selectedRating: string;
+  selectedReviews: string;
 }
 
 const ContractorsList = ({ 
@@ -17,7 +18,8 @@ const ContractorsList = ({
   error, 
   searchQuery, 
   selectedSpecialty, 
-  selectedRating 
+  selectedRating,
+  selectedReviews
 }: ContractorsListProps) => {
   return (
     <section 
@@ -52,7 +54,7 @@ const ContractorsList = ({
 
         {!isLoading && !error && contractors.length === 0 && (
           <div className="text-center py-12 text-gray-500" role="status">
-            {searchQuery || selectedSpecialty !== "All" || selectedRating !== "All"
+            {searchQuery || selectedSpecialty !== "All" || selectedRating !== "All" || selectedReviews !== "All"
               ? "No contractors found matching your criteria."
               : "No contractors available at the moment."}
           </div>
