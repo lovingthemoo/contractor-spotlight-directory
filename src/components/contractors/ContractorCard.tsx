@@ -4,7 +4,7 @@ import { Star, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Contractor } from "@/types/contractor";
 import { getDisplayImage } from "@/utils/image-utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ContractorCardProps {
   contractor: Contractor;
@@ -13,12 +13,35 @@ interface ContractorCardProps {
 const ContractorCard = ({ contractor }: ContractorCardProps) => {
   const [imageError, setImageError] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
+  const [imageUrl, setImageUrl] = useState<string>('/placeholder.svg');
   
   // Get business name
   const businessName = contractor.google_place_name || contractor.business_name;
-  
-  // Get the image URL using our utility function
-  const imageUrl = getDisplayImage(contractor);
+
+  useEffect(() => {
+    // Get the image URL using our utility function
+    const url = getDisplayImage(contractor);
+    setImageUrl(url);
+    
+    // Pre-load the image
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+      setImageUrl(url);
+      setIsImageLoading(false);
+      setImageError(false);
+    };
+    img.onerror = () => {
+      console.error('Failed to load image:', {
+        business: businessName,
+        url: url,
+        fallback: '/placeholder.svg'
+      });
+      setImageUrl('/placeholder.svg');
+      setImageError(true);
+      setIsImageLoading(false);
+    };
+  }, [contractor, businessName]);
   
   // Format rating display
   const displayRating = contractor.rating?.toFixed(1) || '0.0';
@@ -27,29 +50,6 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
   // Get the display address
   const getDisplayAddress = (): string => {
     return contractor.google_formatted_address || contractor.location || 'London';
-  };
-
-  const handleImageError = () => {
-    console.error('Image failed to load:', {
-      business: businessName,
-      imageUrl: imageUrl,
-      contractor: {
-        specialty: contractor.specialty,
-        defaultImage: contractor.default_specialty_image,
-        images: contractor.images,
-        googlePhotos: contractor.google_photos
-      }
-    });
-    setImageError(true);
-    setIsImageLoading(false);
-  };
-
-  const handleImageLoad = () => {
-    console.log('Image loaded successfully:', {
-      business: businessName,
-      imageUrl: imageUrl
-    });
-    setIsImageLoading(false);
   };
 
   return (
@@ -65,13 +65,11 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
             </div>
           )}
           <img
-            src={imageError ? '/placeholder.svg' : imageUrl}
+            src={imageUrl}
             alt={`${businessName} - ${contractor.specialty} contractor in London`}
             className={`object-cover w-full h-full transform transition-transform duration-300 group-hover:scale-105 ${
               isImageLoading ? 'opacity-0' : 'opacity-100'
             }`}
-            onError={handleImageError}
-            onLoad={handleImageLoad}
             loading="lazy"
           />
         </div>
