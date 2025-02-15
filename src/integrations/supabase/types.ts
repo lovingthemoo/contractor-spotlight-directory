@@ -90,6 +90,7 @@ export type Database = {
           certifications: string[] | null
           company_number: string | null
           created_at: string
+          default_specialty_image: string | null
           description: string | null
           email: string | null
           founded_year: number | null
@@ -102,6 +103,7 @@ export type Database = {
           google_reviews: Json | null
           id: string
           identity_verified: boolean | null
+          image_priority: Json | null
           images: string[]
           insurance_details: Json | null
           insurance_verified: boolean | null
@@ -142,6 +144,7 @@ export type Database = {
           certifications?: string[] | null
           company_number?: string | null
           created_at?: string
+          default_specialty_image?: string | null
           description?: string | null
           email?: string | null
           founded_year?: number | null
@@ -154,6 +157,7 @@ export type Database = {
           google_reviews?: Json | null
           id?: string
           identity_verified?: boolean | null
+          image_priority?: Json | null
           images?: string[]
           insurance_details?: Json | null
           insurance_verified?: boolean | null
@@ -194,6 +198,7 @@ export type Database = {
           certifications?: string[] | null
           company_number?: string | null
           created_at?: string
+          default_specialty_image?: string | null
           description?: string | null
           email?: string | null
           founded_year?: number | null
@@ -206,6 +211,7 @@ export type Database = {
           google_reviews?: Json | null
           id?: string
           identity_verified?: boolean | null
+          image_priority?: Json | null
           images?: string[]
           insurance_details?: Json | null
           insurance_verified?: boolean | null
@@ -275,6 +281,39 @@ export type Database = {
         }
         Relationships: []
       }
+      specialty_default_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_alt: string | null
+          image_url: string
+          is_active: boolean | null
+          priority: number | null
+          specialty: Database["public"]["Enums"]["contractor_specialty"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_alt?: string | null
+          image_url: string
+          is_active?: boolean | null
+          priority?: number | null
+          specialty: Database["public"]["Enums"]["contractor_specialty"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_alt?: string | null
+          image_url?: string
+          is_active?: boolean | null
+          priority?: number | null
+          specialty?: Database["public"]["Enums"]["contractor_specialty"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       upload_logs: {
         Row: {
           created_at: string
@@ -324,6 +363,12 @@ export type Database = {
           contractor: unknown
         }
         Returns: number
+      }
+      get_default_specialty_image: {
+        Args: {
+          p_specialty: Database["public"]["Enums"]["contractor_specialty"]
+        }
+        Returns: string
       }
       get_random_description: {
         Args: {

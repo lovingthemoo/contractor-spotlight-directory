@@ -13,6 +13,10 @@ export interface GoogleReview {
   author_name: string;
 }
 
+export interface ImagePriority {
+  order: string[];
+}
+
 export interface Contractor {
   id: string;
   business_name: string;
@@ -39,6 +43,8 @@ export interface Contractor {
   email?: string;
   website_url?: string;
   certifications?: string[];
+  default_specialty_image?: string;
+  image_priority?: ImagePriority;
 }
 
 export interface DatabaseContractor extends Omit<Contractor, 'google_reviews' | 'google_photos'> {
