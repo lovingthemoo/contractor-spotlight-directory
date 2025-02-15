@@ -18,29 +18,39 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
     const initializeMap = async () => {
       mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHU1Z3M5cDUwMGo1MmtvNmZyYnF3dXg0In0.jkxpNrQzIBMPqx_zO2TBVA';
 
-      // Geocode the address
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxgl.accessToken}`
-      );
-      const data = await response.json();
+      try {
+        // Geocode the address
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxgl.accessToken}`
+        );
+        const data = await response.json();
 
-      if (data.features && data.features.length > 0) {
-        const [lng, lat] = data.features[0].center;
+        if (data.features && data.features.length > 0) {
+          const [lng, lat] = data.features[0].center;
 
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/streets-v12',
-          center: [lng, lat],
-          zoom: 14
-        });
+          if (map.current) {
+            map.current.remove();
+          }
 
-        // Add marker
-        new mapboxgl.Marker()
-          .setLngLat([lng, lat])
-          .addTo(map.current);
+          map.current = new mapboxgl.Map({
+            container: mapContainer.current,
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [lng, lat],
+            zoom: 14
+          });
 
-        // Add navigation controls
-        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+          // Add marker
+          new mapboxgl.Marker()
+            .setLngLat([lng, lat])
+            .addTo(map.current);
+
+          // Add navigation controls
+          map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        } else {
+          console.error('No location found for address:', address);
+        }
+      } catch (error) {
+        console.error('Error initializing map:', error);
       }
     };
 

@@ -15,12 +15,18 @@ export const HeroImage = ({ contractor, businessName }: HeroImageProps) => {
           src={contractor.google_photos[0].url}
           alt={`Project by ${businessName}`}
           className="w-full object-cover aspect-video"
+          onError={(e) => {
+            e.currentTarget.src = contractor.default_specialty_image || '/placeholder.svg';
+          }}
         />
       ) : contractor.images?.[0] ? (
         <img
           src={contractor.images[0]}
           alt={`Project by ${businessName}`}
           className="w-full object-cover aspect-video"
+          onError={(e) => {
+            e.currentTarget.src = contractor.default_specialty_image || '/placeholder.svg';
+          }}
         />
       ) : (
         <img
