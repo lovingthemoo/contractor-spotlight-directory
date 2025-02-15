@@ -12,9 +12,6 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     return '/placeholder.svg';
   }
 
-  // Ensure specialty is of the correct type
-  const specialty = contractor.specialty as ContractorSpecialty;
-
   try {
     // First try to get contractor-specific images
     if (contractor.id) {
@@ -23,16 +20,15 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
         .select('storage_path')
         .eq('contractor_id', contractor.id)
         .eq('is_active', true)
-        .order('priority');
+        .order('priority', { ascending: true })
+        .limit(1);
 
       if (!contractorImagesError && contractorImages && contractorImages.length > 0) {
-        const selectedImage = contractorImages[0];
-        const imageUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/contractor-images/${selectedImage.storage_path}`;
-        console.debug('Using contractor-specific image:', {
-          path: selectedImage.storage_path,
-          url: imageUrl
+        console.debug('Found contractor-specific image:', {
+          contractor: contractor.business_name,
+          image: contractorImages[0]
         });
-        return imageUrl;
+        return contractorImages[0].storage_path;
       }
       
       if (contractorImagesError) {
@@ -49,8 +45,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
       .select('storage_path')
       .is('contractor_id', null)
       .eq('image_type', 'specialty')
-      .eq('is_active', true)
-      .order('priority');
+      .eq('is_active', true);
 
     if (specialtyError) {
       console.error('Error fetching specialty images:', specialtyError);
@@ -58,36 +53,30 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     }
 
     if (!specialtyImages || specialtyImages.length === 0) {
-      console.debug('No specialty images found for:', specialty);
+      console.debug('No specialty images found, using placeholder');
       return '/placeholder.svg';
     }
 
-    // Use multiple contractor properties for better distribution
-    const uniqueString = `${contractor.id}-${contractor.business_name}-${specialty}`;
-    const hash = createImageHash(uniqueString);
-    const index = Math.abs(hash) % specialtyImages.length;
-    
-    const imageUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/contractor-images/${specialtyImages[index].storage_path}`;
+    // Select a specialty image based on contractor properties
+    const uniqueString = `${contractor.id}-${contractor.business_name}-${contractor.specialty}`;
+    const selectedIndex = Math.abs(createImageHash(uniqueString)) % specialtyImages.length;
     
     console.debug('Selected specialty image:', {
-      specialty,
+      contractor: contractor.business_name,
       totalImages: specialtyImages.length,
-      selectedIndex: index,
-      path: specialtyImages[index].storage_path,
-      url: imageUrl
+      selectedIndex,
+      selectedImage: specialtyImages[selectedIndex]
     });
 
-    return imageUrl;
+    return specialtyImages[selectedIndex].storage_path;
   } catch (error) {
-    console.error('Error in selectImage:', error);
+    console.error('Error selecting image:', error);
     return '/placeholder.svg';
   }
 };
 
 const createImageHash = (uniqueString: string): number => {
   return uniqueString.split('').reduce((sum, char, index) => {
-    // Use prime numbers for better distribution
     return sum + char.charCodeAt(0) * ((index + 1) * 31);
   }, 0);
 };
-
