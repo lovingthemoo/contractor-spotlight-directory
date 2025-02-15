@@ -12,7 +12,7 @@ export const getDisplayImage = (contractor: Contractor): string => {
   });
 
   // Follow the priority order defined in contractor.image_priority
-  const priorityOrder = contractor?.image_priority?.order || ["uploaded_images", "google_photos", "default_specialty_image"];
+  const priorityOrder = contractor?.image_priority?.order || ["google_photos", "uploaded_images", "default_specialty_image"];
   
   for (const source of priorityOrder) {
     switch (source) {
