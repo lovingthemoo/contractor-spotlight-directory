@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,8 @@ import { fetchSpecialtyImages } from "@/utils/image-fetching";
 const AdminImport = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentSpecialty, setCurrentSpecialty] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -27,6 +30,34 @@ const AdminImport = () => {
       return data;
     }
   });
+
+  // Handle file upload
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      // Handle file upload logic here
+      // This is just a placeholder - implement your actual file upload logic
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Success",
+        description: "File uploaded successfully",
+      });
+      setShowPreview(true);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Delete log function
   const deleteLog = async (logId: string) => {
@@ -124,7 +155,11 @@ const AdminImport = () => {
       <div className="space-y-6">
         <div>
           <h3 className="text-lg font-semibold mb-4">Import Data</h3>
-          <ImportFileUpload />
+          <ImportFileUpload 
+            isUploading={isUploading}
+            showPreview={showPreview}
+            onFileUpload={handleFileUpload}
+          />
         </div>
 
         <div>
