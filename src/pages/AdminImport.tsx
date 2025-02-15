@@ -9,10 +9,24 @@ import ImportFileUpload from "@/components/admin/ImportFileUpload";
 import ImportLogs from "@/components/admin/ImportLogs";
 import { fetchSpecialtyImages } from "@/utils/image-fetching";
 import { format } from "date-fns";
+import type { Database } from "@/integrations/supabase/types";
+
+type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
+
+const specialties: ContractorSpecialty[] = [
+  "Electrical",
+  "Plumbing",
+  "Roofing",
+  "Building",
+  "Home Repair",
+  "Gardening",
+  "Construction",
+  "Handyman"
+];
 
 const AdminImport = () => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentSpecialty, setCurrentSpecialty] = useState<string | null>(null);
+  const [currentSpecialty, setCurrentSpecialty] = useState<ContractorSpecialty | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
@@ -49,7 +63,7 @@ const AdminImport = () => {
           acc[curr.specialty] = curr;
         }
         return acc;
-      }, {});
+      }, {} as Record<ContractorSpecialty, typeof data[0]>);
     }
   });
 
@@ -109,7 +123,7 @@ const AdminImport = () => {
   };
 
   // Handle specialty image fetching
-  const handleFetchSpecialtyImages = async (specialty: string) => {
+  const handleFetchSpecialtyImages = async (specialty: ContractorSpecialty) => {
     setIsProcessing(true);
     setCurrentSpecialty(specialty);
     try {
@@ -123,7 +137,7 @@ const AdminImport = () => {
 
       if (historyError) throw historyError;
 
-      const result = await fetchSpecialtyImages(specialty as any);
+      const result = await fetchSpecialtyImages(specialty);
       
       // Update fetch history record
       const { error: updateError } = await supabase
@@ -199,8 +213,6 @@ const AdminImport = () => {
       });
     }
   };
-
-  const specialties = ["Electrical", "Plumbing", "Roofing", "Building", "Home Repair", "Gardening", "Construction", "Handyman"];
 
   return (
     <Card className="p-6">
