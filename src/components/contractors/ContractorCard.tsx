@@ -44,6 +44,10 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
             business: displayName,
             url
           });
+          // Mark this URL as broken in our utility
+          if (typeof window !== 'undefined' && window.brokenImageUrls) {
+            window.brokenImageUrls.add(url);
+          }
           setImageUrl('/placeholder.svg');
           setIsImageLoading(false);
         };

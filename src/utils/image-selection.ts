@@ -1,3 +1,4 @@
+
 import { Contractor } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -8,6 +9,9 @@ type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
 // Cache to track recently used images per specialty
 const recentlyUsedImages: Record<string, Set<string>> = {};
 
+// Cache to track known broken image URLs
+const brokenImageUrls = new Set<string>();
+
 const getStorageUrl = (path: string): string => {
   // If path is empty or null, return placeholder
   if (!path) {
@@ -17,9 +21,18 @@ const getStorageUrl = (path: string): string => {
 
   // If it's already a full URL (e.g. https://...), return as is
   if (path.startsWith('http')) {
-    // Special case: if it's an Unsplash URL that we know is failing, return placeholder
-    if (path.includes('unsplash.com/photo-1581094794329-c8112a89df44')) {
-      console.debug('Detected broken Unsplash URL, using placeholder');
+    // Check if this URL is known to be broken
+    if (brokenImageUrls.has(path)) {
+      console.debug('Using cached knowledge of broken URL:', path);
+      return '/placeholder.svg';
+    }
+    
+    // Handle known problematic Unsplash URLs
+    if (path.includes('unsplash.com/photo-') && 
+       (path.includes('1581094794329-c8112a89df44') || 
+        path.includes('1632245889029-e406c804da87'))) {
+      console.debug('Detected known broken Unsplash URL:', path);
+      brokenImageUrls.add(path);
       return '/placeholder.svg';
     }
     return path;
@@ -62,17 +75,25 @@ const getUnusedImage = (images: { storage_path: string }[], specialty: string): 
     recentlyUsedImages[specialty].clear();
   }
   
-  // Find an image that hasn't been used recently
+  // Find an image that hasn't been used recently and isn't known to be broken
   for (const image of images) {
-    if (!recentlyUsedImages[specialty].has(image.storage_path)) {
+    const url = getStorageUrl(image.storage_path);
+    if (!recentlyUsedImages[specialty].has(image.storage_path) && !brokenImageUrls.has(url)) {
       recentlyUsedImages[specialty].add(image.storage_path);
       return image;
     }
   }
   
-  // If all images are used (shouldn't happen due to clear above), use first one
-  recentlyUsedImages[specialty].add(images[0].storage_path);
-  return images[0];
+  // If all images are used or broken, try to find any non-broken image
+  for (const image of images) {
+    const url = getStorageUrl(image.storage_path);
+    if (!brokenImageUrls.has(url)) {
+      recentlyUsedImages[specialty].add(image.storage_path);
+      return image;
+    }
+  }
+  
+  return null;
 };
 
 export const selectImage = async (contractor: Contractor): Promise<string> => {
@@ -85,7 +106,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     // First check for Google Photos
     if (contractor.google_photos && contractor.google_photos.length > 0) {
       const photo = contractor.google_photos[0];
-      if (photo.url) {
+      if (photo.url && !brokenImageUrls.has(photo.url)) {
         console.debug('Using Google photo:', {
           contractor: contractor.business_name,
           url: photo.url
@@ -97,12 +118,14 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     // Then check for default specialty image
     if (contractor.default_specialty_image) {
       const imageUrl = getStorageUrl(contractor.default_specialty_image);
-      console.debug('Using default specialty image:', {
-        contractor: contractor.business_name,
-        image: contractor.default_specialty_image,
-        url: imageUrl
-      });
-      return imageUrl;
+      if (!brokenImageUrls.has(imageUrl)) {
+        console.debug('Using default specialty image:', {
+          contractor: contractor.business_name,
+          image: contractor.default_specialty_image,
+          url: imageUrl
+        });
+        return imageUrl;
+      }
     }
 
     // Then try to get contractor-specific images
@@ -117,12 +140,14 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
 
       if (!contractorImagesError && contractorImages && contractorImages.length > 0) {
         const imageUrl = getStorageUrl(contractorImages[0].storage_path);
-        console.debug('Found contractor-specific image:', {
-          contractor: contractor.business_name,
-          path: contractorImages[0].storage_path,
-          url: imageUrl
-        });
-        return imageUrl;
+        if (!brokenImageUrls.has(imageUrl)) {
+          console.debug('Found contractor-specific image:', {
+            contractor: contractor.business_name,
+            path: contractorImages[0].storage_path,
+            url: imageUrl
+          });
+          return imageUrl;
+        }
       }
       
       if (contractorImagesError) {
@@ -156,7 +181,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     // Get an unused image for this specialty
     const selectedImage = getUnusedImage(specialtyImages, contractor.specialty);
     if (!selectedImage) {
-      console.debug('No unused images found, using placeholder');
+      console.debug('No valid images found, using placeholder');
       return '/placeholder.svg';
     }
 
@@ -173,10 +198,4 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     console.error('Error selecting image:', error);
     return '/placeholder.svg';
   }
-};
-
-const createImageHash = (uniqueString: string): number => {
-  return uniqueString.split('').reduce((sum, char, index) => {
-    return sum + char.charCodeAt(0) * ((index + 1) * 31);
-  }, 0);
 };
