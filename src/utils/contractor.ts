@@ -135,7 +135,7 @@ export const getDisplayImage = (contractor: Contractor): string | undefined => {
     googlePhotos: contractor.google_photos?.length || 0
   });
 
-  // First priority: Company-specific uploaded images
+  // Priority 1: Company-specific uploaded images
   if (contractor.images && contractor.images.length > 0) {
     const validUploadedImage = contractor.images.find(img => img && img.startsWith('http'));
     if (validUploadedImage) {
@@ -144,26 +144,37 @@ export const getDisplayImage = (contractor: Contractor): string | undefined => {
     }
   }
   
-  // Second priority: Google photos
-  if (contractor.google_photos && contractor.google_photos.length > 0) {
+  // Priority 2: Google photos
+  if (contractor.google_photos && Array.isArray(contractor.google_photos) && contractor.google_photos.length > 0) {
     // Find the first valid Google photo
     const validGooglePhoto = contractor.google_photos.find(photo => 
       photo && 
       typeof photo === 'object' && 
-      photo.url && 
+      'url' in photo &&
+      typeof photo.url === 'string' && 
       photo.url.startsWith('http')
     );
 
-    if (validGooglePhoto) {
+    if (validGooglePhoto && 'url' in validGooglePhoto) {
       console.log('Using Google photo:', validGooglePhoto.url);
       return validGooglePhoto.url;
     } else {
-      console.warn('Google photos found but none were valid for:', contractor.business_name);
+      // Additional logging for debugging
+      console.warn('Google photos found but none were valid for:', contractor.business_name, {
+        photosCount: contractor.google_photos.length,
+        firstPhoto: contractor.google_photos[0],
+        isArray: Array.isArray(contractor.google_photos),
+        photoTypes: contractor.google_photos.map(p => typeof p)
+      });
     }
   }
   
-  console.log('No valid images found for:', contractor.business_name);
-  // If no image is available, return undefined
+  // If no image is available, log the reason and return undefined
+  console.log('No valid images found for:', contractor.business_name, {
+    hasImages: !!contractor.images?.length,
+    hasGooglePhotos: !!contractor.google_photos?.length
+  });
+  
   return undefined;
 };
 
