@@ -9,12 +9,12 @@ export const useContractorsQuery = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       try {
-        // Simplified query with individual filters
+        // Get contractors with images and good ratings
         const { data: contractorsData, error } = await supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .or('google_photos.neq.[]')
+          .or('google_photos.neq.[],default_specialty_image.neq.null')
           .order('rating', { ascending: false });
         
         if (error) {
@@ -37,24 +37,25 @@ export const useContractorsQuery = () => {
           ).length
         });
 
-        // Transform and sort contractors
+        // Transform contractors
         const transformedContractors = await Promise.all(contractorsData.map(transformContractor));
         
+        // Sort contractors with a strong preference for those with fast-loading images
         return transformedContractors.sort((a, b) => {
-          // First, prioritize contractors with Google photos (fastest to load)
-          const aHasGooglePhotos = (Array.isArray(a.google_photos) && a.google_photos.length > 0) ? 3 : 0;
-          const bHasGooglePhotos = (Array.isArray(b.google_photos) && b.google_photos.length > 0) ? 3 : 0;
+          // First, prioritize contractors with default specialty images (fastest to load)
+          const aHasDefaultImage = a.default_specialty_image ? 3 : 0;
+          const bHasDefaultImage = b.default_specialty_image ? 3 : 0;
           
-          // Then those with uploaded images
-          const aHasUploadedImages = (Array.isArray(a.images) && a.images.length > 0) ? 2 : 0;
-          const bHasUploadedImages = (Array.isArray(b.images) && b.images.length > 0) ? 2 : 0;
+          // Then those with Google photos
+          const aHasGooglePhotos = (Array.isArray(a.google_photos) && a.google_photos.length > 0) ? 2 : 0;
+          const bHasGooglePhotos = (Array.isArray(b.google_photos) && b.google_photos.length > 0) ? 2 : 0;
           
-          // Finally those with default specialty images
-          const aHasDefaultImage = a.default_specialty_image ? 1 : 0;
-          const bHasDefaultImage = b.default_specialty_image ? 1 : 0;
+          // Finally those with uploaded images (slowest to load)
+          const aHasUploadedImages = (Array.isArray(a.images) && a.images.length > 0) ? 1 : 0;
+          const bHasUploadedImages = (Array.isArray(b.images) && b.images.length > 0) ? 1 : 0;
           
-          const aImageScore = aHasGooglePhotos + aHasUploadedImages + aHasDefaultImage;
-          const bImageScore = bHasGooglePhotos + bHasUploadedImages + bHasDefaultImage;
+          const aImageScore = aHasDefaultImage + aHasGooglePhotos + aHasUploadedImages;
+          const bImageScore = bHasDefaultImage + bHasGooglePhotos + bHasUploadedImages;
           
           if (aImageScore !== bImageScore) {
             return bImageScore - aImageScore;
