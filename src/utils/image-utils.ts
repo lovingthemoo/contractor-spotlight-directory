@@ -22,8 +22,8 @@ const isValidGooglePhoto = (photo: any): boolean => {
 
 // Helper to format Unsplash URLs
 const formatUnsplashUrl = (url: string): string => {
+  if (!url) return '';
   if (url.includes('images.unsplash.com')) {
-    // Add required Unsplash parameters
     const baseUrl = url.split('?')[0];
     return `${baseUrl}?auto=format&fit=crop&w=800&q=80`;
   }
@@ -31,52 +31,61 @@ const formatUnsplashUrl = (url: string): string => {
 };
 
 export const getDisplayImage = (contractor: Contractor): string => {
-  console.log('Starting image selection process for:', contractor.business_name);
-
-  // Ensure we have a contractor with required fields
-  if (!contractor || !contractor.specialty) {
-    console.error('Invalid contractor data:', contractor);
+  // Default to placeholder if no contractor or specialty
+  if (!contractor?.specialty) {
     return '/placeholder.svg';
   }
 
-  // Ensure we have valid image priority
-  const imagePriority = contractor.image_priority?.order || [
+  // Get image priority order with fallback
+  const priorityOrder = contractor.image_priority?.order || [
     "google_photos",
-    "uploaded_images",
+    "uploaded_images", 
     "default_specialty_image"
   ];
 
-  // Try each image source according to priority
-  for (const source of imagePriority) {
-    switch (source) {
-      case "google_photos":
-        if (Array.isArray(contractor.google_photos)) {
-          const validPhoto = contractor.google_photos.find(isValidGooglePhoto);
-          if (validPhoto) {
-            return validPhoto.url;
+  // Try each image source in priority order
+  for (const source of priorityOrder) {
+    try {
+      switch (source) {
+        case "google_photos": {
+          const photos = contractor.google_photos;
+          if (Array.isArray(photos) && photos.length > 0) {
+            const validPhoto = photos.find(isValidGooglePhoto);
+            if (validPhoto?.url) {
+              return validPhoto.url;
+            }
           }
+          break;
         }
-        break;
 
-      case "uploaded_images":
-        if (Array.isArray(contractor.images)) {
-          const validImage = contractor.images.find(img => 
-            typeof img === 'string' && isValidUrl(img)
-          );
-          if (validImage) {
-            return validImage;
+        case "uploaded_images": {
+          const images = contractor.images;
+          if (Array.isArray(images) && images.length > 0) {
+            const validImage = images.find(img => typeof img === 'string' && isValidUrl(img));
+            if (validImage) {
+              return validImage;
+            }
           }
+          break;
         }
-        break;
 
-      case "default_specialty_image":
-        if (contractor.default_specialty_image && isValidUrl(contractor.default_specialty_image)) {
-          return formatUnsplashUrl(contractor.default_specialty_image);
+        case "default_specialty_image": {
+          const defaultImage = contractor.default_specialty_image;
+          if (defaultImage && isValidUrl(defaultImage)) {
+            return formatUnsplashUrl(defaultImage);
+          }
+          break;
         }
-        break;
+      }
+    } catch (error) {
+      console.error('Error processing image source:', {
+        source,
+        business: contractor.business_name,
+        error: error.message
+      });
     }
   }
 
-  // Return the default placeholder
+  // Fallback to placeholder if no valid images found
   return '/placeholder.svg';
 };

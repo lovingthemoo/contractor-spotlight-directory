@@ -11,46 +11,60 @@ interface ContractorCardProps {
 }
 
 const ContractorCard = ({ contractor }: ContractorCardProps) => {
-  const [imageError, setImageError] = useState(false);
-  const [isImageLoading, setIsImageLoading] = useState(true);
   const [imageUrl, setImageUrl] = useState<string>('/placeholder.svg');
+  const [isImageLoading, setIsImageLoading] = useState(true);
   
-  // Get business name
-  const businessName = contractor.google_place_name || contractor.business_name;
+  // Get display name, defaulting to business name
+  const displayName = contractor.google_place_name || contractor.business_name;
 
   useEffect(() => {
-    // Get the image URL using our utility function
-    const url = getDisplayImage(contractor);
-    setImageUrl(url);
-    
-    // Pre-load the image
-    const img = new Image();
-    img.src = url;
-    img.onload = () => {
-      setImageUrl(url);
-      setIsImageLoading(false);
-      setImageError(false);
+    if (!contractor) return;
+
+    const loadImage = async () => {
+      setIsImageLoading(true);
+      
+      try {
+        // Get the best available image URL
+        const url = getDisplayImage(contractor);
+        
+        // Pre-load the image
+        const img = new Image();
+        
+        img.onload = () => {
+          setImageUrl(url);
+          setIsImageLoading(false);
+        };
+        
+        img.onerror = () => {
+          console.error('Image failed to load:', {
+            business: displayName,
+            url
+          });
+          setImageUrl('/placeholder.svg');
+          setIsImageLoading(false);
+        };
+        
+        img.src = url;
+      } catch (error) {
+        console.error('Error loading image:', {
+          business: displayName,
+          error: error.message
+        });
+        setImageUrl('/placeholder.svg');
+        setIsImageLoading(false);
+      }
     };
-    img.onerror = () => {
-      console.error('Failed to load image:', {
-        business: businessName,
-        url: url,
-        fallback: '/placeholder.svg'
-      });
-      setImageUrl('/placeholder.svg');
-      setImageError(true);
-      setIsImageLoading(false);
-    };
-  }, [contractor, businessName]);
-  
-  // Format rating display
-  const displayRating = contractor.rating?.toFixed(1) || '0.0';
+
+    loadImage();
+  }, [contractor, displayName]);
+
+  // Format rating for display
+  const rating = contractor.rating || 0;
+  const displayRating = rating.toFixed(1);
   const reviewCount = contractor.review_count || 0;
 
-  // Get the display address
-  const getDisplayAddress = (): string => {
-    return contractor.google_formatted_address || contractor.location || 'London';
-  };
+  // Get display address
+  const displayAddress = contractor.google_formatted_address || contractor.location || 'London';
 
   return (
     <Card className="group overflow-hidden transition-all hover:shadow-lg">
@@ -66,7 +80,7 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
           )}
           <img
             src={imageUrl}
-            alt={`${businessName} - ${contractor.specialty} contractor in London`}
+            alt={`${displayName} - ${contractor.specialty} contractor in London`}
             className={`object-cover w-full h-full transform transition-transform duration-300 group-hover:scale-105 ${
               isImageLoading ? 'opacity-0' : 'opacity-100'
             }`}
@@ -76,7 +90,7 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
         
         <CardContent className="p-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-            {businessName}
+            {displayName}
           </h3>
           
           <div className="flex items-center mb-2">
@@ -95,7 +109,7 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
           
           <div className="flex items-center text-sm text-gray-500">
             <MapPin className="w-4 h-4 mr-1 shrink-0" />
-            <span className="line-clamp-1">{getDisplayAddress()}</span>
+            <span className="line-clamp-1">{displayAddress}</span>
           </div>
         </CardContent>
       </Link>
