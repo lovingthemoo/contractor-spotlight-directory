@@ -27,8 +27,19 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
 
       if (!contractorImagesError && contractorImages && contractorImages.length > 0) {
         const selectedImage = contractorImages[0];
-        console.debug('Using contractor-specific image:', selectedImage.storage_path);
-        return selectedImage.storage_path;
+        const imageUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/contractor-images/${selectedImage.storage_path}`;
+        console.debug('Using contractor-specific image:', {
+          path: selectedImage.storage_path,
+          url: imageUrl
+        });
+        return imageUrl;
+      }
+      
+      if (contractorImagesError) {
+        console.error('Error fetching contractor images:', {
+          error: contractorImagesError,
+          contractor: contractor.business_name
+        });
       }
     }
 
@@ -56,14 +67,17 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     const hash = createImageHash(uniqueString);
     const index = Math.abs(hash) % specialtyImages.length;
     
+    const imageUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/contractor-images/${specialtyImages[index].storage_path}`;
+    
     console.debug('Selected specialty image:', {
       specialty,
       totalImages: specialtyImages.length,
       selectedIndex: index,
-      imageUrl: specialtyImages[index].storage_path
+      path: specialtyImages[index].storage_path,
+      url: imageUrl
     });
 
-    return specialtyImages[index].storage_path;
+    return imageUrl;
   } catch (error) {
     console.error('Error in selectImage:', error);
     return '/placeholder.svg';
@@ -76,3 +90,4 @@ const createImageHash = (uniqueString: string): number => {
     return sum + char.charCodeAt(0) * ((index + 1) * 31);
   }, 0);
 };
+

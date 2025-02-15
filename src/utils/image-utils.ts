@@ -27,6 +27,24 @@ const isValidGooglePhoto = (photo: any): boolean => {
   return true;
 };
 
+// Helper to get storage URL if needed
+const getStorageUrl = (path: string): string => {
+  if (!path) return '';
+  
+  // If it's already a full URL, return as is
+  if (path.startsWith('http')) {
+    return path;
+  }
+  
+  // Construct storage URL
+  const storageUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/contractor-images/${path}`;
+  console.debug('Converting storage path to URL:', {
+    path,
+    storageUrl
+  });
+  return storageUrl;
+};
+
 export const getDisplayImage = (contractor: Contractor): string => {
   if (!contractor?.specialty) {
     console.debug('No contractor or specialty provided');
@@ -67,8 +85,13 @@ export const getDisplayImage = (contractor: Contractor): string => {
           if (Array.isArray(images) && images.length > 0) {
             const validImage = images.find(img => typeof img === 'string' && isValidUrl(img));
             if (validImage) {
-              console.debug('Using uploaded image:', validImage);
-              return validImage;
+              // Check if this is a storage path
+              const finalUrl = validImage.includes('storage/v1') ? validImage : getStorageUrl(validImage);
+              console.debug('Using uploaded image:', {
+                original: validImage,
+                final: finalUrl
+              });
+              return finalUrl;
             }
           }
           break;
@@ -76,9 +99,13 @@ export const getDisplayImage = (contractor: Contractor): string => {
 
         case "default_specialty_image": {
           const defaultImage = contractor.default_specialty_image;
-          if (defaultImage && isValidUrl(defaultImage)) {
-            console.debug('Using default specialty image:', defaultImage);
-            return defaultImage;
+          if (defaultImage) {
+            const finalUrl = defaultImage.includes('storage/v1') ? defaultImage : getStorageUrl(defaultImage);
+            console.debug('Using default specialty image:', {
+              original: defaultImage,
+              final: finalUrl
+            });
+            return finalUrl;
           }
           break;
         }
@@ -95,3 +122,4 @@ export const getDisplayImage = (contractor: Contractor): string => {
   console.debug('No valid images found, using placeholder');
   return '/placeholder.svg';
 };
+
