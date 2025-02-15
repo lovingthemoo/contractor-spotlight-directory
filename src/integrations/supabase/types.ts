@@ -39,6 +39,36 @@ export type Database = {
         }
         Relationships: []
       }
+      broken_image_urls: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          last_checked: string
+          reported_by: string | null
+          specialty: Database["public"]["Enums"]["contractor_specialty"] | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_checked?: string
+          reported_by?: string | null
+          specialty?: Database["public"]["Enums"]["contractor_specialty"] | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_checked?: string
+          reported_by?: string | null
+          specialty?: Database["public"]["Enums"]["contractor_specialty"] | null
+          url?: string
+        }
+        Relationships: []
+      }
       contractor_images: {
         Row: {
           contractor_id: string | null

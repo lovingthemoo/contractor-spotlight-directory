@@ -6,9 +6,6 @@ import type { Database } from "@/integrations/supabase/types";
 // Get the specialty type from the database types
 type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
 
-// Cache to track recently used images per specialty
-const recentlyUsedImages: Record<string, Set<string>> = {};
-
 const getStorageUrl = (path: string): string => {
   // If path is empty or null, return placeholder
   if (!path) {
@@ -45,40 +42,53 @@ const getStorageUrl = (path: string): string => {
   return storageUrl;
 };
 
-const getFallbackImage = async (specialty: ContractorSpecialty): Promise<string> => {
+const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty): Promise<string> => {
   try {
-    // Get a random active specialty image that isn't marked as broken
+    console.debug('Getting fallback image for specialty:', specialty);
+    
+    // Get a random active specialty image that:
+    // 1. Matches the specialty
+    // 2. Is marked as active
+    // 3. Isn't marked as broken
+    // 4. Preferably hasn't been used recently
     const { data: specialtyImages, error } = await supabase
       .from('contractor_images')
       .select('storage_path')
       .eq('image_type', 'specialty')
       .eq('is_active', true)
-      .is('contractor_id', null)
       .not('storage_path', 'in', (
         supabase
           .from('broken_image_urls')
           .select('url')
+          .eq('specialty', specialty)
       ))
-      .order('created_at', { ascending: false })
-      .limit(10);
+      .order('RANDOM()')  // Randomize selection
+      .limit(1);
 
-    if (error || !specialtyImages?.length) {
-      console.debug('No fallback images found, using placeholder');
+    if (error) {
+      console.error('Error fetching specialty fallback image:', error);
       return '/placeholder.svg';
     }
 
-    // Select a random image from the results
-    const randomIndex = Math.floor(Math.random() * specialtyImages.length);
-    const fallbackImage = specialtyImages[randomIndex];
+    if (!specialtyImages?.length) {
+      console.debug('No specialty fallback images found, using placeholder');
+      return '/placeholder.svg';
+    }
+
+    const fallbackUrl = getStorageUrl(specialtyImages[0].storage_path);
+    console.debug('Selected fallback image:', {
+      specialty,
+      url: fallbackUrl
+    });
     
-    return getStorageUrl(fallbackImage.storage_path);
+    return fallbackUrl;
   } catch (error) {
-    console.error('Error getting fallback image:', error);
+    console.error('Error getting specialty fallback image:', error);
     return '/placeholder.svg';
   }
 };
 
-const markImageAsBroken = async (url: string, specialty?: string) => {
+const markImageAsBroken = async (url: string, specialty?: ContractorSpecialty) => {
   try {
     const { error } = await supabase
       .from('broken_image_urls')
@@ -114,6 +124,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
           .from('broken_image_urls')
           .select('url')
           .eq('url', photo.url)
+          .eq('specialty', contractor.specialty)
           .maybeSingle();
 
         if (!brokenCheck) {
@@ -135,6 +146,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
         .from('broken_image_urls')
         .select('url')
         .eq('url', imageUrl)
+        .eq('specialty', contractor.specialty)
         .maybeSingle();
 
       if (!brokenCheck) {
@@ -165,6 +177,7 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
           .from('broken_image_urls')
           .select('url')
           .eq('url', imageUrl)
+          .eq('specialty', contractor.specialty)
           .maybeSingle();
 
         if (!brokenCheck) {
@@ -185,8 +198,8 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
       }
     }
 
-    // If no working images found, get a random fallback image
-    return await getFallbackImage(contractor.specialty);
+    // If no working images found, get a specialty-specific fallback image
+    return await getSpecialtyFallbackImage(contractor.specialty);
   } catch (error) {
     console.error('Error selecting image:', error);
     return '/placeholder.svg';
