@@ -47,7 +47,8 @@ export interface Contractor {
   image_priority?: ImagePriority;
 }
 
-export interface DatabaseContractor extends Omit<Contractor, 'google_reviews' | 'google_photos'> {
+export interface DatabaseContractor extends Omit<Contractor, 'google_reviews' | 'google_photos' | 'image_priority'> {
   google_reviews?: any;
   google_photos?: any;
+  image_priority?: any; // Handle JSONB type from database
 }

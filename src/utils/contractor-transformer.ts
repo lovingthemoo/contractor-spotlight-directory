@@ -64,6 +64,21 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     google_photos = [];
   }
 
+  // Parse image_priority
+  let image_priority;
+  try {
+    if (dbContractor.image_priority) {
+      if (typeof dbContractor.image_priority === 'string') {
+        image_priority = JSON.parse(dbContractor.image_priority);
+      } else {
+        image_priority = dbContractor.image_priority;
+      }
+    }
+  } catch (e) {
+    console.error('Error parsing image_priority for', dbContractor.business_name, e);
+    image_priority = { order: ["google_photos", "uploaded_images", "default_specialty_image"] };
+  }
+
   // Create a slug if one doesn't exist
   const slug = dbContractor.slug || (dbContractor.business_name || '')
     .toLowerCase()
@@ -106,6 +121,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     google_photos,
     certifications: Array.isArray(dbContractor.certifications) ? dbContractor.certifications : undefined,
     website_url: formatWebsiteUrl(dbContractor.website_url),
+    image_priority,
     slug
   };
 
