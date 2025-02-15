@@ -3,10 +3,16 @@ import { Contractor, DatabaseContractor, GooglePhoto, GoogleReview } from "@/typ
 import { formatWebsiteUrl } from "./url-utils";
 
 export const transformContractor = async (dbContractor: DatabaseContractor): Promise<Contractor> => {
-  console.log('Raw contractor data:', {
-    business_name: dbContractor.business_name,
-    google_photos_type: typeof dbContractor.google_photos,
-    google_photos_sample: dbContractor.google_photos
+  // Add detailed logging for debugging
+  console.log('Processing contractor:', dbContractor.business_name, {
+    hasGooglePhotos: !!dbContractor.google_photos,
+    googlePhotosType: typeof dbContractor.google_photos,
+    photosSample: dbContractor.google_photos && typeof dbContractor.google_photos === 'object' 
+      ? Array.isArray(dbContractor.google_photos) 
+        ? dbContractor.google_photos.slice(0, 1) 
+        : 'Not an array'
+      : 'No photos',
+    hasImages: Array.isArray(dbContractor.images) && dbContractor.images.length > 0
   });
   
   let google_reviews: GoogleReview[] | undefined;
@@ -30,7 +36,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
         }));
       }
     } catch (e) {
-      console.error('Error parsing google_reviews:', e);
+      console.error('Error parsing google_reviews for', dbContractor.business_name, e);
     }
   }
 
@@ -39,28 +45,48 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     try {
       let photosData = dbContractor.google_photos;
       
+      // Ensure we're working with an array of photo objects
       if (typeof photosData === 'string') {
         photosData = JSON.parse(photosData);
       }
       
+      // Log the photos data structure for debugging
+      console.log('Photos data for', dbContractor.business_name, {
+        isArray: Array.isArray(photosData),
+        length: Array.isArray(photosData) ? photosData.length : 0,
+        firstPhoto: Array.isArray(photosData) && photosData.length > 0 ? photosData[0] : null
+      });
+      
       if (Array.isArray(photosData)) {
         google_photos = photosData
-          .filter(photo => 
-            photo && 
-            typeof photo === 'object' && 
-            'url' in photo && 
-            photo.url && 
-            typeof photo.url === 'string'
-          )
+          .filter(photo => {
+            const isValid = photo && 
+              typeof photo === 'object' && 
+              'url' in photo && 
+              photo.url && 
+              typeof photo.url === 'string';
+            
+            if (!isValid) {
+              console.log('Invalid photo object:', photo);
+            }
+            
+            return isValid;
+          })
           .map(photo => ({
             url: String(photo.url),
             width: Number(photo.width || 0),
             height: Number(photo.height || 0),
             type: String(photo.type || '')
           }));
+          
+        console.log('Processed photos for', dbContractor.business_name, {
+          total: photosData.length,
+          valid: google_photos.length,
+          sample: google_photos.slice(0, 1)
+        });
       }
     } catch (e) {
-      console.error('Error parsing google_photos:', e);
+      console.error('Error parsing google_photos for', dbContractor.business_name, e);
     }
   }
 
