@@ -40,7 +40,14 @@ const Index = () => {
         }
 
         let contractorsData = response.data || [];
-        console.log('Contractors with images:', contractorsData.length);
+        console.log('Initial contractors with images:', {
+          count: contractorsData.length,
+          sampleImages: contractorsData.slice(0, 3).map(c => ({
+            business: c.business_name,
+            images: c.images,
+            googlePhotos: c.google_photos
+          }))
+        });
 
         // If we don't have enough contractors with uploaded images, get ones with Google photos
         if (contractorsData.length < 10) {
@@ -58,8 +65,14 @@ const Index = () => {
             const newContractors = googlePhotosResponse.data.filter(
               gc => !contractorsData.some(c => c.id === gc.id)
             );
+            console.log('Additional contractors with Google photos:', {
+              count: newContractors.length,
+              samplePhotos: newContractors.slice(0, 3).map(c => ({
+                business: c.business_name,
+                googlePhotos: c.google_photos
+              }))
+            });
             contractorsData = [...contractorsData, ...newContractors];
-            console.log('Added contractors with Google photos:', newContractors.length);
           }
         }
 
@@ -83,14 +96,18 @@ const Index = () => {
           }
         }
 
+        // Transform all contractors
         const transformedContractors = await Promise.all(contractorsData.map(transformContractor));
         
-        // Log specialty distribution
-        const specialtyCounts = transformedContractors.reduce((acc, contractor) => {
-          acc[contractor.specialty || 'Unknown'] = (acc[contractor.specialty || 'Unknown'] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        console.log('Specialty distribution:', specialtyCounts);
+        // Log image availability statistics
+        const imageStats = transformedContractors.reduce((stats, contractor) => {
+          if (contractor.images?.length > 0) stats.withUploadedImages++;
+          if (contractor.google_photos?.length > 0) stats.withGooglePhotos++;
+          if (!contractor.images?.length && !contractor.google_photos?.length) stats.withoutImages++;
+          return stats;
+        }, { withUploadedImages: 0, withGooglePhotos: 0, withoutImages: 0 });
+        
+        console.log('Contractor image statistics:', imageStats);
         
         // Sort contractors: those with images first, then by rating
         const sortedContractors = transformedContractors.sort((a, b) => {
