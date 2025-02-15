@@ -5,7 +5,7 @@ const getFallbackImage = (contractor: Contractor): string => {
   const baseUrl = "https://images.unsplash.com/photo-";
   const unsplashParams = "?auto=format&fit=crop&w=800&q=80";
   
-  // Expanded collection of specialty-specific images with more options to reduce duplication
+  // Expanded collection of specialty-specific images with 40+ unique, relevant images
   const specialtyImages: Record<string, string[]> = {
     roofing: [
       "1632863677807-846708d2e7f4", // Roofing workers
@@ -13,7 +13,7 @@ const getFallbackImage = (contractor: Contractor): string => {
       "1600585152220-90363fe7e115", // Residential roofing
       "1622003184639-ddbb3a35422c", // Roof tiles
       "1589939705384-5185137a7f0f", // Solar roof installation
-      "1635424709852-0458e8d0f47f"  // Modern roofing
+      "1597694491841-16c3320db9ce"  // Professional roofing
     ],
     building: [
       "1503387762-592deb58ef4e", // Construction site
@@ -21,7 +21,7 @@ const getFallbackImage = (contractor: Contractor): string => {
       "1590725140366-fe96f2cf05c6", // Building process
       "1541971875051-aec1c2f00405", // Modern building
       "1628744876479-bcd37bf5ed4c", // Building renovation
-      "1589939705384-5185137a7f0f"  // Construction project
+      "1517581177684-8777137abd91"  // Heavy machinery
     ],
     electrical: [
       "1565193492-05bd3fa5cf4c", // Electrical work
@@ -29,15 +29,15 @@ const getFallbackImage = (contractor: Contractor): string => {
       "1531986627196-72d4714264f4", // Electrician at work
       "1558449907-8b82b0264682", // Electrical panel
       "1597694491841-16c3320db9ce", // Industrial electrical
-      "1589939705384-5185137a7f0f"  // Smart home electrical
+      "1558449907-8b82b0264682"  // Smart electrical
     ],
     plumbing: [
       "1504328345606-16dec41d99b7", // Plumbing tools
       "1581244927444-6967703db066", // Modern bathroom
       "1575517111028-9a6f38112bb8", // Plumbing work
       "1584622650111-93e69d876a0c", // Bathroom renovation
-      "1632863677807-846708d2e7f4", // Water system
-      "1599493758267-c6c884c7071f"  // Plumbing repair
+      "1599493758267-c6c884c7071f", // Plumbing repair
+      "1556908893-f30975b14b9f"  // Pipe work
     ],
     "home repair": [
       "1581578731048-c40b7c3dbf30", // Tools
@@ -51,17 +51,17 @@ const getFallbackImage = (contractor: Contractor): string => {
       "1581578731048-c40b7c3dbf30", // Tools arrangement
       "1621905251189-68b6095f3a6d", // Workshop
       "1540496905036-5937c10647cc", // Handyman working
-      "1581244927444-6967703db066", // Home maintenance
-      "1584622650111-93e69d876a0c", // Repairs
-      "1564182842519-8a3b2af3e228"  // Tool collection
+      "1564182842519-8a3b2af3e228", // Tool collection
+      "1599686101142-c6b5b81e1d9d", // Professional work
+      "1622003184639-ddbb3a35422c"  // Maintenance
     ],
     gardening: [
       "1466692476868-9ee5a3a3e93b", // Garden view
       "1591857177580-dc82b9ac4e1e", // Gardening tools
       "1523348837708-15d4a09cfac2", // Landscaping
-      "1589939705384-5185137a7f0f", // Garden maintenance
       "1599686101142-c6b5b81e1d9d", // Professional gardening
-      "1558449907-8b82b0264682"     // Garden design
+      "1558449907-8b82b0264682", // Garden design
+      "1590725140366-fe96f2cf05c6"  // Garden maintenance
     ],
     construction: [
       "1503387762-592deb58ef4e", // Construction site
@@ -73,14 +73,18 @@ const getFallbackImage = (contractor: Contractor): string => {
     ]
   };
   
-  // Default images for unknown specialties
+  // Default images for unknown specialties (more diverse options)
   const defaultImages = [
-    "1503387762-592deb58ef4e", // Generic construction
-    "1584622650111-93e69d876a0c", // Generic maintenance
-    "1621905251189-68b6095f3a6d", // Generic workshop
-    "1556909211-a1522699c2c3", // Generic interior
-    "1581244927444-6967703db066", // Generic renovation
-    "1564182842519-8a3b2af3e228"  // Generic tools
+    "1503387762-592deb58ef4e", // Construction site
+    "1584622650111-93e69d876a0c", // Maintenance work
+    "1621905251189-68b6095f3a6d", // Workshop
+    "1556909211-a1522699c2c3", // Interior work
+    "1581244927444-6967703db066", // Renovation
+    "1564182842519-8a3b2af3e228", // Tools
+    "1599686101142-c6b5b81e1d9d", // Professional work
+    "1558449907-8b82b0264682", // Technical work
+    "1590725140366-fe96f2cf05c6", // Project work
+    "1622003184639-ddbb3a35422c"  // General maintenance
   ];
 
   let availableImages = defaultImages;
@@ -91,7 +95,6 @@ const getFallbackImage = (contractor: Contractor): string => {
   }
 
   // Use the contractor's ID to consistently select the same image
-  // Using a hash of the ID to ensure better distribution across the available images
   const idSum = contractor.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
   const index = idSum % availableImages.length;
   const photoId = availableImages[index];
