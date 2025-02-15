@@ -83,138 +83,70 @@ const getSpecialtyFromQuery = (query: string): string => {
   return 'Building';
 };
 
-// Reduced locations to minimize processing time
-const LOCATIONS = [
-  "London",
-  "Greater London"
-];
-
-// Maximum number of places to process per run
-const MAX_PLACES_PER_RUN = 5;
+// Reduced scope for testing
+const LOCATIONS = ["London"];
+const MAX_PLACES_PER_RUN = 2;
 
 Deno.serve(async (req) => {
-  // Always add CORS headers
+  // Add CORS headers to all responses
   const headers = {
     ...corsHeaders,
     'Content-Type': 'application/json'
   };
 
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
-      headers,
-      status: 200
-    });
-  }
-
   try {
-    // Log incoming request details
-    console.log('Incoming request:', {
-      method: req.method,
-      url: req.url,
-      headers: Object.fromEntries(req.headers.entries())
-    });
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      return new Response('ok', { headers });
+    }
 
-    // Validate API key first
+    // Early validation of API key
     const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
     if (!GOOGLE_PLACES_API_KEY) {
-      console.error('Missing Google Places API key');
-      return new Response(
-        JSON.stringify({ error: 'Google Places API key not configured' }), 
-        { status: 500, headers }
-      );
+      throw new Error('Google Places API key not configured');
     }
 
-    // Parse request body with error handling
-    let body;
-    try {
-      const text = await req.text();
-      console.log('Raw request body:', text);
-      body = JSON.parse(text);
-    } catch (e) {
-      console.error('Error parsing request body:', e);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid request body',
-          details: e.message 
-        }), 
-        { status: 400, headers }
-      );
+    // Parse and validate request body
+    if (req.method !== 'POST') {
+      throw new Error(`Invalid method: ${req.method}. Only POST requests are allowed.`);
     }
 
-    // Validate category
+    const text = await req.text();
+    if (!text) {
+      throw new Error('Request body is empty');
+    }
+
+    console.log('Request body:', text);
+    
+    const body = JSON.parse(text);
     const { category } = body;
+
     if (!category || !SEARCH_QUERIES[category as keyof typeof SEARCH_QUERIES]) {
-      console.error('Invalid category:', category);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid category specified',
-          provided: category,
-          allowed: Object.keys(SEARCH_QUERIES)
-        }), 
-        { status: 400, headers }
-      );
+      throw new Error(`Invalid category: ${category}`);
     }
 
-    console.log(`Starting enrichment for category: ${category}`);
-    const queries = SEARCH_QUERIES[category as keyof typeof SEARCH_QUERIES];
-
+    // Initialize services
     const googlePlacesService = new GooglePlacesService(GOOGLE_PLACES_API_KEY);
     const contractorService = new ContractorService();
 
-    // Test API connection with error handling
-    try {
-      await googlePlacesService.testApiConnection();
-      console.log('API connection test successful');
-    } catch (error) {
-      console.error('API connection test failed:', error);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to connect to Google Places API',
-          details: error.message
-        }), 
-        { status: 500, headers }
-      );
-    }
+    // Test API connection
+    await googlePlacesService.testApiConnection();
 
+    // Get first query for the category
+    const searchQuery = SEARCH_QUERIES[category as keyof typeof SEARCH_QUERIES][0];
     let allPlaces: PlaceSearchResult[] = [];
-    let searchErrors = 0;
 
-    // Search across selected category queries (limit to first query for testing)
-    const firstQuery = queries[0];
-    for (const location of LOCATIONS) {
-      try {
-        console.log(`Searching for: "${firstQuery}" in "${location}"`);
-        const places = await googlePlacesService.searchPlaces(firstQuery, location);
-        
-        // Filter out duplicates
-        const newPlaces = places.filter(
-          place => !allPlaces.some(existing => existing.id === place.id)
-        );
-        allPlaces = [...allPlaces, ...newPlaces];
-        
-        // Limit total places
-        if (allPlaces.length >= MAX_PLACES_PER_RUN) {
-          allPlaces = allPlaces.slice(0, MAX_PLACES_PER_RUN);
-          break;
-        }
-        
-        // Rate limiting
-        await new Promise(resolve => setTimeout(resolve, 200));
-      } catch (error) {
-        console.error(`Search error for ${firstQuery} in ${location}:`, error);
-        searchErrors++;
-      }
-    }
+    // Search in single location
+    const places = await googlePlacesService.searchPlaces(searchQuery, LOCATIONS[0]);
+    allPlaces = places.slice(0, MAX_PLACES_PER_RUN);
 
     console.log(`Found ${allPlaces.length} places to process`);
 
     let processedCount = 0;
     let errorCount = 0;
 
-    // Process only the first few places for testing
-    const placesToProcess = allPlaces.slice(0, MAX_PLACES_PER_RUN);
-    for (const place of placesToProcess) {
+    // Process places
+    for (const place of allPlaces) {
       try {
         console.log(`Processing place: ${place.id}`);
         const placeDetails = await googlePlacesService.getPlaceDetails(place.id);
@@ -226,12 +158,12 @@ Deno.serve(async (req) => {
           google_formatted_address: placeDetails.formattedAddress || '',
           google_formatted_phone: placeDetails.internationalPhoneNumber || '',
           location: 'London',
-          rating: placeDetails.rating,
-          review_count: placeDetails.userRatingCount,
-          specialty: getSpecialtyFromQuery(firstQuery),
+          rating: placeDetails.rating || null,
+          review_count: placeDetails.userRatingCount || 0,
+          specialty: getSpecialtyFromQuery(searchQuery),
           google_reviews: placeDetails.reviews || [],
           google_photos: placeDetails.photos || [],
-          website_url: placeDetails.websiteUri,
+          website_url: placeDetails.websiteUri || null,
           google_business_scopes: placeDetails.types || [],
           needs_google_enrichment: false,
           last_enrichment_attempt: new Date().toISOString(),
@@ -244,33 +176,30 @@ Deno.serve(async (req) => {
             '-' + placeDetails.id.substring(0, 6)
         };
 
-        if (await contractorService.upsertContractor(contractorData)) {
+        const success = await contractorService.upsertContractor(contractorData);
+        if (success) {
           processedCount++;
-          console.log(`Successfully processed place ${processedCount}/${placesToProcess.length}`);
+          console.log(`Successfully processed ${processedCount}/${allPlaces.length}`);
         }
 
-        // Rate limiting
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Rate limiting between requests
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
-        errorCount++;
         console.error('Error processing place:', error);
+        errorCount++;
       }
     }
 
     // Send success response
-    const response = {
-      message: `Processing completed for ${category}`,
-      totalFound: allPlaces.length,
-      processed: processedCount,
-      errors: errorCount,
-      searchErrors,
-      category
-    };
-
-    console.log('Sending response:', response);
-
     return new Response(
-      JSON.stringify(response), 
+      JSON.stringify({
+        success: true,
+        message: `Processing completed for ${category}`,
+        totalFound: allPlaces.length,
+        processed: processedCount,
+        errors: errorCount,
+        category
+      }), 
       { headers }
     );
 
@@ -278,11 +207,14 @@ Deno.serve(async (req) => {
     console.error('Function error:', error);
     return new Response(
       JSON.stringify({
+        success: false,
         error: error.message,
-        stack: error.stack,
-        type: error.name
+        details: error.stack
       }), 
-      { headers, status: 500 }
+      { 
+        headers,
+        status: 500
+      }
     );
   }
 });
