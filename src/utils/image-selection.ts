@@ -6,6 +6,11 @@ import type { Database } from "@/integrations/supabase/types";
 // Get the specialty type from the database types
 type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
 
+const getStorageUrl = (path: string): string => {
+  if (path.startsWith('http')) return path;
+  return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/contractor-images/${path}`;
+};
+
 export const selectImage = async (contractor: Contractor): Promise<string> => {
   if (!contractor?.specialty) {
     console.debug('No specialty provided for contractor:', contractor?.business_name);
@@ -24,11 +29,13 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
         .limit(1);
 
       if (!contractorImagesError && contractorImages && contractorImages.length > 0) {
+        const imageUrl = getStorageUrl(contractorImages[0].storage_path);
         console.debug('Found contractor-specific image:', {
           contractor: contractor.business_name,
-          image: contractorImages[0]
+          path: contractorImages[0].storage_path,
+          url: imageUrl
         });
-        return contractorImages[0].storage_path;
+        return imageUrl;
       }
       
       if (contractorImagesError) {
@@ -45,7 +52,8 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
       .select('storage_path')
       .is('contractor_id', null)
       .eq('image_type', 'specialty')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .order('priority', { ascending: true });
 
     if (specialtyError) {
       console.error('Error fetching specialty images:', specialtyError);
@@ -60,15 +68,17 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     // Select a specialty image based on contractor properties
     const uniqueString = `${contractor.id}-${contractor.business_name}-${contractor.specialty}`;
     const selectedIndex = Math.abs(createImageHash(uniqueString)) % specialtyImages.length;
+    const imageUrl = getStorageUrl(specialtyImages[selectedIndex].storage_path);
     
     console.debug('Selected specialty image:', {
       contractor: contractor.business_name,
       totalImages: specialtyImages.length,
       selectedIndex,
-      selectedImage: specialtyImages[selectedIndex]
+      path: specialtyImages[selectedIndex].storage_path,
+      url: imageUrl
     });
 
-    return specialtyImages[selectedIndex].storage_path;
+    return imageUrl;
   } catch (error) {
     console.error('Error selecting image:', error);
     return '/placeholder.svg';
