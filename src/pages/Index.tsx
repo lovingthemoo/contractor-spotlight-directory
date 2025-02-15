@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -146,9 +145,19 @@ const Index = () => {
   const filteredContractors = contractors
     .filter(contractor => {
       if (selectedSpecialty === "All") return true;
-      // Log the specialty comparison for debugging
-      console.log(`Comparing contractor specialty: "${contractor.specialty}" with selected: "${selectedSpecialty}"`);
-      return contractor.specialty?.toLowerCase() === selectedSpecialty.toLowerCase();
+      
+      // Ensure both strings are trimmed and compared in lowercase
+      const normalizedContractorSpecialty = contractor.specialty?.trim().toLowerCase();
+      const normalizedSelectedSpecialty = selectedSpecialty.trim().toLowerCase();
+      
+      // Log the actual comparison values for debugging
+      console.log('Comparing specialties:', {
+        contractor: normalizedContractorSpecialty,
+        selected: normalizedSelectedSpecialty,
+        matches: normalizedContractorSpecialty === normalizedSelectedSpecialty
+      });
+      
+      return normalizedContractorSpecialty === normalizedSelectedSpecialty;
     })
     .filter(contractor => 
       selectedRating === "All" || (contractor.rating && contractor.rating >= getRatingThreshold(selectedRating))
@@ -159,10 +168,13 @@ const Index = () => {
       contractor.location?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  // Log filtered results
-  console.log('Total contractors:', contractors.length);
-  console.log('Filtered contractors:', filteredContractors.length);
-  console.log('Selected specialty:', selectedSpecialty);
+  // Add more detailed logging for debugging
+  console.log('Filtering details:', {
+    totalContractors: contractors.length,
+    filteredCount: filteredContractors.length,
+    selectedSpecialty,
+    uniqueSpecialties: [...new Set(contractors.map(c => c.specialty))],
+  });
 
   return (
     <div className="flex flex-col min-h-screen">
