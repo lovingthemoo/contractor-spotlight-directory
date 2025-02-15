@@ -21,58 +21,36 @@ const Index = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       try {
-        // First, get contractors with Google photos
-        const withGooglePhotosQuery = supabase
+        // Get all contractors that have any kind of images
+        const withImagesQuery = supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .neq('google_photos', '[]')
+          .or('google_photos.neq.[],(default_specialty_image.neq.null,images.neq.{})')
           .order('rating', { ascending: false });
 
-        const googlePhotosResponse = await withGooglePhotosQuery;
+        const withImagesResponse = await withImagesQuery;
         
-        if (googlePhotosResponse.error) {
+        if (withImagesResponse.error) {
           toast.error('Failed to fetch contractors');
-          throw googlePhotosResponse.error;
+          throw withImagesResponse.error;
         }
 
-        let contractorsData = googlePhotosResponse.data || [];
+        let contractorsData = withImagesResponse.data || [];
         
-        // If we don't have enough contractors with Google photos, get ones with uploaded images
+        // If we need more contractors, get the rest
         if (contractorsData.length < 10) {
-          const withImagesQuery = supabase
+          const remainingQuery = supabase
             .from('contractors')
             .select('*')
             .not('rating', 'is', null)
-            .gt('images', '{}')
+            .not('id', 'in', `(${contractorsData.map(c => `'${c.id}'`).join(',')})`)
             .order('rating', { ascending: false });
 
-          const uploadedImagesResponse = await withImagesQuery;
+          const remainingResponse = await remainingQuery;
 
-          if (!uploadedImagesResponse.error && uploadedImagesResponse.data) {
-            const newContractors = uploadedImagesResponse.data.filter(
-              gc => !contractorsData.some(c => c.id === gc.id)
-            );
-            contractorsData = [...contractorsData, ...newContractors];
-          }
-        }
-
-        // If we still need more contractors, get the rest with default specialty images
-        if (contractorsData.length < 10) {
-          const fallbackQuery = supabase
-            .from('contractors')
-            .select('*')
-            .not('rating', 'is', null)
-            .not('default_specialty_image', 'is', null)
-            .order('rating', { ascending: false });
-            
-          const fallbackResponse = await fallbackQuery;
-
-          if (!fallbackResponse.error && fallbackResponse.data) {
-            const newContractors = fallbackResponse.data.filter(
-              fb => !contractorsData.some(c => c.id === fb.id)
-            );
-            contractorsData = [...contractorsData, ...newContractors];
+          if (!remainingResponse.error && remainingResponse.data) {
+            contractorsData = [...contractorsData, ...remainingResponse.data];
           }
         }
 
@@ -80,21 +58,26 @@ const Index = () => {
         const transformedContractors = await Promise.all(contractorsData.map(transformContractor));
         
         return transformedContractors.sort((a, b) => {
-          // First, prioritize contractors with any kind of images
-          const aHasGooglePhotos = (a.google_photos?.length > 0) ? 2 : 0;
-          const bHasGooglePhotos = (b.google_photos?.length > 0) ? 2 : 0;
+          // First, prioritize contractors with Google photos (fastest to load)
+          const aHasGooglePhotos = (a.google_photos?.length > 0) ? 3 : 0;
+          const bHasGooglePhotos = (b.google_photos?.length > 0) ? 3 : 0;
           
-          const aHasUploadedImages = (a.images?.length > 0) ? 1 : 0;
-          const bHasUploadedImages = (b.images?.length > 0) ? 1 : 0;
+          // Then those with uploaded images
+          const aHasUploadedImages = (a.images?.length > 0) ? 2 : 0;
+          const bHasUploadedImages = (b.images?.length > 0) ? 2 : 0;
           
-          const aImageScore = aHasGooglePhotos + aHasUploadedImages;
-          const bImageScore = bHasGooglePhotos + bHasUploadedImages;
+          // Finally those with default specialty images
+          const aHasDefaultImage = a.default_specialty_image ? 1 : 0;
+          const bHasDefaultImage = b.default_specialty_image ? 1 : 0;
+          
+          const aImageScore = aHasGooglePhotos + aHasUploadedImages + aHasDefaultImage;
+          const bImageScore = bHasGooglePhotos + bHasUploadedImages + bHasDefaultImage;
           
           if (aImageScore !== bImageScore) {
             return bImageScore - aImageScore;
           }
           
-          // Then sort by rating
+          // If image scores are equal, sort by rating
           return (b.rating || 0) - (a.rating || 0);
         });
       } catch (e) {
