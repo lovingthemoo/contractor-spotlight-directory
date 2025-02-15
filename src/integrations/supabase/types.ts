@@ -46,6 +46,7 @@ export type Database = {
           id: string
           image_type: string
           is_active: boolean | null
+          original_url: string | null
           priority: number | null
           storage_path: string
           updated_at: string
@@ -56,6 +57,7 @@ export type Database = {
           id?: string
           image_type?: string
           is_active?: boolean | null
+          original_url?: string | null
           priority?: number | null
           storage_path: string
           updated_at?: string
@@ -66,6 +68,7 @@ export type Database = {
           id?: string
           image_type?: string
           is_active?: boolean | null
+          original_url?: string | null
           priority?: number | null
           storage_path?: string
           updated_at?: string
