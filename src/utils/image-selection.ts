@@ -1,6 +1,10 @@
 
 import { Contractor } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+// Get the specialty type from the database types
+type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
 
 export const selectImage = async (contractor: Contractor): Promise<string> => {
   if (!contractor?.specialty) {
@@ -8,12 +12,15 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     return '/placeholder.svg';
   }
 
+  // Ensure specialty is of the correct type
+  const specialty = contractor.specialty as ContractorSpecialty;
+
   try {
     // Query the database for specialty images
     const { data: specialtyImages, error } = await supabase
       .from('specialty_default_images')
       .select('image_url')
-      .eq('specialty', contractor.specialty)
+      .eq('specialty', specialty)
       .eq('is_active', true)
       .order('priority');
 
@@ -23,17 +30,17 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     }
 
     if (!specialtyImages || specialtyImages.length === 0) {
-      console.debug('No specialty images found for:', contractor.specialty);
+      console.debug('No specialty images found for:', specialty);
       return '/placeholder.svg';
     }
 
     // Use multiple contractor properties for better distribution
-    const uniqueString = `${contractor.id}-${contractor.business_name}-${contractor.specialty}`;
+    const uniqueString = `${contractor.id}-${contractor.business_name}-${specialty}`;
     const hash = createImageHash(uniqueString);
     const index = Math.abs(hash) % specialtyImages.length;
     
     console.debug('Selected specialty image:', {
-      specialty: contractor.specialty,
+      specialty,
       totalImages: specialtyImages.length,
       selectedIndex: index,
       imageUrl: specialtyImages[index].image_url
