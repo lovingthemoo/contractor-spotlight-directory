@@ -328,31 +328,40 @@ export type Database = {
       specialty_default_images: {
         Row: {
           created_at: string
+          google_place_id: string | null
           id: string
           image_alt: string | null
           image_url: string
           is_active: boolean | null
+          last_updated: string | null
           priority: number | null
+          source: string | null
           specialty: Database["public"]["Enums"]["contractor_specialty"]
           updated_at: string
         }
         Insert: {
           created_at?: string
+          google_place_id?: string | null
           id?: string
           image_alt?: string | null
           image_url: string
           is_active?: boolean | null
+          last_updated?: string | null
           priority?: number | null
+          source?: string | null
           specialty: Database["public"]["Enums"]["contractor_specialty"]
           updated_at?: string
         }
         Update: {
           created_at?: string
+          google_place_id?: string | null
           id?: string
           image_alt?: string | null
           image_url?: string
           is_active?: boolean | null
+          last_updated?: string | null
           priority?: number | null
+          source?: string | null
           specialty?: Database["public"]["Enums"]["contractor_specialty"]
           updated_at?: string
         }

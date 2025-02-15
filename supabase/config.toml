@@ -2,3 +2,6 @@
 [functions.migrate-specialty-images]
 verify_jwt = false
 
+[functions.fetch-specialty-images]
+verify_jwt = false
+
