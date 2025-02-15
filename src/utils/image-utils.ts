@@ -53,16 +53,14 @@ export const getDisplayImage = (contractor: Contractor): string => {
         break;
 
       case "default_specialty_image":
+        // Simplified check for default specialty image
         if (contractor.default_specialty_image) {
-          const defaultImage = contractor.default_specialty_image.trim();
-          if (defaultImage.length > 0) {
             console.log('Using default specialty image:', {
               business: contractor.business_name,
               specialty: contractor.specialty,
-              image: defaultImage
+              image: contractor.default_specialty_image
             });
-            return defaultImage;
-          }
+            return contractor.default_specialty_image;
         }
         break;
     }
