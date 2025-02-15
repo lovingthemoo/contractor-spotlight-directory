@@ -15,17 +15,15 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
 
   useEffect(() => {
     if (!mapContainer.current) return;
-    
+
     // Validate address
-    if (!address || address.trim().length < 3) {
+    if (!address || typeof address !== 'string' || address.trim().length < 3) {
       console.error('Invalid address provided:', address);
       setError('Invalid address provided');
       return;
     }
 
     const initializeMap = async () => {
-      mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHU1Z3M5cDUwMGo1MmtvNmZyYnF3dXg0In0.jkxpNrQzIBMPqx_zO2TBVA';
-
       try {
         // Ensure any existing map is cleaned up
         if (map.current) {
@@ -33,12 +31,24 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
           map.current = null;
         }
 
-        // Geocode the address
-        console.log('Geocoding address:', address);
-        const encodedAddress = encodeURIComponent(address);
-        const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${mapboxgl.accessToken}&country=GB`;
+        // Initialize Mapbox with access token
+        if (!mapboxgl.accessToken) {
+          mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHU1Z3M5cDUwMGo1MmtvNmZyYnF3dXg0In0.jkxpNrQzIBMPqx_zO2TBVA';
+        }
+
+        // Clean and encode the address
+        const cleanAddress = address.trim();
+        console.log('Geocoding address:', cleanAddress);
         
-        const response = await fetch(geocodingUrl);
+        // Construct geocoding URL with proper parameters
+        const geocodingUrl = new URL('https://api.mapbox.com/geocoding/v5/mapbox.places/' + encodeURIComponent(cleanAddress) + '.json');
+        geocodingUrl.searchParams.append('access_token', mapboxgl.accessToken);
+        geocodingUrl.searchParams.append('country', 'GB');
+        geocodingUrl.searchParams.append('limit', '1');
+        geocodingUrl.searchParams.append('types', 'address');
+
+        const response = await fetch(geocodingUrl.toString());
+        
         if (!response.ok) {
           throw new Error(`Geocoding failed with status: ${response.status}`);
         }
@@ -53,24 +63,31 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         const [lng, lat] = data.features[0].center;
         console.log('Coordinates:', { lng, lat });
 
-        // Initialize map
+        // Create new map instance
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/streets-v12',
           center: [lng, lat],
-          zoom: 14
+          zoom: 15,
+          minZoom: 9,
+          maxZoom: 17
         });
 
-        // Add marker
-        new mapboxgl.Marker()
+        // Add marker with popup
+        new mapboxgl.Marker({ color: '#7c3aed' })
           .setLngLat([lng, lat])
+          .setPopup(new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`<div class="p-2"><strong>${address}</strong></div>`))
           .addTo(map.current);
 
         // Add navigation controls
-        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        map.current.addControl(new mapboxgl.NavigationControl({
+          showCompass: false
+        }), 'top-right');
 
         // Clear any previous errors
         setError(null);
+
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to load map';
         console.error('Error initializing map:', error);
@@ -78,10 +95,14 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       }
     };
 
-    initializeMap();
+    // Initialize map with small delay to ensure container is ready
+    const timeoutId = setTimeout(() => {
+      initializeMap();
+    }, 100);
 
     // Cleanup function
     return () => {
+      clearTimeout(timeoutId);
       if (map.current) {
         map.current.remove();
         map.current = null;
