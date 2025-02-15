@@ -39,45 +39,28 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     try {
       let photosData = dbContractor.google_photos;
       
-      // Handle case where photos might be a string
       if (typeof photosData === 'string') {
         photosData = JSON.parse(photosData);
       }
       
-      // Handle case where it might be empty array in string form
-      if (photosData === '[]') {
-        photosData = [];
-      }
-      
       if (Array.isArray(photosData)) {
-        const validPhotos = photosData.filter(photo => 
-          photo && 
-          typeof photo === 'object' &&
-          ('url' in photo || 'id' in photo)
-        );
-
-        google_photos = validPhotos.map(photo => {
-          // Handle both direct URL objects and Google Places photo references
-          const photoUrl = photo.url || 
-            (typeof photo.id === 'string' ? 
-              `https://places.googleapis.com/v1/places/${photo.id}/photos` : 
-              undefined);
-
-          return {
-            url: String(photoUrl || ''),
+        google_photos = photosData
+          .filter(photo => 
+            photo && 
+            typeof photo === 'object' && 
+            'url' in photo && 
+            photo.url && 
+            typeof photo.url === 'string'
+          )
+          .map(photo => ({
+            url: String(photo.url),
             width: Number(photo.width || 0),
             height: Number(photo.height || 0),
             type: String(photo.type || '')
-          };
-        }).filter(photo => photo.url.length > 0);
-
-        console.log('Processed photos for', dbContractor.business_name, {
-          rawCount: photosData.length,
-          validCount: google_photos.length
-        });
+          }));
       }
     } catch (e) {
-      console.error('Error parsing google_photos for', dbContractor.business_name, e);
+      console.error('Error parsing google_photos:', e);
     }
   }
 
