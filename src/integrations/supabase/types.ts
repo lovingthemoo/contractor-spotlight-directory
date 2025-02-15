@@ -429,6 +429,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      migrate_images_to_storage: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      store_remote_image: {
+        Args: {
+          url: string
+          output_path: string
+        }
+        Returns: string
+      }
       update_specialty_images: {
         Args: Record<PropertyKey, never>
         Returns: undefined
