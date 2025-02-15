@@ -48,7 +48,7 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
       } catch (error) {
         console.error('Error loading image:', {
           business: displayName,
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         });
         setImageUrl('/placeholder.svg');
         setIsImageLoading(false);
@@ -96,10 +96,10 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
           <div className="flex items-center mb-2">
             <div className="flex items-center text-yellow-400 mr-2">
               <Star className="fill-current w-4 h-4" />
-              <span className="ml-1 text-sm font-medium">{displayRating}</span>
+              <span className="ml-1 text-sm font-medium">{contractor.rating?.toFixed(1)}</span>
             </div>
             <span className="text-sm text-gray-500">
-              ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+              ({contractor.review_count || 0} {contractor.review_count === 1 ? 'review' : 'reviews'})
             </span>
           </div>
           
@@ -109,7 +109,9 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
           
           <div className="flex items-center text-sm text-gray-500">
             <MapPin className="w-4 h-4 mr-1 shrink-0" />
-            <span className="line-clamp-1">{displayAddress}</span>
+            <span className="line-clamp-1">
+              {contractor.google_formatted_address || contractor.location || 'London'}
+            </span>
           </div>
         </CardContent>
       </Link>
