@@ -10,6 +10,7 @@ import { HeroImage } from "@/components/contractor/HeroImage";
 import { CompanyOverview } from "@/components/contractor/CompanyOverview";
 import { Reviews } from "@/components/contractor/Reviews";
 import { ContactSidebar } from "@/components/contractor/ContactSidebar";
+import { BusinessLocation } from "@/components/contractor/BusinessLocation";
 
 const ContractorDetail = () => {
   const { slug } = useParams();
@@ -85,6 +86,12 @@ const ContractorDetail = () => {
           <div className="lg:col-span-2 space-y-8">
             <HeroImage contractor={contractor} businessName={businessName} />
             <CompanyOverview contractor={contractor} businessName={businessName} />
+            <BusinessLocation 
+              address={contractor.location}
+              google_formatted_address={contractor.google_formatted_address}
+              google_place_id={contractor.google_place_id}
+              google_photos={contractor.google_photos}
+            />
             {contractor.google_reviews && <Reviews reviews={contractor.google_reviews} />}
           </div>
 
