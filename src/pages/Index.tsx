@@ -1,25 +1,20 @@
-import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import ContractorCard from "@/components/contractors/ContractorCard";
 import SearchBar from "@/components/contractors/SearchBar";
 import SpecialtyFilter from "@/components/contractors/SpecialtyFilter";
+import RatingFilter from "@/components/contractors/RatingFilter";
+import ContractorsList from "@/components/contractors/ContractorsList";
+import { useContractorFilters } from "@/hooks/useContractorFilters";
 import { transformContractor } from "@/utils/contractor";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import type { Contractor } from "@/types/contractor";
 
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Construction", "Handyman"];
 const ratingFilters = ["All", "4.5+", "4.0+", "3.5+", "3.0+"];
 
 const Index = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSpecialty, setSelectedSpecialty] = useState("All");
-  const [selectedRating, setSelectedRating] = useState("All");
-  
   const { data: contractors = [], isLoading, error } = useQuery({
     queryKey: ['contractors'],
     queryFn: async () => {
@@ -29,7 +24,7 @@ const Index = () => {
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .gt('images', '{}') // Filter for non-empty arrays
+          .gt('images', '{}')
           .order('rating', { ascending: false });
         
         const response = await withImagesQuery;
@@ -40,15 +35,7 @@ const Index = () => {
         }
 
         let contractorsData = response.data || [];
-        console.log('Initial contractors with images:', {
-          count: contractorsData.length,
-          sampleImages: contractorsData.slice(0, 3).map(c => ({
-            business: c.business_name,
-            images: c.images,
-            googlePhotos: c.google_photos
-          }))
-        });
-
+        
         // If we don't have enough contractors with uploaded images, get ones with Google photos
         if (contractorsData.length < 10) {
           const withGooglePhotosQuery = supabase
@@ -61,17 +48,9 @@ const Index = () => {
           const googlePhotosResponse = await withGooglePhotosQuery;
 
           if (!googlePhotosResponse.error && googlePhotosResponse.data) {
-            // Filter out duplicates
             const newContractors = googlePhotosResponse.data.filter(
               gc => !contractorsData.some(c => c.id === gc.id)
             );
-            console.log('Additional contractors with Google photos:', {
-              count: newContractors.length,
-              samplePhotos: newContractors.slice(0, 3).map(c => ({
-                business: c.business_name,
-                googlePhotos: c.google_photos
-              }))
-            });
             contractorsData = [...contractorsData, ...newContractors];
           }
         }
@@ -87,94 +66,44 @@ const Index = () => {
           const fallbackResponse = await fallbackQuery;
 
           if (!fallbackResponse.error && fallbackResponse.data) {
-            // Filter out contractors we already have
             const newContractors = fallbackResponse.data.filter(
               fb => !contractorsData.some(c => c.id === fb.id)
             );
             contractorsData = [...contractorsData, ...newContractors];
-            console.log('Added additional contractors:', newContractors.length);
           }
         }
 
-        // Transform all contractors
+        // Transform and sort contractors
         const transformedContractors = await Promise.all(contractorsData.map(transformContractor));
         
-        // Log image availability statistics
-        const imageStats = transformedContractors.reduce((stats, contractor) => {
-          if (contractor.images?.length > 0) stats.withUploadedImages++;
-          if (contractor.google_photos?.length > 0) stats.withGooglePhotos++;
-          if (!contractor.images?.length && !contractor.google_photos?.length) stats.withoutImages++;
-          return stats;
-        }, { withUploadedImages: 0, withGooglePhotos: 0, withoutImages: 0 });
-        
-        console.log('Contractor image statistics:', imageStats);
-        
-        // Sort contractors: those with images first, then by rating
-        const sortedContractors = transformedContractors.sort((a, b) => {
+        return transformedContractors.sort((a, b) => {
           const aHasImages = (a.images?.length > 0 || a.google_photos?.length > 0) ? 1 : 0;
           const bHasImages = (b.images?.length > 0 || b.google_photos?.length > 0) ? 1 : 0;
           
           if (aHasImages !== bHasImages) {
-            return bHasImages - aHasImages; // Contractors with images come first
+            return bHasImages - aHasImages;
           }
           
-          // If both have or don't have images, sort by rating
           return (b.rating || 0) - (a.rating || 0);
         });
-        
-        return sortedContractors;
       } catch (e) {
         console.error('Error fetching contractors:', e);
         throw e;
       }
     },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
   });
 
-  const getRatingThreshold = (filter: string): number => {
-    switch (filter) {
-      case "4.5+": return 4.5;
-      case "4.0+": return 4.0;
-      case "3.5+": return 3.5;
-      case "3.0+": return 3.0;
-      default: return 0;
-    }
-  };
-
-  const filteredContractors = contractors
-    .filter(contractor => {
-      if (selectedSpecialty === "All") return true;
-      
-      // Ensure both strings are trimmed and compared in lowercase
-      const normalizedContractorSpecialty = contractor.specialty?.trim().toLowerCase();
-      const normalizedSelectedSpecialty = selectedSpecialty.trim().toLowerCase();
-      
-      // Log the actual comparison values for debugging
-      console.log('Comparing specialties:', {
-        contractor: normalizedContractorSpecialty,
-        selected: normalizedSelectedSpecialty,
-        matches: normalizedContractorSpecialty === normalizedSelectedSpecialty
-      });
-      
-      return normalizedContractorSpecialty === normalizedSelectedSpecialty;
-    })
-    .filter(contractor => 
-      selectedRating === "All" || (contractor.rating && contractor.rating >= getRatingThreshold(selectedRating))
-    )
-    .filter(contractor => 
-      contractor.business_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contractor.specialty?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contractor.location?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-  // Add more detailed logging for debugging
-  console.log('Filtering details:', {
-    totalContractors: contractors.length,
-    filteredCount: filteredContractors.length,
+  const {
+    searchQuery,
+    setSearchQuery,
     selectedSpecialty,
-    uniqueSpecialties: [...new Set(contractors.map(c => c.specialty))],
-  });
+    setSelectedSpecialty,
+    selectedRating,
+    setSelectedRating,
+    filteredContractors
+  } = useContractorFilters(contractors);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -211,90 +140,20 @@ const Index = () => {
           aria-label="Filter by specialty"
         />
 
-        {/* Rating Filter */}
-        <section className="px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="animate-in">
-            <h2 className="text-lg font-semibold text-gray-900" id="rating-filter-heading">
-              Filter by Rating
-            </h2>
-            <RadioGroup 
-              className="flex flex-wrap gap-4 mt-4"
-              defaultValue={selectedRating}
-              onValueChange={setSelectedRating}
-              aria-label="Rating filter"
-              aria-labelledby="rating-filter-heading"
-            >
-              {ratingFilters.map((rating) => (
-                <div key={rating} className="flex items-center space-x-2">
-                  <RadioGroupItem 
-                    value={rating} 
-                    id={`rating-${rating.toLowerCase().replace('+', '-plus')}`}
-                    title={`Select ${rating} rating filter`}
-                  />
-                  <Label 
-                    htmlFor={`rating-${rating.toLowerCase().replace('+', '-plus')}`}
-                    className="cursor-pointer"
-                  >
-                    {rating}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
-        </section>
+        <RatingFilter 
+          selectedRating={selectedRating}
+          setSelectedRating={setSelectedRating}
+          ratingFilters={ratingFilters}
+        />
 
-        {/* Featured Contractors */}
-        <section 
-          className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8"
-          aria-labelledby="featured-contractors-title"
-        >
-          <div>
-            <h2 id="featured-contractors-title" className="text-2xl font-bold tracking-tight text-gray-900">
-              {selectedSpecialty === "All" ? "Featured Contractors" : `${selectedSpecialty} Contractors`}
-            </h2>
-            <p className="mt-2 text-gray-500">
-              {isLoading ? 'Loading top rated professionals...' : 'Top rated professionals in London'}
-            </p>
-            
-            {isLoading && (
-              <div className="text-center py-12" role="status">
-                <div 
-                  className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                  aria-label="Loading contractors"
-                >
-                  <span className="sr-only">Loading...</span>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="text-center py-12 text-red-500" role="alert">
-                <p>Failed to load contractors. Please try again later.</p>
-                <p className="text-sm mt-2">{error instanceof Error ? error.message : 'Unknown error'}</p>
-              </div>
-            )}
-
-            {!isLoading && !error && filteredContractors.length === 0 && (
-              <div className="text-center py-12 text-gray-500" role="status">
-                {searchQuery || selectedSpecialty !== "All" || selectedRating !== "All"
-                  ? "No contractors found matching your criteria."
-                  : "No contractors available at the moment."}
-              </div>
-            )}
-            
-            <div 
-              className="grid gap-6 mt-8 md:grid-cols-2 lg:grid-cols-3"
-              aria-label="Contractors list"
-            >
-              {filteredContractors.map((contractor) => (
-                <ContractorCard
-                  key={contractor.id}
-                  contractor={contractor}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
+        <ContractorsList 
+          contractors={filteredContractors}
+          isLoading={isLoading}
+          error={error as Error | null}
+          searchQuery={searchQuery}
+          selectedSpecialty={selectedSpecialty}
+          selectedRating={selectedRating}
+        />
 
         {/* Advertisement Section */}
         <section 
