@@ -7,12 +7,9 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   console.log('Processing contractor:', dbContractor.business_name, {
     hasGooglePhotos: !!dbContractor.google_photos,
     googlePhotosType: typeof dbContractor.google_photos,
-    photosSample: dbContractor.google_photos && typeof dbContractor.google_photos === 'object' 
-      ? Array.isArray(dbContractor.google_photos) 
-        ? dbContractor.google_photos.slice(0, 1) 
-        : 'Not an array'
-      : 'No photos',
-    hasImages: Array.isArray(dbContractor.images) && dbContractor.images.length > 0
+    rawGooglePhotos: dbContractor.google_photos, // Log the raw data
+    hasImages: Array.isArray(dbContractor.images) && dbContractor.images.length > 0,
+    rawImages: dbContractor.images // Log the raw images array
   });
   
   let google_reviews: GoogleReview[] | undefined;
@@ -45,32 +42,47 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     try {
       let photosData = dbContractor.google_photos;
       
-      // Ensure we're working with an array of photo objects
+      // Handle both string and already parsed object cases
       if (typeof photosData === 'string') {
-        photosData = JSON.parse(photosData);
+        try {
+          photosData = JSON.parse(photosData);
+        } catch (e) {
+          console.error('Failed to parse google_photos string:', photosData);
+          photosData = null;
+        }
       }
       
-      // Log the photos data structure for debugging
-      console.log('Photos data for', dbContractor.business_name, {
-        isArray: Array.isArray(photosData),
-        length: Array.isArray(photosData) ? photosData.length : 0,
-        firstPhoto: Array.isArray(photosData) && photosData.length > 0 ? photosData[0] : null
+      // Log the raw parsed data
+      console.log('Raw parsed photos data:', {
+        business: dbContractor.business_name,
+        data: photosData
       });
       
       if (Array.isArray(photosData)) {
         google_photos = photosData
           .filter(photo => {
-            const isValid = photo && 
-              typeof photo === 'object' && 
-              'url' in photo && 
-              photo.url && 
-              typeof photo.url === 'string';
-            
-            if (!isValid) {
-              console.log('Invalid photo object:', photo);
+            // More detailed validation
+            if (!photo) {
+              console.log('Null or undefined photo object');
+              return false;
             }
             
-            return isValid;
+            if (typeof photo !== 'object') {
+              console.log('Photo is not an object:', typeof photo);
+              return false;
+            }
+            
+            if (!('url' in photo)) {
+              console.log('Photo missing url property:', Object.keys(photo));
+              return false;
+            }
+            
+            if (!photo.url || typeof photo.url !== 'string') {
+              console.log('Invalid url in photo:', photo.url);
+              return false;
+            }
+            
+            return true;
           })
           .map(photo => ({
             url: String(photo.url),
@@ -79,14 +91,21 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
             type: String(photo.type || '')
           }));
           
-        console.log('Processed photos for', dbContractor.business_name, {
-          total: photosData.length,
-          valid: google_photos.length,
-          sample: google_photos.slice(0, 1)
+        console.log('Processed photos result:', {
+          business: dbContractor.business_name,
+          totalPhotos: photosData.length,
+          validPhotos: google_photos.length,
+          firstValidPhoto: google_photos[0]
+        });
+      } else {
+        console.log('Photos data is not an array:', {
+          business: dbContractor.business_name,
+          type: typeof photosData,
+          value: photosData
         });
       }
     } catch (e) {
-      console.error('Error parsing google_photos for', dbContractor.business_name, e);
+      console.error('Error processing google_photos for', dbContractor.business_name, e);
     }
   }
 
@@ -115,7 +134,9 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     rating,
     review_count,
     years_in_business: dbContractor.years_in_business || undefined,
-    images: Array.isArray(dbContractor.images) ? dbContractor.images.filter(img => img && typeof img === 'string') : [],
+    images: Array.isArray(dbContractor.images) 
+      ? dbContractor.images.filter(img => img && typeof img === 'string' && img.startsWith('http')) 
+      : [],
     project_types: Array.isArray(dbContractor.project_types) ? dbContractor.project_types : [],
     google_reviews,
     google_photos,
