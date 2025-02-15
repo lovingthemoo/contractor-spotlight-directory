@@ -24,13 +24,14 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
             url: String(photo.url || ''),
             width: Number(photo.width || 0),
             height: Number(photo.height || 0),
-            type: String(photo.type || '')
+            // Don't use the type field from the API as it contains profile photo URLs
+            type: 'place'
           }));
           
         console.debug('Processed Google photos:', {
           total: photosData.length,
           valid: google_photos.length,
-          sample: google_photos[0]
+          sample: google_photos[0]?.url
         });
       } else {
         console.error('Google photos is not an array:', photosData);
@@ -62,7 +63,8 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
           
         console.debug('Processed Google reviews:', {
           total: reviewsData.length,
-          valid: google_reviews.length
+          valid: google_reviews.length,
+          sample: google_reviews[0]?.rating
         });
       }
     } catch (e) {
@@ -124,7 +126,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     default_specialty_image,
     google_photos: google_photos ? {
       length: google_photos.length,
-      sample: google_photos[0]
+      sample: google_photos[0]?.url
     } : 'none',
     uploaded_images: images.length
   });
