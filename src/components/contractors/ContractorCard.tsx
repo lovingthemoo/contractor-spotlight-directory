@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Star, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Contractor } from "@/types/contractor";
-import { selectImage } from "@/utils/image-selection";
+import { selectImage, brokenImageUrls } from "@/utils/image-selection";
 import { useState, useEffect } from "react";
 
 interface ContractorCardProps {
@@ -45,9 +45,7 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
             url
           });
           // Mark this URL as broken in our utility
-          if (typeof window !== 'undefined' && window.brokenImageUrls) {
-            window.brokenImageUrls.add(url);
-          }
+          brokenImageUrls.add(url);
           setImageUrl('/placeholder.svg');
           setIsImageLoading(false);
         };

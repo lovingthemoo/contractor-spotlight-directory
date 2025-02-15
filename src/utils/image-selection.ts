@@ -1,4 +1,3 @@
-
 import { Contractor } from "@/types/contractor";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -10,7 +9,7 @@ type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
 const recentlyUsedImages: Record<string, Set<string>> = {};
 
 // Cache to track known broken image URLs
-const brokenImageUrls = new Set<string>();
+export const brokenImageUrls = new Set<string>();
 
 const getStorageUrl = (path: string): string => {
   // If path is empty or null, return placeholder
