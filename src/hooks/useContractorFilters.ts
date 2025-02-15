@@ -21,6 +21,7 @@ export const useContractorFilters = (contractors: Contractor[]) => {
     .filter(contractor => {
       if (selectedSpecialty === "All") return true;
       
+      // Normalize both strings by trimming whitespace and converting to lowercase
       const normalizedContractorSpecialty = contractor.specialty?.trim().toLowerCase();
       const normalizedSelectedSpecialty = selectedSpecialty.trim().toLowerCase();
       
