@@ -30,10 +30,8 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
 
   // Parse Google photos
   try {
-    // Initialize with empty array if null (shouldn't happen with new constraints)
     let photosData = dbContractor.google_photos || [];
     
-    // Handle string case (from older data)
     if (typeof photosData === 'string') {
       try {
         photosData = JSON.parse(photosData);
@@ -52,12 +50,6 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
           height: Number(photo.height || 0),
           type: String(photo.type || '')
         }));
-      
-      console.log('Processed Google photos:', {
-        business: dbContractor.business_name,
-        total: photosData.length,
-        valid: google_photos.length
-      });
     }
   } catch (e) {
     console.error('Error processing google_photos for', dbContractor.business_name, e);
@@ -76,9 +68,10 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     }
   } catch (e) {
     console.error('Error parsing image_priority for', dbContractor.business_name, e);
-    // Always provide a fallback image priority
-    image_priority = { order: ["google_photos", "uploaded_images", "default_specialty_image"] };
   }
+  
+  // Always provide a fallback image priority
+  image_priority = image_priority || { order: ["google_photos", "uploaded_images", "default_specialty_image"] };
 
   // Create a slug if one doesn't exist
   const slug = dbContractor.slug || (dbContractor.business_name || '')
@@ -105,19 +98,19 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     ? dbContractor.images.filter(img => img && typeof img === 'string' && img.startsWith('http'))
     : [];
 
-  console.log('Processed contractor images:', {
-    business: dbContractor.business_name,
-    uploadedImages: images.length,
-    googlePhotos: google_photos?.length || 0,
-    defaultSpecialtyImage: dbContractor.default_specialty_image
-  });
-
   // Ensure we have a valid default_specialty_image
   const default_specialty_image = dbContractor.default_specialty_image && 
     typeof dbContractor.default_specialty_image === 'string' && 
     dbContractor.default_specialty_image.startsWith('http')
       ? dbContractor.default_specialty_image
       : undefined;
+
+  console.log('Transformed contractor:', {
+    business: dbContractor.business_name,
+    default_specialty_image,
+    google_photos: google_photos?.length || 0,
+    uploaded_images: images.length
+  });
 
   const contractor: Contractor = {
     ...dbContractor,
@@ -130,7 +123,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     project_types: Array.isArray(dbContractor.project_types) ? dbContractor.project_types : [],
     certifications: Array.isArray(dbContractor.certifications) ? dbContractor.certifications : undefined,
     website_url: formatWebsiteUrl(dbContractor.website_url),
-    image_priority: image_priority || { order: ["google_photos", "uploaded_images", "default_specialty_image"] },
+    image_priority,
     default_specialty_image,
     slug
   };

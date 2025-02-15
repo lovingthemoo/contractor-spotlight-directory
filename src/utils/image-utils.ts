@@ -16,6 +16,25 @@ export const getDisplayImage = (contractor: Contractor): string => {
   
   for (const source of priorityOrder) {
     switch (source) {
+      case "google_photos":
+        if (contractor.google_photos && Array.isArray(contractor.google_photos) && contractor.google_photos.length > 0) {
+          const validPhoto = contractor.google_photos.find(photo => 
+            photo && 
+            photo.url && 
+            typeof photo.url === 'string' && 
+            photo.url.startsWith('http')
+          );
+
+          if (validPhoto) {
+            console.log('Using Google photo:', {
+              business: contractor.business_name,
+              photo: validPhoto.url
+            });
+            return validPhoto.url;
+          }
+        }
+        break;
+
       case "uploaded_images":
         if (Array.isArray(contractor.images) && contractor.images.length > 0) {
           const validImage = contractor.images.find(img => 
@@ -34,29 +53,8 @@ export const getDisplayImage = (contractor: Contractor): string => {
         }
         break;
 
-      case "google_photos":
-        if (contractor.google_photos && Array.isArray(contractor.google_photos) && contractor.google_photos.length > 0) {
-          const validPhoto = contractor.google_photos.find(photo => 
-            photo && 
-            photo.url && 
-            typeof photo.url === 'string' && 
-            photo.url.startsWith('http')
-          );
-
-          if (validPhoto) {
-            console.log('Using Google photo:', {
-              business: contractor.business_name,
-              photo: validPhoto
-            });
-            return validPhoto.url;
-          }
-        }
-        break;
-
       case "default_specialty_image":
-        if (contractor.default_specialty_image && 
-            typeof contractor.default_specialty_image === 'string' && 
-            contractor.default_specialty_image.startsWith('http')) {
+        if (contractor.default_specialty_image) {
           console.log('Using default specialty image:', {
             business: contractor.business_name,
             specialty: contractor.specialty,
@@ -68,13 +66,9 @@ export const getDisplayImage = (contractor: Contractor): string => {
     }
   }
   
-  // Final fallback to legacy system if everything else fails
-  const fallbackUrl = selectImage(contractor);
-  console.log('Using fallback image:', {
-    business: contractor.business_name,
-    specialty: contractor.specialty,
-    url: fallbackUrl
+  // If no valid image is found, return placeholder
+  console.log('No valid image found, using placeholder:', {
+    business: contractor.business_name
   });
-  
-  return fallbackUrl;
+  return '/placeholder.svg';
 };
