@@ -33,7 +33,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         console.error('Error fetching Mapbox token:', error);
         throw error;
       }
-      console.log('Found Mapbox token');
+      console.log('Found Mapbox token:', data.value.slice(0, 10) + '...');
       return data.value;
     }
   });
@@ -44,16 +44,42 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
 
     const geocodeAddress = async () => {
       try {
-        const encodedAddress = encodeURIComponent(address);
+        // Ensure address is a string and properly formatted
+        const cleanAddress = address.trim();
+        if (!cleanAddress) {
+          setError('No address provided');
+          return;
+        }
+
+        // Append 'London, UK' if not present to improve geocoding accuracy
+        const fullAddress = cleanAddress.toLowerCase().includes('london') 
+          ? cleanAddress 
+          : `${cleanAddress}, London, UK`;
+
+        console.log('Geocoding address:', fullAddress);
+        const encodedAddress = encodeURIComponent(fullAddress);
+        
         const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${mapboxToken}&limit=1`
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${mapboxToken}&country=GB&limit=1`,
+          {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json'
+            }
+          }
         );
+
+        if (!response.ok) {
+          throw new Error(`Geocoding failed with status: ${response.status}`);
+        }
+
         const data = await response.json();
 
         if (data.features && data.features.length > 0) {
           const [lng, lat] = data.features[0].center;
-          setCoordinates({ lng, lat });
           console.log('Geocoding successful:', { lng, lat });
+          setCoordinates({ lng, lat });
+          setError(null);
         } else {
           console.error('No coordinates found for address');
           setError('Could not find location on map');
@@ -73,7 +99,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
 
     try {
       const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l(${coordinates.lng},${coordinates.lat})/${coordinates.lng},${coordinates.lat},14/800x400@2x?access_token=${mapboxToken}`;
-      console.log('Map URL generated:', staticMapUrl);
+      console.log('Static map URL generated successfully');
       setMapUrl(staticMapUrl);
       setError(null);
     } catch (err) {
