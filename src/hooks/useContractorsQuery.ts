@@ -9,31 +9,31 @@ export const useContractorsQuery = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       try {
-        // First get contractors with default specialty images and good ratings
-        const { data: defaultImageContractors = [], error: defaultError } = await supabase
-          .from('contractors')
-          .select('*')
-          .not('rating', 'is', null)
-          .not('default_specialty_image', 'is', null)
-          .order('rating', { ascending: false });
-
-        // Then get contractors with Google photos
+        // First get contractors with Google photos (preferred)
         const { data: googlePhotoContractors = [], error: googleError } = await supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .is('default_specialty_image', null)
           .not('google_photos', 'eq', '[]')
           .order('rating', { ascending: false });
 
-        // Finally get remaining contractors with uploaded images
+        // Then get contractors with uploaded images
         const { data: uploadedImageContractors = [], error: uploadedError } = await supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .is('default_specialty_image', null)
           .eq('google_photos', '[]')
           .not('images', 'eq', '{}')
+          .order('rating', { ascending: false });
+
+        // Finally get contractors with default specialty images
+        const { data: defaultImageContractors = [], error: defaultError } = await supabase
+          .from('contractors')
+          .select('*')
+          .not('rating', 'is', null)
+          .eq('google_photos', '[]')
+          .eq('images', '{}')
+          .not('default_specialty_image', 'is', null)
           .order('rating', { ascending: false });
 
         if (defaultError || googleError || uploadedError) {
@@ -44,9 +44,9 @@ export const useContractorsQuery = () => {
 
         // Combine all contractors in the desired order
         const contractorsData = [
-          ...defaultImageContractors,
           ...googlePhotoContractors,
-          ...uploadedImageContractors
+          ...uploadedImageContractors,
+          ...defaultImageContractors
         ];
 
         if (!contractorsData.length) {
@@ -56,24 +56,24 @@ export const useContractorsQuery = () => {
 
         console.log('Fetched contractors data:', {
           totalCount: contractorsData.length,
-          withDefaultImages: defaultImageContractors.length,
           withGooglePhotos: googlePhotoContractors.length,
-          withUploadedImages: uploadedImageContractors.length
+          withUploadedImages: uploadedImageContractors.length,
+          withDefaultImages: defaultImageContractors.length
         });
 
-        // Transform contractors
+        // Transform contractors and maintain the order
         const transformedContractors = await Promise.all(contractorsData.map(transformContractor));
         
-        // Sort within each group by rating
+        // Sort within each group by rating while maintaining the image type priority
         return transformedContractors.sort((a, b) => {
           // First check which category each contractor belongs to
-          const aCategory = a.default_specialty_image ? 3 
-            : (Array.isArray(a.google_photos) && a.google_photos.length > 0) ? 2 
-            : (Array.isArray(a.images) && a.images.length > 0) ? 1 : 0;
+          const aCategory = Array.isArray(a.google_photos) && a.google_photos.length > 0 ? 3
+            : (Array.isArray(a.images) && a.images.length > 0) ? 2
+            : a.default_specialty_image ? 1 : 0;
           
-          const bCategory = b.default_specialty_image ? 3 
-            : (Array.isArray(b.google_photos) && b.google_photos.length > 0) ? 2 
-            : (Array.isArray(b.images) && b.images.length > 0) ? 1 : 0;
+          const bCategory = Array.isArray(b.google_photos) && b.google_photos.length > 0 ? 3
+            : (Array.isArray(b.images) && b.images.length > 0) ? 2
+            : b.default_specialty_image ? 1 : 0;
           
           // If categories are different, sort by category
           if (aCategory !== bCategory) {
