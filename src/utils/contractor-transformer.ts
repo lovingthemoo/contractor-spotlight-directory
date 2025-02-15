@@ -3,7 +3,11 @@ import { Contractor, DatabaseContractor, GooglePhoto, GoogleReview } from "@/typ
 import { formatWebsiteUrl } from "./url-utils";
 
 export const transformContractor = async (dbContractor: DatabaseContractor): Promise<Contractor> => {
-  console.log('Raw contractor data:', dbContractor);
+  console.log('Raw contractor data:', {
+    business_name: dbContractor.business_name,
+    google_photos_type: typeof dbContractor.google_photos,
+    google_photos_sample: dbContractor.google_photos
+  });
   
   let google_reviews: GoogleReview[] | undefined;
   let google_photos: GooglePhoto[] | undefined;
@@ -11,13 +15,10 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   // Parse Google reviews if available
   if (dbContractor.google_reviews) {
     try {
-      console.log('Raw google_reviews:', dbContractor.google_reviews);
-      let reviewsData;
+      let reviewsData = dbContractor.google_reviews;
       
-      if (typeof dbContractor.google_reviews === 'string') {
-        reviewsData = JSON.parse(dbContractor.google_reviews);
-      } else {
-        reviewsData = dbContractor.google_reviews;
+      if (typeof reviewsData === 'string') {
+        reviewsData = JSON.parse(reviewsData);
       }
       
       if (Array.isArray(reviewsData) && reviewsData.length > 0) {
@@ -38,28 +39,45 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     try {
       let photosData = dbContractor.google_photos;
       
+      // Handle case where photos might be a string
       if (typeof photosData === 'string') {
         photosData = JSON.parse(photosData);
       }
       
+      // Handle case where it might be empty array in string form
+      if (photosData === '[]') {
+        photosData = [];
+      }
+      
       if (Array.isArray(photosData)) {
-        google_photos = photosData
-          .filter(photo => 
-            photo && 
-            typeof photo === 'object' && 
-            'url' in photo && 
-            photo.url && 
-            typeof photo.url === 'string'
-          )
-          .map(photo => ({
-            url: String(photo.url),
+        const validPhotos = photosData.filter(photo => 
+          photo && 
+          typeof photo === 'object' &&
+          ('url' in photo || 'id' in photo)
+        );
+
+        google_photos = validPhotos.map(photo => {
+          // Handle both direct URL objects and Google Places photo references
+          const photoUrl = photo.url || 
+            (typeof photo.id === 'string' ? 
+              `https://places.googleapis.com/v1/places/${photo.id}/photos` : 
+              undefined);
+
+          return {
+            url: String(photoUrl || ''),
             width: Number(photo.width || 0),
             height: Number(photo.height || 0),
             type: String(photo.type || '')
-          }));
+          };
+        }).filter(photo => photo.url.length > 0);
+
+        console.log('Processed photos for', dbContractor.business_name, {
+          rawCount: photosData.length,
+          validCount: google_photos.length
+        });
       }
     } catch (e) {
-      console.error('Error parsing google_photos:', e);
+      console.error('Error parsing google_photos for', dbContractor.business_name, e);
     }
   }
 
