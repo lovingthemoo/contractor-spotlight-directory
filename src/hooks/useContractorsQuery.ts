@@ -9,47 +9,32 @@ export const useContractorsQuery = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       try {
-        // Get contractors with any kind of images, using proper Postgres syntax
-        const withImagesQuery = supabase
+        // Get contractors with images using simplified OR conditions
+        const query = supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .or('google_photos.neq.[],default_specialty_image.neq.null,images.neq.{}')
+          .or('google_photos.neq.[],default_specialty_image.neq.null,images.neq.[]')
           .order('rating', { ascending: false });
 
-        const withImagesResponse = await withImagesQuery;
+        const { data: contractorsData, error } = await query;
         
-        if (withImagesResponse.error) {
-          console.error('Failed to fetch contractors with images:', withImagesResponse.error);
+        if (error) {
+          console.error('Failed to fetch contractors:', error);
           toast.error('Failed to fetch contractors');
-          throw withImagesResponse.error;
+          throw error;
         }
 
-        let contractorsData = withImagesResponse.data || [];
-        
-        // If we need more contractors, get the rest
-        if (contractorsData.length < 10) {
-          const remainingQuery = supabase
-            .from('contractors')
-            .select('*')
-            .not('rating', 'is', null)
-            .not('id', 'in', `(${contractorsData.map(c => c.id).join(',')})`)
-            .order('rating', { ascending: false });
-
-          const remainingResponse = await remainingQuery;
-
-          if (remainingResponse.error) {
-            console.error('Failed to fetch remaining contractors:', remainingResponse.error);
-          } else if (remainingResponse.data) {
-            contractorsData = [...contractorsData, ...remainingResponse.data];
-          }
+        if (!contractorsData?.length) {
+          console.log('No contractors found with images');
+          return [];
         }
 
         console.log('Fetched contractors data:', {
           totalCount: contractorsData.length,
           withImages: contractorsData.filter(c => 
             (Array.isArray(c.google_photos) && c.google_photos.length > 0) || 
-            (c.default_specialty_image) || 
+            c.default_specialty_image || 
             (Array.isArray(c.images) && c.images.length > 0)
           ).length
         });
