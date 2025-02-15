@@ -14,7 +14,7 @@ export const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty):
     // Get specialty images that aren't in the broken URLs list
     const { data: specialtyImages, error } = await supabase
       .from('contractor_images')
-      .select('storage_path, default_image_url')
+      .select('storage_path')
       .eq('image_type', 'specialty')
       .eq('is_active', true)
       .not('storage_path', 'in', `(${brokenUrlList.map(url => `'${url}'`).join(',')})`)
@@ -30,14 +30,7 @@ export const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty):
       return '/placeholder.svg';
     }
 
-    // First try to get a default image URL
-    const defaultImage = specialtyImages.find(img => img.default_image_url);
-    if (defaultImage?.default_image_url) {
-      console.debug('Using default image URL:', defaultImage.default_image_url);
-      return defaultImage.default_image_url;
-    }
-
-    // If no default image, take a random image from the results
+    // Take a random image from the results for more variety
     const randomIndex = Math.floor(Math.random() * specialtyImages.length);
     const fallbackUrl = getStorageUrl(specialtyImages[randomIndex].storage_path);
     

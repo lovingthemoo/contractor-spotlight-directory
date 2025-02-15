@@ -64,22 +64,13 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
     if (contractor.id) {
       const { data: contractorImages, error: contractorImagesError } = await supabase
         .from('contractor_images')
-        .select('storage_path, default_image_url')
+        .select('storage_path')
         .eq('contractor_id', contractor.id)
         .eq('is_active', true)
         .order('priority', { ascending: true })
         .limit(1);
 
       if (!contractorImagesError && contractorImages && contractorImages.length > 0) {
-        // First try to use the default image URL if available
-        if (contractorImages[0].default_image_url) {
-          console.debug('Using contractor default image:', {
-            contractor: contractor.business_name,
-            url: contractorImages[0].default_image_url
-          });
-          return contractorImages[0].default_image_url;
-        }
-
         const imageUrl = getStorageUrl(contractorImages[0].storage_path);
         
         // Check if the URL is known to be broken
