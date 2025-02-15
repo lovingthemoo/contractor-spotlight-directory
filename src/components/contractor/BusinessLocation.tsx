@@ -13,100 +13,88 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
   const [mapUrl, setMapUrl] = useState<string | null>(null);
 
   // Fetch Mapbox token from app_settings
-  const { data: mapboxToken } = useQuery({
+  const { data: mapboxToken, isLoading: isLoadingToken } = useQuery({
     queryKey: ['mapbox-token'],
     queryFn: async () => {
       console.log('Fetching Mapbox token...');
       const { data, error } = await supabase
         .from('app_settings')
-        .select('*')
+        .select('value')
         .eq('key', 'mapbox_public_token')
-        .maybeSingle();
+        .single();
       
       if (error) {
         console.error('Error fetching Mapbox token:', error);
         throw error;
       }
-      if (!data) {
-        console.error('Mapbox token not found in app_settings');
-        throw new Error('Mapbox token not found');
-      }
-      console.log('Found Mapbox token:', data);
+      console.log('Found Mapbox token');
       return data.value;
     }
   });
 
   useEffect(() => {
-    if (!mapboxToken) {
-      console.log('No Mapbox token available yet');
+    if (isLoadingToken || !mapboxToken) {
+      console.log('Waiting for Mapbox token...');
       return;
     }
 
-    console.log('Starting map initialization with address:', address);
-
-    // Validate address
-    if (!address || typeof address !== 'string' || address.trim().length < 3) {
-      console.error('Invalid address provided:', address);
-      setError('Invalid address provided');
+    if (!address) {
+      console.error('No address provided');
+      setError('Address information unavailable');
       return;
     }
 
-    const showMap = () => {
-      try {
-        const cleanAddress = address.trim();
-        console.log('Preparing map for address:', cleanAddress);
-        
-        // Basic static map of London with high resolution
-        const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/` +
-          `[-0.1276,51.5072]` + // London center coordinates
-          `,11` + // Zoom level
-          `/800x400` + // Higher resolution
-          `@2x` + // Retina display support
-          `?padding=50` +
-          `&access_token=${mapboxToken}`;
+    console.log('Generating map for address:', address);
+    
+    try {
+      const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l(0,0)/-0.1276,51.5072,11/800x400@2x?access_token=${mapboxToken}`;
+      console.log('Map URL generated');
+      setMapUrl(staticMapUrl);
+      setError(null);
+    } catch (err) {
+      console.error('Error generating map URL:', err);
+      setError('Could not load location map');
+    }
+  }, [address, mapboxToken, isLoadingToken]);
 
-        console.log('Generated static map URL');
-        setMapUrl(staticMapUrl);
-        setError(null);
-      } catch (error) {
-        console.error('Map generation failed:', error);
-        setError('Could not load location map');
-      }
-    };
-
-    showMap();
-  }, [address, mapboxToken]);
+  if (isLoadingToken) {
+    return (
+      <Card className="p-4 mt-6">
+        <h3 className="text-lg font-semibold mb-4">Location</h3>
+        <div className="w-full h-[300px] rounded-lg bg-gray-50 flex items-center justify-center">
+          <div className="text-gray-500">Loading map...</div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-4 mt-6">
       <h3 className="text-lg font-semibold mb-4">Location</h3>
-      {error && (
+      {error ? (
         <div className="text-red-500 mb-4">{error}</div>
-      )}
-      <div className="w-full h-[300px] rounded-lg bg-gray-50 overflow-hidden">
-        {mapUrl ? (
-          <div className="relative w-full h-full">
-            <img 
-              src={mapUrl}
-              alt={`Map showing location of ${address}`}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              onError={(e) => {
-                console.error('Map image failed to load');
-                setError('Could not load map image');
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <div className="absolute bottom-4 left-4 right-4 bg-white/90 p-2 rounded-md text-sm">
-              {address}
+      ) : (
+        <div className="w-full h-[300px] rounded-lg bg-gray-50 overflow-hidden">
+          {mapUrl && (
+            <div className="relative w-full h-full">
+              <img 
+                src={mapUrl}
+                alt={`Map showing location of ${address}`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={(e) => {
+                  console.error('Map image failed to load');
+                  setError('Could not load map image');
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <div className="absolute bottom-4 left-4 right-4 bg-white/90 p-2 rounded-md text-sm">
+                {address}
+              </div>
             </div>
-          </div>
-        ) : !error ? (
-          <div className="w-full h-full flex items-center justify-center">
-            Loading map...
-          </div>
-        ) : null}
-      </div>
+          )}
+        </div>
+      )}
     </Card>
   );
 };
