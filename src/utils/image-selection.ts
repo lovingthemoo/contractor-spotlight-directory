@@ -7,8 +7,27 @@ import type { Database } from "@/integrations/supabase/types";
 type ContractorSpecialty = Database['public']['Enums']['contractor_specialty'];
 
 const getStorageUrl = (path: string): string => {
-  if (path.startsWith('http')) return path;
-  return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/contractor-images/${path}`;
+  // If it's already a full URL (e.g. https://...), return as is
+  if (path.startsWith('http')) {
+    // Special case: if it's an Unsplash URL that we know is failing, return placeholder
+    if (path.includes('unsplash.com/photo-1581094794329-c8112a89df44')) {
+      console.debug('Detected broken Unsplash URL, using placeholder');
+      return '/placeholder.svg';
+    }
+    return path;
+  }
+  
+  // Ensure the path doesn't start with a slash
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  
+  // Construct the full storage URL
+  const storageUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/contractor-images/${cleanPath}`;
+  console.debug('Constructed storage URL:', {
+    originalPath: path,
+    cleanPath,
+    storageUrl
+  });
+  return storageUrl;
 };
 
 export const selectImage = async (contractor: Contractor): Promise<string> => {
@@ -20,11 +39,13 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
   try {
     // First, if the contractor has a default_specialty_image, use it
     if (contractor.default_specialty_image) {
+      const imageUrl = getStorageUrl(contractor.default_specialty_image);
       console.debug('Using default specialty image:', {
         contractor: contractor.business_name,
-        image: contractor.default_specialty_image
+        image: contractor.default_specialty_image,
+        url: imageUrl
       });
-      return contractor.default_specialty_image;
+      return imageUrl;
     }
 
     // Then try to get contractor-specific images
