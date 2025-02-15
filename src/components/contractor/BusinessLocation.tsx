@@ -23,9 +23,10 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         .from('app_settings')
         .select('value')
         .eq('key', 'mapbox_public_token')
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
+      if (!data) throw new Error('Mapbox token not found');
       return data.value;
     }
   });
