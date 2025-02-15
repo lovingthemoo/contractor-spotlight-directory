@@ -55,17 +55,27 @@ const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty): Promis
   try {
     console.debug('Getting fallback image for specialty:', specialty);
     
+    // First get the broken URLs for this specialty
+    const { data: brokenUrls, error: brokenError } = await supabase
+      .from('broken_image_urls')
+      .select('url')
+      .eq('specialty', specialty);
+
+    if (brokenError) {
+      console.error('Error fetching broken URLs:', brokenError);
+      return '/placeholder.svg';
+    }
+
+    // Extract just the URLs into an array
+    const brokenUrlList = (brokenUrls || []).map(item => item.url);
+    
+    // Now get a specialty image that isn't in the broken URLs list
     const { data: specialtyImages, error } = await supabase
       .from('contractor_images')
       .select('storage_path')
       .eq('image_type', 'specialty')
       .eq('is_active', true)
-      .not('storage_path', 'in', (
-        supabase
-          .from('broken_image_urls')
-          .select('url')
-          .eq('specialty', specialty)
-      ))
+      .not('storage_path', 'in', `(${brokenUrlList.map(url => `'${url}'`).join(',')})`)
       .limit(1);
 
     if (error) {
@@ -92,10 +102,27 @@ const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty): Promis
 };
 
 const markImageAsBroken = async (url: string, specialty?: string) => {
+  if (!url) {
+    console.debug('No URL provided to mark as broken');
+    return;
+  }
+
   try {
     // Only include specialty if it's valid
     const validatedSpecialty = specialty && isValidSpecialty(specialty) ? specialty : null;
     
+    // Check if this URL is already marked as broken
+    const { data: existing } = await supabase
+      .from('broken_image_urls')
+      .select('id')
+      .eq('url', url)
+      .maybeSingle();
+
+    if (existing) {
+      console.debug('URL already marked as broken:', url);
+      return;
+    }
+
     const { error } = await supabase
       .from('broken_image_urls')
       .insert({
