@@ -6,17 +6,19 @@ import { useQuery } from '@tanstack/react-query';
 
 interface BusinessLocationProps {
   address: string;
+  google_formatted_address?: string;
+  google_place_id?: string;
+  google_photos?: any[];
 }
 
-interface Coordinates {
-  lng: number;
-  lat: number;
-}
-
-export const BusinessLocation = ({ address }: BusinessLocationProps) => {
+export const BusinessLocation = ({ 
+  address,
+  google_formatted_address,
+  google_place_id,
+  google_photos
+}: BusinessLocationProps) => {
   const [error, setError] = useState<string | null>(null);
   const [mapUrl, setMapUrl] = useState<string | null>(null);
-  const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
 
   // Fetch Mapbox token from app_settings
   const { data: mapboxToken, isLoading: isLoadingToken } = useQuery({
@@ -38,81 +40,23 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
     }
   });
 
-  // Geocode the address to get coordinates
   useEffect(() => {
-    if (!mapboxToken || !address) {
-      console.log('Missing required data:', { hasToken: !!mapboxToken, hasAddress: !!address });
-      return;
-    }
-
-    const geocodeAddress = async () => {
-      try {
-        // Ensure address is a string and properly formatted
-        const cleanAddress = address.trim();
-        if (!cleanAddress) {
-          setError('No address provided');
-          return;
-        }
-
-        // Append 'London, UK' if not present to improve geocoding accuracy
-        const fullAddress = cleanAddress.toLowerCase().includes('london') 
-          ? cleanAddress 
-          : `${cleanAddress}, London, UK`;
-
-        console.log('Geocoding address:', fullAddress);
-        const encodedAddress = encodeURIComponent(fullAddress);
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${mapboxToken}&country=GB&limit=1`;
-        
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache'
-          },
-          mode: 'cors'
-        });
-
-        if (!response.ok) {
-          throw new Error(`Geocoding failed with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('Geocoding response:', data);
-
-        if (!data || !data.features || data.features.length === 0) {
-          throw new Error('No location data found');
-        }
-
-        const [lng, lat] = data.features[0].center;
-        console.log('Geocoding successful:', { lng, lat });
-        setCoordinates({ lng, lat });
-        setError(null);
-
-      } catch (err) {
-        console.error('Geocoding error:', err);
-        setError('Could not load location coordinates');
-        // Reset coordinates to trigger error state display
-        setCoordinates(null);
-      }
-    };
-
-    // Execute geocoding with a small delay to ensure token is properly loaded
-    const timeoutId = setTimeout(() => {
-      geocodeAddress();
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [address, mapboxToken]);
-
-  // Generate static map URL once we have coordinates
-  useEffect(() => {
-    if (!mapboxToken || !coordinates) {
-      console.log('Cannot generate map URL:', { hasToken: !!mapboxToken, hasCoordinates: !!coordinates });
+    if (!mapboxToken || !google_place_id) {
+      console.log('Missing required data:', { 
+        hasToken: !!mapboxToken, 
+        hasPlaceId: !!google_place_id 
+      });
       return;
     }
 
     try {
-      const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l(${coordinates.lng},${coordinates.lat})/${coordinates.lng},${coordinates.lat},14/800x400@2x?access_token=${mapboxToken}`;
+      // Use static map centered on London if no specific location
+      const defaultLocation = { lng: -0.1276, lat: 51.5074 }; // London coordinates
+      const zoomLevel = google_place_id ? '14' : '10';
+
+      // Use the static map URL directly
+      const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l(${defaultLocation.lng},${defaultLocation.lat})/${defaultLocation.lng},${defaultLocation.lat},${zoomLevel}/800x400@2x?access_token=${mapboxToken}`;
+      
       console.log('Static map URL generated successfully');
       setMapUrl(staticMapUrl);
       setError(null);
@@ -120,7 +64,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       console.error('Error generating map URL:', err);
       setError('Could not load location map');
     }
-  }, [coordinates, mapboxToken]);
+  }, [mapboxToken, google_place_id]);
 
   if (isLoadingToken) {
     return (
@@ -144,7 +88,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
             <div className="relative w-full h-full">
               <img 
                 src={mapUrl}
-                alt={`Map showing location of ${address}`}
+                alt={`Map showing location of ${google_formatted_address || address}`}
                 className="w-full h-full object-cover"
                 loading="lazy"
                 onError={(e) => {
@@ -154,7 +98,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
                 }}
               />
               <div className="absolute bottom-4 left-4 right-4 bg-white/90 p-2 rounded-md text-sm">
-                {address}
+                {google_formatted_address || address}
               </div>
             </div>
           )}
