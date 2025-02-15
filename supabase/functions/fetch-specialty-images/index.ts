@@ -21,6 +21,7 @@ interface PlaceDetails {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -32,10 +33,29 @@ serve(async (req) => {
       throw new Error('Specialty is required')
     }
 
+    console.log('Processing request for specialty:', specialty);
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    // Verify the storage bucket exists, create if it doesn't
+    const { data: buckets } = await supabase
+      .storage
+      .listBuckets();
+
+    if (!buckets?.find(b => b.name === 'contractor-images')) {
+      console.log('Creating contractor-images bucket');
+      const { error: bucketError } = await supabase
+        .storage
+        .createBucket('contractor-images', { public: true });
+      
+      if (bucketError) {
+        console.error('Error creating bucket:', bucketError);
+        throw bucketError;
+      }
+    }
 
     // Search terms for each specialty
     const searchTerms: Record<string, string[]> = {
@@ -53,6 +73,12 @@ serve(async (req) => {
     const places: PlaceDetails[] = []
     const GOOGLE_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY')
 
+    if (!GOOGLE_API_KEY) {
+      throw new Error('Google Places API key not configured');
+    }
+
+    console.log('Starting place search for terms:', terms);
+
     // Search for places
     for (const term of terms) {
       const searchResponse = await fetch(
@@ -60,15 +86,16 @@ serve(async (req) => {
       )
       
       if (!searchResponse.ok) {
-        console.error(`Failed to search places for term: ${term}`)
-        continue
+        console.error(`Failed to search places for term: ${term}`, await searchResponse.text());
+        continue;
       }
 
       const searchData = await searchResponse.json()
+      console.log(`Found ${searchData.results?.length || 0} results for term: ${term}`);
       
       // Get details for each place that has photos
       for (const place of searchData.results) {
-        if (places.length >= 50) break
+        if (places.length >= 50) break;
 
         if (place.photos && place.photos.length > 0) {
           const detailsResponse = await fetch(
@@ -76,8 +103,8 @@ serve(async (req) => {
           )
 
           if (!detailsResponse.ok) {
-            console.error(`Failed to get details for place: ${place.place_id}`)
-            continue
+            console.error(`Failed to get details for place: ${place.place_id}`, await detailsResponse.text());
+            continue;
           }
 
           const detailsData = await detailsResponse.json()
@@ -92,11 +119,11 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Found ${places.length} places with photos for ${specialty}`)
+    console.log(`Found ${places.length} places with photos for ${specialty}`);
 
     // Store photos for each place
     for (const place of places) {
-      if (!place.photos) continue
+      if (!place.photos) continue;
 
       for (const photo of place.photos) {
         try {
@@ -105,8 +132,8 @@ serve(async (req) => {
           // Download the photo
           const imageResponse = await fetch(photoUrl)
           if (!imageResponse.ok) {
-            console.error(`Failed to fetch photo for place: ${place.place_id}`)
-            continue
+            console.error(`Failed to fetch photo for place: ${place.place_id}`, await imageResponse.text());
+            continue;
           }
 
           const imageBlob = await imageResponse.blob()
@@ -121,8 +148,8 @@ serve(async (req) => {
             })
 
           if (uploadError) {
-            console.error('Error uploading image:', uploadError)
-            continue
+            console.error('Error uploading image:', uploadError);
+            continue;
           }
 
           // Get the public URL
@@ -143,10 +170,10 @@ serve(async (req) => {
             })
 
           if (insertError) {
-            console.error('Error inserting image record:', insertError)
+            console.error('Error inserting image record:', insertError);
           }
         } catch (error) {
-          console.error('Error processing photo:', error)
+          console.error('Error processing photo:', error);
         }
       }
     }
@@ -162,9 +189,12 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error in fetch-specialty-images:', error)
+    console.error('Error in fetch-specialty-images:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        stack: error.stack 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 
