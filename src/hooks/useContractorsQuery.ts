@@ -14,7 +14,8 @@ export const useContractorsQuery = () => {
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .not('google_photos', 'eq', '[]')
+          .not('google_photos', 'is', null)
+          .neq('google_photos', [])
           .order('rating', { ascending: false });
 
         // Then get contractors with uploaded images
@@ -22,7 +23,7 @@ export const useContractorsQuery = () => {
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .eq('google_photos', '[]')
+          .eq('google_photos', [])
           .not('images', 'eq', '{}')
           .order('rating', { ascending: false });
 
@@ -31,7 +32,7 @@ export const useContractorsQuery = () => {
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .eq('google_photos', '[]')
+          .eq('google_photos', [])
           .eq('images', '{}')
           .not('default_specialty_image', 'is', null)
           .order('rating', { ascending: false });
