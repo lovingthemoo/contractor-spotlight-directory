@@ -1,8 +1,5 @@
 
-import { Button } from "@/components/ui/button";
 import SearchBar from "@/components/contractors/SearchBar";
-import { migrateSpecialtyImages } from "@/utils/migration-utils";
-import { toast } from "sonner";
 
 interface HeroSectionProps {
   searchQuery: string;
@@ -10,17 +7,6 @@ interface HeroSectionProps {
 }
 
 const HeroSection = ({ searchQuery, setSearchQuery }: HeroSectionProps) => {
-  const handleMigration = async () => {
-    try {
-      toast.loading('Starting image migration...');
-      await migrateSpecialtyImages();
-      toast.success('Migration completed successfully');
-    } catch (error) {
-      console.error('Migration failed:', error);
-      toast.error('Failed to migrate images');
-    }
-  };
-
   return (
     <section 
       className="relative overflow-hidden bg-white"
@@ -41,16 +27,6 @@ const HeroSection = ({ searchQuery, setSearchQuery }: HeroSectionProps) => {
             setSearchQuery={setSearchQuery}
             aria-label="Search contractors"
           />
-          
-          {/* Admin only migration button */}
-          <div className="mt-4">
-            <Button 
-              onClick={handleMigration}
-              variant="outline"
-            >
-              Migrate Specialty Images
-            </Button>
-          </div>
         </div>
       </div>
     </section>

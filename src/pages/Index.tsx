@@ -10,6 +10,7 @@ import AdvertSection from "@/components/home/AdvertSection";
 
 const specialties = ["All", "Building", "Electrical", "Plumbing", "Roofing", "Home Repair", "Gardening", "Gas Engineer"];
 const ratingFilters = ["All", "4.5+", "4.0+", "3.5+", "3.0+"];
+const reviewFilters = ["All", "0-5", "5-10", "10+"];
 
 const Index = () => {
   const { data: contractors = [], isLoading, error } = useContractorsQuery();
@@ -21,6 +22,8 @@ const Index = () => {
     setSelectedSpecialty,
     selectedRating,
     setSelectedRating,
+    selectedReviews,
+    setSelectedReviews,
     filteredContractors
   } = useContractorFilters(contractors);
 
@@ -40,6 +43,9 @@ const Index = () => {
           selectedRating={selectedRating}
           setSelectedRating={setSelectedRating}
           ratingFilters={ratingFilters}
+          selectedReviews={selectedReviews}
+          setSelectedReviews={setSelectedReviews}
+          reviewFilters={reviewFilters}
         />
 
         <ContractorsList 
@@ -49,6 +55,7 @@ const Index = () => {
           searchQuery={searchQuery}
           selectedSpecialty={selectedSpecialty}
           selectedRating={selectedRating}
+          selectedReviews={selectedReviews}
         />
 
         <AdvertSection />

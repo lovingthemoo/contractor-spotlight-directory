@@ -1,6 +1,7 @@
 
 import SpecialtyFilter from "@/components/contractors/SpecialtyFilter";
 import RatingFilter from "@/components/contractors/RatingFilter";
+import ReviewsFilter from "@/components/contractors/ReviewsFilter";
 
 interface FiltersSectionProps {
   specialties: string[];
@@ -9,6 +10,9 @@ interface FiltersSectionProps {
   selectedRating: string;
   setSelectedRating: (rating: string) => void;
   ratingFilters: string[];
+  selectedReviews: string;
+  setSelectedReviews: (reviews: string) => void;
+  reviewFilters: string[];
 }
 
 const FiltersSection = ({
@@ -17,7 +21,10 @@ const FiltersSection = ({
   setSelectedSpecialty,
   selectedRating,
   setSelectedRating,
-  ratingFilters
+  ratingFilters,
+  selectedReviews,
+  setSelectedReviews,
+  reviewFilters
 }: FiltersSectionProps) => {
   return (
     <>
@@ -28,11 +35,19 @@ const FiltersSection = ({
         aria-label="Filter by specialty"
       />
 
-      <RatingFilter 
-        selectedRating={selectedRating}
-        setSelectedRating={setSelectedRating}
-        ratingFilters={ratingFilters}
-      />
+      <div className="flex flex-col md:flex-row md:gap-8">
+        <RatingFilter 
+          selectedRating={selectedRating}
+          setSelectedRating={setSelectedRating}
+          ratingFilters={ratingFilters}
+        />
+
+        <ReviewsFilter
+          selectedReviews={selectedReviews}
+          setSelectedReviews={setSelectedReviews}
+          reviewFilters={reviewFilters}
+        />
+      </div>
     </>
   );
 };

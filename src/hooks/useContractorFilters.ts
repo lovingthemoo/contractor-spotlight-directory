@@ -7,6 +7,7 @@ export const useContractorFilters = (contractors: Contractor[]) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
   const [selectedRating, setSelectedRating] = useState("All");
+  const [selectedReviews, setSelectedReviews] = useState("All");
 
   const getRatingThreshold = (filter: string): number => {
     switch (filter) {
@@ -18,11 +19,19 @@ export const useContractorFilters = (contractors: Contractor[]) => {
     }
   };
 
+  const getReviewRange = (filter: string): [number, number] => {
+    switch (filter) {
+      case "0-5": return [0, 5];
+      case "5-10": return [5, 10];
+      case "10+": return [10, Infinity];
+      default: return [0, Infinity];
+    }
+  };
+
   const filteredContractors = contractors
     .filter(contractor => {
       if (selectedSpecialty === "All") return true;
       
-      // Normalize both the selected specialty and the contractor's specialty
       const normalizedSelected = normalizeSpecialty(selectedSpecialty);
       const normalizedContractor = contractor.specialty ? normalizeSpecialty(contractor.specialty) : null;
       
@@ -41,19 +50,17 @@ export const useContractorFilters = (contractors: Contractor[]) => {
     .filter(contractor => 
       selectedRating === "All" || (contractor.rating && contractor.rating >= getRatingThreshold(selectedRating))
     )
+    .filter(contractor => {
+      if (selectedReviews === "All") return true;
+      const [min, max] = getReviewRange(selectedReviews);
+      const reviewCount = contractor.review_count || 0;
+      return reviewCount >= min && reviewCount < max;
+    })
     .filter(contractor => 
       contractor.business_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contractor.specialty?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contractor.location?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-
-  // Debug logging
-  console.log('Filtering details:', {
-    totalContractors: contractors.length,
-    filteredCount: filteredContractors.length,
-    selectedSpecialty,
-    uniqueSpecialties: [...new Set(contractors.map(c => c.specialty))],
-  });
 
   return {
     searchQuery,
@@ -62,6 +69,8 @@ export const useContractorFilters = (contractors: Contractor[]) => {
     setSelectedSpecialty,
     selectedRating,
     setSelectedRating,
+    selectedReviews,
+    setSelectedReviews,
     filteredContractors
   };
 };
