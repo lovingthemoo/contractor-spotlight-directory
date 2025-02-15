@@ -72,9 +72,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
           zoom: 15,
           minZoom: 9,
           maxZoom: 17,
-          workerCount: 1, // Reduce worker count to minimize CSP issues
-          fadeDuration: 0,
-          preserveDrawingBuffer: true // Might help with rendering issues
+          preserveDrawingBuffer: true
         });
 
         // Add navigation control
