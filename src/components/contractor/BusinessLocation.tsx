@@ -61,13 +61,22 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
           encodeURIComponent(cleanAddress)
         }.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`;
 
-        const response = await fetch(geocodingUrl);
+        const response = await fetch(geocodingUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Origin': window.location.origin
+          },
+          mode: 'cors',
+          credentials: 'omit'
+        });
         
         if (!response.ok) {
           throw new Error(`Geocoding failed: ${response.status}`);
         }
 
         const data = await response.json();
+        console.log('Geocoding response:', data);
         
         if (!data.features?.[0]?.center) {
           throw new Error('No location found');
