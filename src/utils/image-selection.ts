@@ -1,6 +1,6 @@
 
 import { Contractor } from "@/types/contractor";
-import { specialtyImages, defaultImages } from "./image-collections";
+import { specialtyImages, defaultImages } from "./images";
 
 const createImageHash = (uniqueString: string): number => {
   return uniqueString.split('').reduce((sum, char, index) => {
