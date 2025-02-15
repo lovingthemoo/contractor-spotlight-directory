@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
@@ -121,6 +120,7 @@ serve(async (req) => {
 
     console.log(`Found ${places.length} places with photos for ${specialty}`);
 
+    let processedCount = 0;
     // Store photos for each place
     for (const place of places) {
       if (!place.photos) continue;
@@ -171,6 +171,8 @@ serve(async (req) => {
 
           if (insertError) {
             console.error('Error inserting image record:', insertError);
+          } else {
+            processedCount++;
           }
         } catch (error) {
           console.error('Error processing photo:', error);
@@ -180,7 +182,8 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
+        success: true,
+        processedCount,
         message: `Processed ${places.length} places for ${specialty}` 
       }),
       { 

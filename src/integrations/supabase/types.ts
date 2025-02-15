@@ -367,6 +367,36 @@ export type Database = {
         }
         Relationships: []
       }
+      specialty_image_fetch_history: {
+        Row: {
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          images_processed: number | null
+          specialty: Database["public"]["Enums"]["contractor_specialty"]
+          started_at: string | null
+          success: boolean | null
+        }
+        Insert: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          images_processed?: number | null
+          specialty: Database["public"]["Enums"]["contractor_specialty"]
+          started_at?: string | null
+          success?: boolean | null
+        }
+        Update: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          images_processed?: number | null
+          specialty?: Database["public"]["Enums"]["contractor_specialty"]
+          started_at?: string | null
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       upload_logs: {
         Row: {
           created_at: string

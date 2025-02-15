@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ImportFileUpload from "@/components/admin/ImportFileUpload";
 import ImportLogs from "@/components/admin/ImportLogs";
 import { fetchSpecialtyImages } from "@/utils/image-fetching";
+import { format } from "date-fns";
 
 const AdminImport = () => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -28,6 +29,27 @@ const AdminImport = () => {
       
       if (error) throw error;
       return data;
+    }
+  });
+
+  // Query for specialty image fetch history
+  const { data: fetchHistory = {} } = useQuery({
+    queryKey: ['specialtyImageFetchHistory'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('specialty_image_fetch_history')
+        .select('*')
+        .order('completed_at', { ascending: false });
+      
+      if (error) throw error;
+
+      // Convert array to object keyed by specialty
+      return (data || []).reduce((acc, curr) => {
+        if (!acc[curr.specialty] || new Date(acc[curr.specialty].completed_at) < new Date(curr.completed_at)) {
+          acc[curr.specialty] = curr;
+        }
+        return acc;
+      }, {});
     }
   });
 
@@ -74,6 +96,7 @@ const AdminImport = () => {
         description: "Log deleted successfully",
       });
 
+      // Immediately refresh the logs
       queryClient.invalidateQueries({ queryKey: ['uploadLogs'] });
     } catch (error) {
       console.error('Error deleting log:', error);
@@ -90,13 +113,52 @@ const AdminImport = () => {
     setIsProcessing(true);
     setCurrentSpecialty(specialty);
     try {
-      await fetchSpecialtyImages(specialty as any);
+      // Create fetch history record
+      const { error: historyError } = await supabase
+        .from('specialty_image_fetch_history')
+        .insert({
+          specialty,
+          started_at: new Date().toISOString(),
+        });
+
+      if (historyError) throw historyError;
+
+      const result = await fetchSpecialtyImages(specialty as any);
+      
+      // Update fetch history record
+      const { error: updateError } = await supabase
+        .from('specialty_image_fetch_history')
+        .update({
+          completed_at: new Date().toISOString(),
+          success: true,
+          images_processed: result.processedCount || 0,
+        })
+        .eq('specialty', specialty)
+        .is('completed_at', null);
+
+      if (updateError) throw updateError;
+
       toast({
         title: "Success",
-        description: `Started fetching images for ${specialty}`,
+        description: `Completed fetching images for ${specialty}`,
       });
+
+      // Refresh the fetch history
+      queryClient.invalidateQueries({ queryKey: ['specialtyImageFetchHistory'] });
     } catch (error) {
       console.error('Error fetching specialty images:', error);
+      
+      // Update fetch history with error
+      await supabase
+        .from('specialty_image_fetch_history')
+        .update({
+          completed_at: new Date().toISOString(),
+          success: false,
+          error_message: error.message,
+        })
+        .eq('specialty', specialty)
+        .is('completed_at', null);
+
       toast({
         title: "Error",
         description: `Failed to fetch images for ${specialty}`,
@@ -126,6 +188,7 @@ const AdminImport = () => {
         description: "Old logs cleared successfully",
       });
 
+      // Immediately refresh the logs
       queryClient.invalidateQueries({ queryKey: ['uploadLogs'] });
     } catch (error) {
       console.error('Error clearing old logs:', error);
@@ -136,6 +199,8 @@ const AdminImport = () => {
       });
     }
   };
+
+  const specialties = ["Electrical", "Plumbing", "Roofing", "Building", "Home Repair", "Gardening", "Construction", "Handyman"];
 
   return (
     <Card className="p-6">
@@ -165,30 +230,47 @@ const AdminImport = () => {
         <div>
           <h3 className="text-lg font-semibold mb-4">Fetch Specialty Images</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {["Electrical", "Plumbing", "Roofing", "Building", "Home Repair", "Gardening", "Construction", "Handyman"].map((specialty) => (
-              <Button
-                key={specialty}
-                onClick={() => handleFetchSpecialtyImages(specialty)}
-                disabled={isProcessing && currentSpecialty === specialty}
-                variant="outline"
-                className="h-auto py-4"
-              >
-                {isProcessing && currentSpecialty === specialty ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-                    Processing...
-                  </div>
-                ) : (
-                  specialty
-                )}
-              </Button>
-            ))}
+            {specialties.map((specialty) => {
+              const lastFetch = fetchHistory[specialty];
+              const lastCompleted = lastFetch?.completed_at ? 
+                format(new Date(lastFetch.completed_at), 'dd/MM/yyyy HH:mm') : 
+                'Never';
+              
+              return (
+                <div key={specialty} className="flex flex-col gap-2">
+                  <Button
+                    onClick={() => handleFetchSpecialtyImages(specialty)}
+                    disabled={isProcessing && currentSpecialty === specialty}
+                    variant="outline"
+                    className="h-auto py-4"
+                  >
+                    {isProcessing && currentSpecialty === specialty ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                        Processing...
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        <span>{specialty}</span>
+                        <span className="text-xs text-gray-500">
+                          Last completed: {lastCompleted}
+                        </span>
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         <div>
           <h3 className="text-lg font-semibold mb-4">Import Logs</h3>
-          <ImportLogs logs={logs} onDelete={deleteLog} />
+          {isLoadingLogs ? (
+            <div className="text-center py-4">Loading logs...</div>
+          ) : (
+            <ImportLogs logs={logs} onDelete={deleteLog} />
+          )}
         </div>
       </div>
     </Card>
