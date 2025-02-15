@@ -6,6 +6,41 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   let google_reviews: GoogleReview[] | undefined;
   let google_photos: GooglePhoto[] | undefined;
   
+  // Parse Google photos first since this seems to be the main issue
+  if (dbContractor.google_photos) {
+    try {
+      let photosData = dbContractor.google_photos;
+      
+      // Handle case where it might be a string
+      if (typeof photosData === 'string') {
+        photosData = JSON.parse(photosData);
+      }
+      
+      // Ensure we have an array of photo objects
+      if (Array.isArray(photosData)) {
+        google_photos = photosData
+          .filter(photo => photo && typeof photo === 'object' && photo.url)
+          .map(photo => ({
+            url: String(photo.url || ''),
+            width: Number(photo.width || 0),
+            height: Number(photo.height || 0),
+            type: String(photo.type || '')
+          }));
+          
+        console.debug('Processed Google photos:', {
+          total: photosData.length,
+          valid: google_photos.length,
+          sample: google_photos[0]
+        });
+      } else {
+        console.error('Google photos is not an array:', photosData);
+      }
+    } catch (e) {
+      console.error('Error processing google_photos for', dbContractor.business_name, e);
+      google_photos = [];
+    }
+  }
+
   // Parse Google reviews if available
   if (dbContractor.google_reviews) {
     try {
@@ -15,45 +50,24 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
         reviewsData = JSON.parse(reviewsData);
       }
       
-      if (Array.isArray(reviewsData) && reviewsData.length > 0) {
-        google_reviews = reviewsData.map(review => ({
-          rating: Number(review.rating) || 0,
-          text: String(review.text || ''),
-          time: String(review.time || ''),
-          author_name: String(review.author_name || '')
-        }));
+      if (Array.isArray(reviewsData)) {
+        google_reviews = reviewsData
+          .filter(review => review && typeof review === 'object')
+          .map(review => ({
+            rating: Number(review.rating) || 0,
+            text: String(review.text || ''),
+            time: String(review.time || ''),
+            author_name: String(review.author_name || '')
+          }));
+          
+        console.debug('Processed Google reviews:', {
+          total: reviewsData.length,
+          valid: google_reviews.length
+        });
       }
     } catch (e) {
       console.error('Error parsing google_reviews for', dbContractor.business_name, e);
     }
-  }
-
-  // Parse Google photos
-  try {
-    let photosData = dbContractor.google_photos || [];
-    
-    if (typeof photosData === 'string') {
-      try {
-        photosData = JSON.parse(photosData);
-      } catch (e) {
-        console.error('Failed to parse google_photos string:', e);
-        photosData = [];
-      }
-    }
-    
-    if (Array.isArray(photosData)) {
-      google_photos = photosData
-        .filter(photo => photo && typeof photo === 'object' && photo.url)
-        .map(photo => ({
-          url: String(photo.url),
-          width: Number(photo.width || 0),
-          height: Number(photo.height || 0),
-          type: String(photo.type || '')
-        }));
-    }
-  } catch (e) {
-    console.error('Error processing google_photos for', dbContractor.business_name, e);
-    google_photos = [];
   }
 
   // Parse image_priority with fallback
@@ -108,7 +122,10 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   console.log('Transformed contractor:', {
     business: dbContractor.business_name,
     default_specialty_image,
-    google_photos: google_photos?.length || 0,
+    google_photos: google_photos ? {
+      length: google_photos.length,
+      sample: google_photos[0]
+    } : 'none',
     uploaded_images: images.length
   });
 
