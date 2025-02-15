@@ -21,8 +21,7 @@ export const getDisplayImage = (contractor: Contractor): string => {
           const validPhoto = contractor.google_photos.find(photo => 
             photo && 
             photo.url && 
-            typeof photo.url === 'string' && 
-            photo.url.startsWith('http')
+            typeof photo.url === 'string'
           );
 
           if (validPhoto) {
@@ -39,8 +38,7 @@ export const getDisplayImage = (contractor: Contractor): string => {
         if (Array.isArray(contractor.images) && contractor.images.length > 0) {
           const validImage = contractor.images.find(img => 
             typeof img === 'string' && 
-            img.trim().length > 0 && 
-            img.startsWith('http')
+            img.trim().length > 0
           );
           
           if (validImage) {
@@ -54,7 +52,7 @@ export const getDisplayImage = (contractor: Contractor): string => {
         break;
 
       case "default_specialty_image":
-        if (contractor.default_specialty_image) {
+        if (contractor.default_specialty_image && typeof contractor.default_specialty_image === 'string') {
           console.log('Using default specialty image:', {
             business: contractor.business_name,
             specialty: contractor.specialty,

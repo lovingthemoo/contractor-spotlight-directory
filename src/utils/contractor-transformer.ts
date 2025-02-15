@@ -95,13 +95,13 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
 
   // Process images array and ensure all URLs are valid
   const images = Array.isArray(dbContractor.images)
-    ? dbContractor.images.filter(img => img && typeof img === 'string' && img.startsWith('http'))
+    ? dbContractor.images.filter(img => img && typeof img === 'string' && img.trim().length > 0)
     : [];
 
   // Ensure we have a valid default_specialty_image
   const default_specialty_image = dbContractor.default_specialty_image && 
     typeof dbContractor.default_specialty_image === 'string' && 
-    dbContractor.default_specialty_image.startsWith('http')
+    dbContractor.default_specialty_image.trim().length > 0
       ? dbContractor.default_specialty_image
       : undefined;
 
