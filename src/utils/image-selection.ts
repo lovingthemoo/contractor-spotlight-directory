@@ -62,8 +62,7 @@ const getSpecialtyFallbackImage = async (specialty: ContractorSpecialty): Promis
           .select('url')
           .eq('specialty', specialty)
       ))
-      .order('RANDOM()')  // Randomize selection
-      .limit(1);
+      .limit(1);  // Remove the ORDER BY RANDOM() here as it's handled by the function
 
     if (error) {
       console.error('Error fetching specialty fallback image:', error);
@@ -207,3 +206,4 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
 };
 
 export { markImageAsBroken };
+
