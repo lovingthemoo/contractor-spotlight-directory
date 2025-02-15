@@ -64,7 +64,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     google_photos = [];
   }
 
-  // Parse image_priority
+  // Parse image_priority with fallback
   let image_priority;
   try {
     if (dbContractor.image_priority) {
@@ -76,6 +76,8 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     }
   } catch (e) {
     console.error('Error parsing image_priority for', dbContractor.business_name, e);
+    // Always provide a fallback image priority
+    image_priority = { order: ["google_photos", "uploaded_images", "default_specialty_image"] };
   }
 
   // Create a slug if one doesn't exist
@@ -98,7 +100,7 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
       ? dbContractor.review_count
       : 0;
 
-  // Process images array
+  // Process images array and ensure all URLs are valid
   const images = Array.isArray(dbContractor.images)
     ? dbContractor.images.filter(img => img && typeof img === 'string' && img.startsWith('http'))
     : [];
@@ -109,6 +111,13 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     googlePhotos: google_photos?.length || 0,
     defaultSpecialtyImage: dbContractor.default_specialty_image
   });
+
+  // Ensure we have a valid default_specialty_image
+  const default_specialty_image = dbContractor.default_specialty_image && 
+    typeof dbContractor.default_specialty_image === 'string' && 
+    dbContractor.default_specialty_image.startsWith('http')
+      ? dbContractor.default_specialty_image
+      : undefined;
 
   const contractor: Contractor = {
     ...dbContractor,
@@ -121,8 +130,8 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     project_types: Array.isArray(dbContractor.project_types) ? dbContractor.project_types : [],
     certifications: Array.isArray(dbContractor.certifications) ? dbContractor.certifications : undefined,
     website_url: formatWebsiteUrl(dbContractor.website_url),
-    image_priority: image_priority || { order: ["uploaded_images", "google_photos", "default_specialty_image"] },
-    default_specialty_image: dbContractor.default_specialty_image,
+    image_priority: image_priority || { order: ["google_photos", "uploaded_images", "default_specialty_image"] },
+    default_specialty_image,
     slug
   };
 
