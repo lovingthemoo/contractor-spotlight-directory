@@ -388,6 +388,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_specialty_images: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       admin_role: "super_admin" | "admin"

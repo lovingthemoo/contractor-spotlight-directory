@@ -20,14 +20,30 @@ const isValidGooglePhoto = (photo: any): boolean => {
          isValidUrl(photo.url);
 };
 
-// Helper to format Unsplash URLs
+// Helper to format Unsplash URLs with proper parameters
 const formatUnsplashUrl = (url: string): string => {
   if (!url) return '';
-  if (url.includes('images.unsplash.com')) {
-    const baseUrl = url.split('?')[0];
-    return `${baseUrl}?auto=format&fit=crop&w=800&q=80`;
+  
+  // Check if it's an Unsplash URL
+  if (!url.includes('images.unsplash.com')) {
+    return url;
   }
-  return url;
+
+  try {
+    // Parse the URL to handle existing query parameters
+    const urlObj = new URL(url);
+    
+    // Add or update required parameters
+    urlObj.searchParams.set('auto', 'format');
+    urlObj.searchParams.set('fit', 'crop');
+    urlObj.searchParams.set('w', '800');
+    urlObj.searchParams.set('q', '80');
+    
+    return urlObj.toString();
+  } catch (error) {
+    console.error('Error formatting Unsplash URL:', error);
+    return url;
+  }
 };
 
 export const getDisplayImage = (contractor: Contractor): string => {
