@@ -9,17 +9,18 @@ export const useContractorsQuery = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       try {
-        // Get all contractors that have any kind of images
+        // Get contractors with any kind of images, using proper Postgres syntax
         const withImagesQuery = supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .or('google_photos.neq.[],(default_specialty_image.neq.null,images.neq.{})')
+          .or('google_photos.neq.[],default_specialty_image.neq.null,images.neq.{}')
           .order('rating', { ascending: false });
 
         const withImagesResponse = await withImagesQuery;
         
         if (withImagesResponse.error) {
+          console.error('Failed to fetch contractors with images:', withImagesResponse.error);
           toast.error('Failed to fetch contractors');
           throw withImagesResponse.error;
         }
@@ -32,15 +33,26 @@ export const useContractorsQuery = () => {
             .from('contractors')
             .select('*')
             .not('rating', 'is', null)
-            .not('id', 'in', `(${contractorsData.map(c => `'${c.id}'`).join(',')})`)
+            .not('id', 'in', `(${contractorsData.map(c => c.id).join(',')})`)
             .order('rating', { ascending: false });
 
           const remainingResponse = await remainingQuery;
 
-          if (!remainingResponse.error && remainingResponse.data) {
+          if (remainingResponse.error) {
+            console.error('Failed to fetch remaining contractors:', remainingResponse.error);
+          } else if (remainingResponse.data) {
             contractorsData = [...contractorsData, ...remainingResponse.data];
           }
         }
+
+        console.log('Fetched contractors data:', {
+          totalCount: contractorsData.length,
+          withImages: contractorsData.filter(c => 
+            (c.google_photos?.length > 0) || 
+            (c.default_specialty_image) || 
+            (c.images?.length > 0)
+          ).length
+        });
 
         // Transform and sort contractors
         const transformedContractors = await Promise.all(contractorsData.map(transformContractor));
@@ -73,7 +85,7 @@ export const useContractorsQuery = () => {
         throw e;
       }
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     refetchOnWindowFocus: false,
   });
 };
