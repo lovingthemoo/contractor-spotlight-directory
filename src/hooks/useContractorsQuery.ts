@@ -9,15 +9,13 @@ export const useContractorsQuery = () => {
     queryKey: ['contractors'],
     queryFn: async () => {
       try {
-        // Get contractors with images using more explicit conditions
-        const query = supabase
+        // Simplified query with individual filters
+        const { data: contractorsData, error } = await supabase
           .from('contractors')
           .select('*')
           .not('rating', 'is', null)
-          .or(`google_photos.neq.'[]',default_specialty_image.is.not.null,images.neq.'{}'::"text[]"`)
+          .or('google_photos.neq.[]')
           .order('rating', { ascending: false });
-
-        const { data: contractorsData, error } = await query;
         
         if (error) {
           console.error('Failed to fetch contractors:', error);
