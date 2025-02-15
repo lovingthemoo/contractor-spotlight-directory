@@ -12,10 +12,28 @@ export const getDisplayImage = (contractor: Contractor): string => {
   });
 
   // Follow the priority order defined in contractor.image_priority
-  const priorityOrder = contractor?.image_priority?.order || ["google_photos", "uploaded_images", "default_specialty_image"];
+  const priorityOrder = contractor?.image_priority?.order || ["uploaded_images", "google_photos", "default_specialty_image"];
   
   for (const source of priorityOrder) {
     switch (source) {
+      case "uploaded_images":
+        if (Array.isArray(contractor.images) && contractor.images.length > 0) {
+          const validImage = contractor.images.find(img => 
+            typeof img === 'string' && 
+            img.trim().length > 0 && 
+            img.startsWith('http')
+          );
+          
+          if (validImage) {
+            console.log('Using uploaded image:', {
+              business: contractor.business_name,
+              image: validImage
+            });
+            return validImage;
+          }
+        }
+        break;
+
       case "google_photos":
         if (contractor.google_photos && Array.isArray(contractor.google_photos) && contractor.google_photos.length > 0) {
           const validPhoto = contractor.google_photos.find(photo => 
@@ -31,24 +49,6 @@ export const getDisplayImage = (contractor: Contractor): string => {
               photo: validPhoto
             });
             return validPhoto.url;
-          }
-        }
-        break;
-
-      case "uploaded_images":
-        if (Array.isArray(contractor.images) && contractor.images.length > 0) {
-          const validImage = contractor.images.find(img => 
-            typeof img === 'string' && 
-            img.trim().length > 0 && 
-            img.startsWith('http')
-          );
-          
-          if (validImage) {
-            console.log('Using uploaded image:', {
-              business: contractor.business_name,
-              image: validImage
-            });
-            return validImage;
           }
         }
         break;
