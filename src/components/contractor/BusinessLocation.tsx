@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -64,52 +65,54 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         console.log('Geocoding address:', cleanAddress);
         
         // Construct geocoding URL with proper parameters
-        const geocodingUrl = new URL('https://api.mapbox.com/geocoding/v5/mapbox.places/' + encodeURIComponent(cleanAddress) + '.json');
-        geocodingUrl.searchParams.append('access_token', mapboxToken);
-        geocodingUrl.searchParams.append('country', 'GB');
-        geocodingUrl.searchParams.append('limit', '1');
-        geocodingUrl.searchParams.append('types', 'address');
+        const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(cleanAddress)}.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`;
 
-        const response = await fetch(geocodingUrl.toString());
-        
-        if (!response.ok) {
-          throw new Error(`Geocoding failed with status: ${response.status}`);
+        try {
+          const response = await fetch(geocodingUrl);
+          
+          if (!response.ok) {
+            throw new Error(`Geocoding failed with status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log('Geocoding response:', data);
+
+          if (!data.features || data.features.length === 0) {
+            throw new Error('No location found for the provided address');
+          }
+
+          const [lng, lat] = data.features[0].center;
+          console.log('Coordinates:', { lng, lat });
+
+          // Create new map instance
+          map.current = new mapboxgl.Map({
+            container: mapContainer.current,
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [lng, lat],
+            zoom: 15,
+            minZoom: 9,
+            maxZoom: 17
+          });
+
+          // Add marker with popup
+          new mapboxgl.Marker({ color: '#7c3aed' })
+            .setLngLat([lng, lat])
+            .setPopup(new mapboxgl.Popup({ offset: 25 })
+              .setHTML(`<div class="p-2"><strong>${address}</strong></div>`))
+            .addTo(map.current);
+
+          // Add navigation controls
+          map.current.addControl(new mapboxgl.NavigationControl({
+            showCompass: false
+          }), 'top-right');
+
+          // Clear any previous errors
+          setError(null);
+
+        } catch (fetchError) {
+          console.error('Error fetching geocoding data:', fetchError);
+          throw new Error(`Geocoding request failed: ${fetchError.message}`);
         }
-
-        const data = await response.json();
-        console.log('Geocoding response:', data);
-
-        if (!data.features || data.features.length === 0) {
-          throw new Error('No location found for the provided address');
-        }
-
-        const [lng, lat] = data.features[0].center;
-        console.log('Coordinates:', { lng, lat });
-
-        // Create new map instance
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/streets-v12',
-          center: [lng, lat],
-          zoom: 15,
-          minZoom: 9,
-          maxZoom: 17
-        });
-
-        // Add marker with popup
-        new mapboxgl.Marker({ color: '#7c3aed' })
-          .setLngLat([lng, lat])
-          .setPopup(new mapboxgl.Popup({ offset: 25 })
-            .setHTML(`<div class="p-2"><strong>${address}</strong></div>`))
-          .addTo(map.current);
-
-        // Add navigation controls
-        map.current.addControl(new mapboxgl.NavigationControl({
-          showCompass: false
-        }), 'top-right');
-
-        // Clear any previous errors
-        setError(null);
 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to load map';
