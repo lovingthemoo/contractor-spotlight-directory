@@ -1,7 +1,5 @@
 
-import { useEffect, useRef, useState } from 'react';
-import mapboxgl, { LngLatLike } from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -11,10 +9,8 @@ interface BusinessLocationProps {
 }
 
 export const BusinessLocation = ({ address }: BusinessLocationProps) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showMap, setShowMap] = useState(false);
+  const [mapUrl, setMapUrl] = useState<string | null>(null);
 
   // Fetch Mapbox token from app_settings
   const { data: mapboxToken } = useQuery({
@@ -56,145 +52,48 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
     }
 
     const initializeMap = async () => {
-      console.log('InitializeMap function called');
-      
       try {
-        // Ensure any existing map is cleaned up
-        if (map.current) {
-          console.log('Cleaning up existing map instance');
-          map.current.remove();
-          map.current = null;
-        }
-
-        // Initialize with default London coordinates
-        const defaultCoords: LngLatLike = [-0.1276, 51.5072];
+        const cleanAddress = address.trim();
+        console.log('Geocoding:', cleanAddress);
         
-        // Initialize Mapbox with access token
-        console.log('Setting Mapbox access token');
-        mapboxgl.accessToken = mapboxToken;
+        // Get coordinates from Mapbox Geocoding API
+        const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${
+          encodeURIComponent(cleanAddress)
+        }.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`;
 
-        // Configure Mapbox to use basic tiles without WebGL
-        (mapboxgl as any).prewarm = false;
-        (mapboxgl as any).clearStorage = true;
-        (mapboxgl as any).baseApiUrl = 'https://api.mapbox.com';
-        (mapboxgl as any).workerCount = 0;
-
-        // Try to create map with minimal configuration
-        try {
-          console.log('Creating map with minimal config');
-          
-          if (!mapContainer.current) {
-            throw new Error('Map container reference is not available');
-          }
-
-          const mapOptions = {
-            container: mapContainer.current,
-            style: 'mapbox://styles/mapbox/streets-v11',
-            center: defaultCoords,
-            zoom: 15,
-            interactive: false,
-            fadeDuration: 0,
-            crossSourceCollisions: false,
-            locale: { 'NavigationControl.ZoomIn': 'Zoom in', 'NavigationControl.ZoomOut': 'Zoom out' },
-            optimizeForTerrain: false,
-            preserveDrawingBuffer: false,
-            refreshExpiredTiles: false,
-            trackResize: false,
-            boxZoom: false,
-            dragRotate: false,
-            dragPan: false,
-            keyboard: false,
-            doubleClickZoom: false,
-            touchZoomRotate: false,
-            maxBounds: null,
-            renderWorldCopies: false,
-            antialias: false
-          };
-
-          console.log('Map initialization options:', mapOptions);
-
-          // Create map instance
-          map.current = new mapboxgl.Map(mapOptions);
-          console.log('Map instance created');
-
-          // Once map is loaded
-          map.current.once('load', () => {
-            console.log('Map loaded event fired');
-            setShowMap(true);
-            
-            // Handle geocoding
-            const geocodeAddress = async () => {
-              try {
-                const cleanAddress = address.trim();
-                console.log('Geocoding:', cleanAddress);
-                
-                const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${
-                  encodeURIComponent(cleanAddress)
-                }.json?access_token=${mapboxToken}&country=GB&limit=1&types=address`;
-
-                const response = await fetch(geocodingUrl);
-                
-                if (!response.ok) {
-                  throw new Error(`Geocoding failed: ${response.status}`);
-                }
-
-                const data = await response.json();
-                
-                if (!data.features?.[0]?.center) {
-                  throw new Error('No location found');
-                }
-
-                const coords = data.features[0].center as LngLatLike;
-                console.log('Found coordinates:', coords);
-
-                if (map.current) {
-                  map.current.setCenter(coords);
-                  
-                  // Add a simple marker
-                  new mapboxgl.Marker()
-                    .setLngLat(coords)
-                    .addTo(map.current);
-                }
-
-                setError(null);
-              } catch (geocodeError) {
-                console.error('Geocoding failed:', geocodeError);
-                setError('Could not find exact location');
-              }
-            };
-
-            geocodeAddress();
-          });
-
-          // Handle errors
-          map.current.on('error', (e) => {
-            console.error('Map error:', e.error);
-            setError('Map loading error');
-          });
-
-        } catch (mapError) {
-          console.error('Map creation failed:', mapError);
-          throw mapError;
+        const response = await fetch(geocodingUrl);
+        
+        if (!response.ok) {
+          throw new Error(`Geocoding failed: ${response.status}`);
         }
 
-      } catch (finalError) {
-        console.error('Final error:', finalError);
-        setError('Could not load map');
-        setShowMap(false);
+        const data = await response.json();
+        
+        if (!data.features?.[0]?.center) {
+          throw new Error('No location found');
+        }
+
+        const [longitude, latitude] = data.features[0].center;
+        console.log('Found coordinates:', { longitude, latitude });
+
+        // Create static map URL
+        const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/` +
+          `pin-s+7c3aed(${longitude},${latitude})/` + // Purple pin
+          `${longitude},${latitude},` + // Center
+          `15/` + // Zoom level
+          `600x300` + // Size
+          `?access_token=${mapboxToken}`;
+
+        console.log('Generated static map URL');
+        setMapUrl(staticMapUrl);
+        setError(null);
+      } catch (error) {
+        console.error('Map generation failed:', error);
+        setError('Could not load location map');
       }
     };
 
-    // Start initialization
-    const timeoutId = setTimeout(initializeMap, 100);
-
-    // Cleanup
-    return () => {
-      clearTimeout(timeoutId);
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
-    };
+    initializeMap();
   }, [address, mapboxToken]);
 
   return (
@@ -203,18 +102,24 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       {error && (
         <div className="text-red-500 mb-4">{error}</div>
       )}
-      <div 
-        ref={mapContainer} 
-        className="w-full h-[300px] rounded-lg bg-gray-50"
-        style={{ 
-          display: showMap ? 'block' : 'none'
-        }} 
-      />
-      {!showMap && !error && (
-        <div className="w-full h-[300px] rounded-lg flex items-center justify-center bg-gray-50">
-          Loading map...
-        </div>
-      )}
+      <div className="w-full h-[300px] rounded-lg bg-gray-50 overflow-hidden">
+        {mapUrl ? (
+          <img 
+            src={mapUrl}
+            alt={`Map showing location of ${address}`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error('Map image failed to load');
+              setError('Could not load map image');
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : !error ? (
+          <div className="w-full h-full flex items-center justify-center">
+            Loading map...
+          </div>
+        ) : null}
+      </div>
     </Card>
   );
 };
