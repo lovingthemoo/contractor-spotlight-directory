@@ -48,9 +48,9 @@ export const useContractorsQuery = () => {
         console.log('Fetched contractors data:', {
           totalCount: contractorsData.length,
           withImages: contractorsData.filter(c => 
-            (c.google_photos?.length > 0) || 
+            (Array.isArray(c.google_photos) && c.google_photos.length > 0) || 
             (c.default_specialty_image) || 
-            (c.images?.length > 0)
+            (Array.isArray(c.images) && c.images.length > 0)
           ).length
         });
 
@@ -59,12 +59,12 @@ export const useContractorsQuery = () => {
         
         return transformedContractors.sort((a, b) => {
           // First, prioritize contractors with Google photos (fastest to load)
-          const aHasGooglePhotos = (a.google_photos?.length > 0) ? 3 : 0;
-          const bHasGooglePhotos = (b.google_photos?.length > 0) ? 3 : 0;
+          const aHasGooglePhotos = (Array.isArray(a.google_photos) && a.google_photos.length > 0) ? 3 : 0;
+          const bHasGooglePhotos = (Array.isArray(b.google_photos) && b.google_photos.length > 0) ? 3 : 0;
           
           // Then those with uploaded images
-          const aHasUploadedImages = (a.images?.length > 0) ? 2 : 0;
-          const bHasUploadedImages = (b.images?.length > 0) ? 2 : 0;
+          const aHasUploadedImages = (Array.isArray(a.images) && a.images.length > 0) ? 2 : 0;
+          const bHasUploadedImages = (Array.isArray(b.images) && b.images.length > 0) ? 2 : 0;
           
           // Finally those with default specialty images
           const aHasDefaultImage = a.default_specialty_image ? 1 : 0;
