@@ -12,12 +12,12 @@ export const getDisplayImage = (contractor: Contractor): string => {
   });
 
   // Follow the priority order defined in contractor.image_priority
-  const priorityOrder = contractor.image_priority?.order || ["google_photos", "uploaded_images", "default_specialty_image"];
+  const priorityOrder = contractor?.image_priority?.order || ["google_photos", "uploaded_images", "default_specialty_image"];
   
   for (const source of priorityOrder) {
     switch (source) {
       case "google_photos":
-        if (contractor.google_photos && contractor.google_photos.length > 0) {
+        if (contractor.google_photos && Array.isArray(contractor.google_photos) && contractor.google_photos.length > 0) {
           const validPhoto = contractor.google_photos.find(photo => 
             photo && 
             photo.url && 
@@ -36,7 +36,7 @@ export const getDisplayImage = (contractor: Contractor): string => {
         break;
 
       case "uploaded_images":
-        if (contractor.images && contractor.images.length > 0) {
+        if (Array.isArray(contractor.images) && contractor.images.length > 0) {
           const validImage = contractor.images.find(img => 
             typeof img === 'string' && 
             img.trim().length > 0 && 
@@ -54,7 +54,9 @@ export const getDisplayImage = (contractor: Contractor): string => {
         break;
 
       case "default_specialty_image":
-        if (contractor.default_specialty_image) {
+        if (contractor.default_specialty_image && 
+            typeof contractor.default_specialty_image === 'string' && 
+            contractor.default_specialty_image.startsWith('http')) {
           console.log('Using default specialty image:', {
             business: contractor.business_name,
             specialty: contractor.specialty,
