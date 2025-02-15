@@ -64,30 +64,51 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
         // Initialize Mapbox with access token
         mapboxgl.accessToken = mapboxToken;
 
+        console.log('Initializing map with token:', mapboxToken);
+
         // Create map with basic configuration
-        map.current = new mapboxgl.Map({
+        const mapInstance = new mapboxgl.Map({
           container: mapContainer.current!,
-          style: 'mapbox://styles/mapbox/streets-v12',
+          style: 'mapbox://styles/mapbox/light-v11', // Using a simpler style
           center: defaultCoords,
           zoom: 15,
           minZoom: 9,
-          maxZoom: 17,
-          preserveDrawingBuffer: true
+          maxZoom: 17
         });
 
-        // Add navigation control
+        // Set up error handling
+        mapInstance.on('error', (e) => {
+          console.error('Mapbox error:', e);
+          setError('Map loading error. Please try again later.');
+        });
+
+        // Handle style loading errors
+        mapInstance.on('style.load', () => {
+          console.log('Map style loaded successfully');
+          setShowMap(true);
+        });
+
+        mapInstance.on('style.error', () => {
+          console.error('Error loading map style');
+          setError('Could not load map style');
+        });
+
+        map.current = mapInstance;
+
+        // Add navigation control after map is initialized
         map.current.addControl(new mapboxgl.NavigationControl({
           showCompass: false
         }), 'top-right');
 
-        // Only show map after it's loaded
+        // Geocode address once map is ready
         map.current.on('load', () => {
-          setShowMap(true);
+          console.log('Map loaded, attempting to geocode address');
           
-          // Now try to geocode the address
           const geocodeAddress = async () => {
             try {
               const cleanAddress = address.trim();
+              console.log('Geocoding address:', cleanAddress);
+              
               const response = await fetch(
                 `https://api.mapbox.com/geocoding/v5/mapbox.places/${
                   encodeURIComponent(cleanAddress)
@@ -99,12 +120,14 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
               }
 
               const data = await response.json();
+              console.log('Geocoding response:', data);
               
               if (!data.features?.[0]?.center) {
                 throw new Error('No location found');
               }
 
               const coords: LngLatLike = data.features[0].center as [number, number];
+              console.log('Found coordinates:', coords);
 
               // Update map center
               map.current?.setCenter(coords);
@@ -116,7 +139,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
                   new mapboxgl.Popup({ offset: 25 })
                     .setHTML(`<div class="p-2"><strong>${address}</strong></div>`)
                 )
-                .addTo(map.current!);
+                .addTo(map.current);
 
               setError(null);
             } catch (geocodeError) {
@@ -134,7 +157,7 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       }
     };
 
-    // Small delay to ensure container is ready
+    // Initialize map with a small delay to ensure container is ready
     const timeoutId = setTimeout(initializeMap, 100);
 
     return () => {
@@ -154,10 +177,9 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
       )}
       <div 
         ref={mapContainer} 
-        className="w-full h-[300px] rounded-lg"
+        className="w-full h-[300px] rounded-lg bg-gray-50"
         style={{ 
-          display: showMap ? 'block' : 'none',
-          background: '#f8f9fa'
+          display: showMap ? 'block' : 'none'
         }} 
       />
       {!showMap && !error && (
