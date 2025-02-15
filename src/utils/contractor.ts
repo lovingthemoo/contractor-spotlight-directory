@@ -63,21 +63,19 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
       // Ensure we have a valid array of photo objects
       if (Array.isArray(photosData)) {
         google_photos = photosData
-          .filter(photo => photo && typeof photo === 'object' && photo.url)
+          .filter(photo => 
+            photo && 
+            typeof photo === 'object' && 
+            'url' in photo && 
+            photo.url && 
+            typeof photo.url === 'string'
+          )
           .map(photo => ({
-            url: String(photo.url || ''),
-            width: Number(photo.width) || 0,
-            height: Number(photo.height) || 0,
+            url: String(photo.url),
+            width: Number(photo.width || 0),
+            height: Number(photo.height || 0),
             type: String(photo.type || '')
           }));
-        
-        console.log('Processed Google photos:', {
-          contractorName: dbContractor.business_name,
-          photoCount: google_photos.length,
-          firstPhotoUrl: google_photos[0]?.url
-        });
-      } else {
-        console.warn('Invalid google_photos format:', photosData);
       }
     } catch (e) {
       console.error('Error parsing google_photos:', e);
@@ -109,10 +107,10 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     rating,
     review_count,
     years_in_business: dbContractor.years_in_business || undefined,
-    images: Array.isArray(dbContractor.images) ? dbContractor.images : [],
+    images: Array.isArray(dbContractor.images) ? dbContractor.images.filter(img => img && typeof img === 'string') : [],
     project_types: Array.isArray(dbContractor.project_types) ? dbContractor.project_types : [],
-    google_reviews: google_reviews || undefined,
-    google_photos: google_photos || undefined,
+    google_reviews,
+    google_photos,
     certifications: Array.isArray(dbContractor.certifications) ? dbContractor.certifications : undefined,
     website_url: formatWebsiteUrl(dbContractor.website_url),
     slug
@@ -155,7 +153,8 @@ export const getDisplayImage = (contractor: Contractor): string => {
   // Log available images for debugging
   console.log('Image sources for', contractor.business_name, {
     uploadedImages: contractor.images?.length || 0,
-    googlePhotos: contractor.google_photos?.length || 0
+    googlePhotos: contractor.google_photos?.length || 0,
+    specialty: contractor.specialty
   });
 
   // Priority 1: Company-specific uploaded images
@@ -174,11 +173,11 @@ export const getDisplayImage = (contractor: Contractor): string => {
   
   // Priority 2: Google photos
   if (contractor.google_photos && Array.isArray(contractor.google_photos)) {
-    // Filter out invalid photos first
     const validGooglePhotos = contractor.google_photos.filter(photo => 
       photo && 
       typeof photo === 'object' &&
       'url' in photo &&
+      photo.url &&
       typeof photo.url === 'string' &&
       photo.url.trim().length > 0 &&
       photo.url.startsWith('http')
@@ -188,37 +187,13 @@ export const getDisplayImage = (contractor: Contractor): string => {
       const photoUrl = validGooglePhotos[0].url;
       console.log('Using Google photo:', photoUrl);
       return photoUrl;
-    } else {
-      // Additional logging for debugging invalid photos
-      console.warn('Google photos validation failed for:', contractor.business_name, {
-        totalPhotos: contractor.google_photos.length,
-        invalidPhotos: contractor.google_photos
-          .filter(photo => !photo || typeof photo !== 'object' || !('url' in photo))
-          .length,
-        samplePhoto: contractor.google_photos[0],
-        photoTypes: contractor.google_photos.map(p => ({
-          isObject: typeof p === 'object',
-          hasUrl: p && typeof p === 'object' && 'url' in p,
-          urlType: p && typeof p === 'object' && 'url' in p ? typeof p.url : 'undefined'
-        }))
-      });
     }
-  } else {
-    console.warn('No Google photos array found for:', contractor.business_name);
   }
   
-  // If no image is available, log detailed debugging information
-  console.log('No valid images found for:', contractor.business_name, {
-    hasImages: !!contractor.images?.length,
-    imagesValid: contractor.images && Array.isArray(contractor.images),
-    hasGooglePhotos: !!contractor.google_photos?.length,
-    googlePhotosValid: contractor.google_photos && Array.isArray(contractor.google_photos),
-    imageTypes: contractor.images?.map(img => typeof img),
-    googlePhotoSample: contractor.google_photos?.[0]
-  });
-  
   // Return fallback image if no valid images found
-  return getFallbackImage(contractor.specialty);
+  const fallbackImage = getFallbackImage(contractor.specialty);
+  console.log('Using fallback image for', contractor.business_name, fallbackImage);
+  return fallbackImage;
 };
 
 export const getDisplayAddress = (contractor: Contractor): string => {
