@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -19,14 +18,22 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
   const { data: mapboxToken } = useQuery({
     queryKey: ['mapbox-token'],
     queryFn: async () => {
+      console.log('Fetching Mapbox token...');
       const { data, error } = await supabase
         .from('app_settings')
-        .select('value')
+        .select('*')
         .eq('key', 'mapbox_public_token')
         .maybeSingle();
       
-      if (error) throw error;
-      if (!data) throw new Error('Mapbox token not found');
+      if (error) {
+        console.error('Error fetching Mapbox token:', error);
+        throw error;
+      }
+      if (!data) {
+        console.error('Mapbox token not found in app_settings');
+        throw new Error('Mapbox token not found');
+      }
+      console.log('Found Mapbox token:', data);
       return data.value;
     }
   });
