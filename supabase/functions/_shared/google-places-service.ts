@@ -2,6 +2,8 @@
 export class GooglePlacesService {
   private apiKey: string;
   private baseUrl = 'https://places.googleapis.com/v1/places';
+  private retryAttempts = 3;
+  private retryDelay = 1000; // 1 second
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -15,6 +17,28 @@ export class GooglePlacesService {
     };
   }
 
+  private async retryRequest<T>(requestFn: () => Promise<T>): Promise<T> {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
+      try {
+        console.log(`Attempt ${attempt}/${this.retryAttempts}`);
+        return await requestFn();
+      } catch (error) {
+        console.error(`Attempt ${attempt} failed:`, error);
+        lastError = error as Error;
+        
+        if (attempt < this.retryAttempts) {
+          const delay = this.retryDelay * attempt;
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    throw lastError || new Error('All retry attempts failed');
+  }
+
   async testApiConnection(): Promise<boolean> {
     const testSearchBody = {
       textQuery: "construction company London",
@@ -22,7 +46,7 @@ export class GooglePlacesService {
       languageCode: "en"
     };
 
-    try {
+    return this.retryRequest(async () => {
       console.log('Testing API connection...');
       const response = await fetch(`${this.baseUrl}:searchText`, {
         method: 'POST',
@@ -38,10 +62,7 @@ export class GooglePlacesService {
 
       console.log('API test successful');
       return true;
-    } catch (error) {
-      console.error('API test error:', error);
-      throw error;
-    }
+    });
   }
 
   async searchPlaces(searchQuery: string, location: string): Promise<any[]> {
@@ -60,7 +81,7 @@ export class GooglePlacesService {
       languageCode: "en"
     };
 
-    try {
+    return this.retryRequest(async () => {
       console.log('Searching places:', searchBody);
       const response = await fetch(`${this.baseUrl}:searchText`, {
         method: 'POST',
@@ -82,14 +103,11 @@ export class GooglePlacesService {
       });
       
       return data.places || [];
-    } catch (error) {
-      console.error('Search error:', error);
-      throw error;
-    }
+    });
   }
 
   async getPlaceDetails(placeId: string): Promise<any> {
-    try {
+    return this.retryRequest(async () => {
       console.log(`Fetching details for place: ${placeId}`);
       
       const fieldMask = [
@@ -120,10 +138,19 @@ export class GooglePlacesService {
       
       // Process photos if they exist
       if (placeDetails.photos && Array.isArray(placeDetails.photos)) {
-        placeDetails.photos = placeDetails.photos.map((photo: any, index: number) => {
+        placeDetails.photos = await Promise.all(placeDetails.photos.map(async (photo: any, index: number) => {
           try {
             if (!photo.name) {
               console.warn(`Photo ${index} missing name`);
+              return null;
+            }
+
+            // Test the photo URL before returning it
+            const photoUrl = `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=800&maxWidthPx=800&key=${this.apiKey}`;
+            const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
+            
+            if (!photoResponse.ok) {
+              console.warn(`Photo URL ${index} is not accessible:`, photoResponse.status);
               return null;
             }
 
@@ -132,21 +159,21 @@ export class GooglePlacesService {
               width: photo.widthPx || 800,
               height: photo.heightPx || 600,
               attribution: photo.authorAttributions?.[0]?.displayName || null,
-              url: `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=800&maxWidthPx=800&key=${this.apiKey}`
+              url: photoUrl
             };
           } catch (error) {
             console.error(`Error processing photo ${index}:`, error);
             return null;
           }
-        }).filter(Boolean);
+        }));
+
+        placeDetails.photos = placeDetails.photos.filter(Boolean);
+        console.log(`Successfully processed ${placeDetails.photos.length} photos`);
       } else {
         placeDetails.photos = [];
       }
       
       return placeDetails;
-    } catch (error) {
-      console.error(`Error fetching place details for ${placeId}:`, error);
-      throw error;
-    }
+    });
   }
 }
