@@ -76,7 +76,6 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     }
   } catch (e) {
     console.error('Error parsing image_priority for', dbContractor.business_name, e);
-    image_priority = { order: ["google_photos", "uploaded_images", "default_specialty_image"] };
   }
 
   // Create a slug if one doesn't exist
@@ -107,7 +106,8 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
   console.log('Processed contractor images:', {
     business: dbContractor.business_name,
     uploadedImages: images.length,
-    googlePhotos: google_photos?.length || 0
+    googlePhotos: google_photos?.length || 0,
+    defaultSpecialtyImage: dbContractor.default_specialty_image
   });
 
   const contractor: Contractor = {
@@ -116,12 +116,13 @@ export const transformContractor = async (dbContractor: DatabaseContractor): Pro
     review_count,
     years_in_business: dbContractor.years_in_business || undefined,
     images,
-    project_types: Array.isArray(dbContractor.project_types) ? dbContractor.project_types : [],
     google_reviews,
     google_photos,
+    project_types: Array.isArray(dbContractor.project_types) ? dbContractor.project_types : [],
     certifications: Array.isArray(dbContractor.certifications) ? dbContractor.certifications : undefined,
     website_url: formatWebsiteUrl(dbContractor.website_url),
-    image_priority,
+    image_priority: image_priority || { order: ["uploaded_images", "google_photos", "default_specialty_image"] },
+    default_specialty_image: dbContractor.default_specialty_image,
     slug
   };
 
