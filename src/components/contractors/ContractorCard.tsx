@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Star, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Contractor } from "@/types/contractor";
-import { getDisplayImage } from "@/utils/image-utils";
+import { selectImage } from "@/utils/image-selection";
 import { useState, useEffect } from "react";
 
 interface ContractorCardProps {
@@ -24,8 +24,8 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
       setIsImageLoading(true);
       
       try {
-        // Get the best available image URL
-        const url = getDisplayImage(contractor);
+        // Get the best available image URL using our new selection logic
+        const url = await selectImage(contractor);
         
         // Pre-load the image
         const img = new Image();
@@ -58,14 +58,6 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
     loadImage();
   }, [contractor, displayName]);
 
-  // Format rating for display
-  const rating = contractor.rating || 0;
-  const displayRating = rating.toFixed(1);
-  const reviewCount = contractor.review_count || 0;
-
-  // Get display address
-  const displayAddress = contractor.google_formatted_address || contractor.location || 'London';
-
   return (
     <Card className="group overflow-hidden transition-all hover:shadow-lg">
       <Link 
@@ -96,10 +88,10 @@ const ContractorCard = ({ contractor }: ContractorCardProps) => {
           <div className="flex items-center mb-2">
             <div className="flex items-center text-yellow-400 mr-2">
               <Star className="fill-current w-4 h-4" />
-              <span className="ml-1 text-sm font-medium">{contractor.rating?.toFixed(1)}</span>
+              <span className="ml-1 text-sm font-medium">{rating?.toFixed(1)}</span>
             </div>
             <span className="text-sm text-gray-500">
-              ({contractor.review_count || 0} {contractor.review_count === 1 ? 'review' : 'reviews'})
+              ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
             </span>
           </div>
           
