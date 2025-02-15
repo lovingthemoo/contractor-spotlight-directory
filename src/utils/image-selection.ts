@@ -18,7 +18,16 @@ export const selectImage = async (contractor: Contractor): Promise<string> => {
   }
 
   try {
-    // First try to get contractor-specific images
+    // First, if the contractor has a default_specialty_image, use it
+    if (contractor.default_specialty_image) {
+      console.debug('Using default specialty image:', {
+        contractor: contractor.business_name,
+        image: contractor.default_specialty_image
+      });
+      return contractor.default_specialty_image;
+    }
+
+    // Then try to get contractor-specific images
     if (contractor.id) {
       const { data: contractorImages, error: contractorImagesError } = await supabase
         .from('contractor_images')
