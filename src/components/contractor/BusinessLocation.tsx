@@ -40,7 +40,10 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
 
   // Geocode the address to get coordinates
   useEffect(() => {
-    if (!mapboxToken || !address) return;
+    if (!mapboxToken || !address) {
+      console.log('Missing required data:', { hasToken: !!mapboxToken, hasAddress: !!address });
+      return;
+    }
 
     const geocodeAddress = async () => {
       try {
@@ -58,44 +61,55 @@ export const BusinessLocation = ({ address }: BusinessLocationProps) => {
 
         console.log('Geocoding address:', fullAddress);
         const encodedAddress = encodeURIComponent(fullAddress);
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${mapboxToken}&country=GB&limit=1`;
         
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedAddress}.json?access_token=${mapboxToken}&country=GB&limit=1`,
-          {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json'
-            }
-          }
-        );
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
+          mode: 'cors'
+        });
 
         if (!response.ok) {
           throw new Error(`Geocoding failed with status: ${response.status}`);
         }
 
         const data = await response.json();
+        console.log('Geocoding response:', data);
 
-        if (data.features && data.features.length > 0) {
-          const [lng, lat] = data.features[0].center;
-          console.log('Geocoding successful:', { lng, lat });
-          setCoordinates({ lng, lat });
-          setError(null);
-        } else {
-          console.error('No coordinates found for address');
-          setError('Could not find location on map');
+        if (!data || !data.features || data.features.length === 0) {
+          throw new Error('No location data found');
         }
+
+        const [lng, lat] = data.features[0].center;
+        console.log('Geocoding successful:', { lng, lat });
+        setCoordinates({ lng, lat });
+        setError(null);
+
       } catch (err) {
         console.error('Geocoding error:', err);
         setError('Could not load location coordinates');
+        // Reset coordinates to trigger error state display
+        setCoordinates(null);
       }
     };
 
-    geocodeAddress();
+    // Execute geocoding with a small delay to ensure token is properly loaded
+    const timeoutId = setTimeout(() => {
+      geocodeAddress();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
   }, [address, mapboxToken]);
 
   // Generate static map URL once we have coordinates
   useEffect(() => {
-    if (!mapboxToken || !coordinates) return;
+    if (!mapboxToken || !coordinates) {
+      console.log('Cannot generate map URL:', { hasToken: !!mapboxToken, hasCoordinates: !!coordinates });
+      return;
+    }
 
     try {
       const staticMapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l(${coordinates.lng},${coordinates.lat})/${coordinates.lng},${coordinates.lat},14/800x400@2x?access_token=${mapboxToken}`;
